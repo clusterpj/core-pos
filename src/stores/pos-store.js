@@ -1,7 +1,9 @@
+// src/stores/pos-store.js
 import { defineStore } from 'pinia'
 import { posApi } from '../services/api/pos-api'
 import { useCompanyStore } from './company'
 import { logger } from '../utils/logger'
+import apiClient from '../services/api/client'
 
 export const usePosStore = defineStore('pos', {
   state: () => ({
@@ -11,7 +13,8 @@ export const usePosStore = defineStore('pos', {
       products: false,
       stores: false,
       cashiers: false,
-      employees: false
+      employees: false,
+      itemOperation: false
     },
     error: null,
 
@@ -68,6 +71,15 @@ export const usePosStore = defineStore('pos', {
     systemReady: (state) => {
       const companyStore = useCompanyStore()
       return companyStore.isConfigured
+    },
+
+    // Get setup message if system is not ready
+    setupMessage: () => {
+      const companyStore = useCompanyStore()
+      if (!companyStore.selectedCustomer) return 'Please select a customer'
+      if (!companyStore.selectedStore) return 'Please select a store'
+      if (!companyStore.selectedCashier) return 'Please select a cash register'
+      return ''
     }
   },
 
@@ -178,6 +190,107 @@ export const usePosStore = defineStore('pos', {
         this.totalItems = 0
       } finally {
         this.loading.products = false
+        logger.endGroup()
+      }
+    },
+
+    // Item Management (Create/Update/Delete)
+    async createItem(formData) {
+      logger.startGroup('POS Store: Create Item')
+      this.loading.itemOperation = true
+      this.error = null
+
+      try {        
+        // Ensure company header is present
+        const response = await apiClient.post('/api/v1/items', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json'
+          }
+        })
+
+        logger.info('Item created successfully:', response.data)
+        await this.fetchProducts() // Refresh product list
+        return response.data
+      } catch (error) {
+        logger.error('Failed to create item:', error)
+        this.error = error.message || 'Failed to create item'
+        throw error
+      } finally {
+        this.loading.itemOperation = false
+        logger.endGroup()
+      }
+    },
+
+    async updateItem(itemId, formData) {
+      logger.startGroup('POS Store: Update Item')
+      this.loading.itemOperation = true
+      this.error = null
+
+      try {
+        // Using POST instead of PUT for updates
+        const response = await apiClient.post(`/api/v1/items/${itemId}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
+            'X-HTTP-Method-Override': 'PUT' // Add this to indicate it's an update
+          }
+        })
+
+        logger.info('Item updated successfully:', response.data)
+        await this.fetchProducts() // Refresh product list
+        return response.data
+      } catch (error) {
+        logger.error('Failed to update item:', error)
+        this.error = error.message || 'Failed to update item'
+        throw error
+      } finally {
+        this.loading.itemOperation = false
+        logger.endGroup()
+      }
+    },
+
+    async deleteItem(itemId) {
+      logger.startGroup('POS Store: Delete Item')
+      this.loading.itemOperation = true
+      this.error = null
+
+      try {
+        // Using the correct endpoint for single item deletion
+        const response = await apiClient.post('/api/v1/items/delete', {
+          ids: [itemId]
+        })
+        logger.info('Item deleted successfully:', response.data)
+        await this.fetchProducts() // Refresh product list
+        return response.data
+      } catch (error) {
+        logger.error('Failed to delete item:', error)
+        this.error = error.message || 'Failed to delete item'
+        throw error
+      } finally {
+        this.loading.itemOperation = false
+        logger.endGroup()
+      }
+    },
+
+    async deleteMultipleItems(itemIds) {
+      logger.startGroup('POS Store: Delete Multiple Items')
+      this.loading.itemOperation = true
+      this.error = null
+
+      try {
+        const response = await apiClient.post('/api/v1/items/delete', {
+          ids: itemIds
+        })
+        logger.info('Items deleted successfully:', response.data)
+        await this.fetchProducts() // Refresh product list
+        return response.data
+      } catch (error) {
+        logger.error('Failed to delete items:', error)
+        this.error = error.message || 'Failed to delete items'
+        throw error
+      } finally {
+        this.loading.itemOperation = false
         logger.endGroup()
       }
     },
