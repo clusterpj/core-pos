@@ -166,7 +166,7 @@ export const usePosStore = defineStore('pos', {
           categories_id: categoryIds,
           avalara_bool: false,
           is_pos: 1,
-          store_id: companyStore.selectedStore,
+          id: companyStore.selectedStore,
           limit: this.itemsPerPage,
           page: this.currentPage
         }
@@ -195,22 +195,30 @@ export const usePosStore = defineStore('pos', {
     },
 
     // Item Management (Create/Update/Delete)
-    async createItem(formData) {
+    async createItem(itemData) {
       logger.startGroup('POS Store: Create Item')
       this.loading.itemOperation = true
       this.error = null
-
-      try {        
-        // Ensure company header is present
-        const response = await apiClient.post('/api/v1/items', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Accept': 'application/json'
-          }
-        })
-
+    
+      try {
+        // Log the request data
+        logger.debug('Creating item with data:', itemData)
+    
+        const headers = {
+          'Accept': 'application/json'
+        }
+    
+        // Set the correct Content-Type based on the data type
+        if (itemData instanceof FormData) {
+          headers['Content-Type'] = 'multipart/form-data'
+        } else {
+          headers['Content-Type'] = 'application/json'
+        }
+    
+        const response = await apiClient.post('/v1/items', itemData, { headers })
+    
         logger.info('Item created successfully:', response.data)
-        await this.fetchProducts() // Refresh product list
+        await this.fetchProducts()
         return response.data
       } catch (error) {
         logger.error('Failed to create item:', error)
@@ -221,24 +229,44 @@ export const usePosStore = defineStore('pos', {
         logger.endGroup()
       }
     },
-
+    
     async updateItem(itemId, formData) {
       logger.startGroup('POS Store: Update Item')
       this.loading.itemOperation = true
       this.error = null
-
+    
       try {
-        // Using POST instead of PUT for updates
-        const response = await apiClient.post(`/api/v1/items/${itemId}`, formData, {
+        const companyStore = useCompanyStore()
+        if (!formData.has('stores[]') && companyStore.selectedStore) {
+          formData.append('stores[]', companyStore.selectedStore)
+          
+          // Add pivot table data if not present
+          if (!formData.has('item_store')) {
+            const storeData = [{
+              id: companyStore.selectedStore,
+              status: 'A'
+            }];
+            formData.append('item_store', JSON.stringify(storeData));
+          }
+        }
+    
+        formData.append('_method', 'PUT')
+    
+        // Log the form data before sending
+        logger.debug('Updating item with store data:', {
+          stores: formData.getAll('stores[]'),
+          storeData: formData.get('item_store')
+        });
+    
+        const response = await apiClient.post(`/v1/items/${itemId}`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
-            'Accept': 'application/json',
-            'X-HTTP-Method-Override': 'PUT' // Add this to indicate it's an update
+            'Accept': 'application/json'
           }
         })
-
+    
         logger.info('Item updated successfully:', response.data)
-        await this.fetchProducts() // Refresh product list
+        await this.fetchProducts()
         return response.data
       } catch (error) {
         logger.error('Failed to update item:', error)
@@ -257,7 +285,7 @@ export const usePosStore = defineStore('pos', {
 
       try {
         // Using the correct endpoint for single item deletion
-        const response = await apiClient.post('/api/v1/items/delete', {
+        const response = await apiClient.post('/v1/items/delete', {
           ids: [itemId]
         })
         logger.info('Item deleted successfully:', response.data)
@@ -279,7 +307,7 @@ export const usePosStore = defineStore('pos', {
       this.error = null
 
       try {
-        const response = await apiClient.post('/api/v1/items/delete', {
+        const response = await apiClient.post('/v1/items/delete', {
           ids: itemIds
         })
         logger.info('Items deleted successfully:', response.data)

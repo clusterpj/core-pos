@@ -1,5 +1,28 @@
 <!-- src/views/pos/components/ItemManagementModal.vue -->
 <template>
+  <v-dialog v-model="dialogVisible" max-width="800" persistent @click:outside="closeDialog">
+    <v-card>
+      <!-- Add this alert if no store is selected -->
+      <v-alert
+        v-if="!companyStore.selectedStore"
+        type="warning"
+        variant="tonal"
+        class="ma-4"
+      >
+        Please select a store before creating new items.
+      </v-alert>
+    </v-card>
+  </v-dialog>
+  <v-alert
+  v-if="errorMessage"
+  type="error"
+  variant="tonal"
+  closable
+  class="mb-4"
+  @click:close="errorMessage = null"
+>
+  {{ errorMessage }}
+</v-alert>
     <v-dialog
       v-model="dialogVisible"
       max-width="800"
@@ -180,7 +203,12 @@
   import { ref, reactive, computed, watch } from 'vue'
   import { usePosStore } from '@/stores/pos-store'
   import { logger } from '@/utils/logger'
+  import { useCompanyStore } from '@/stores/company'
+
+  const errorMessage = ref(null)
   
+  const companyStore = useCompanyStore() 
+
   const props = defineProps({
     modelValue: {
       type: Boolean,
@@ -274,56 +302,113 @@
     fileInput.value.value = ''
   }
   
-  async function saveItem() {
-    if (!form.value) return
-    const { valid } = await form.value.validate()
-    if (!valid) return
+// In ItemManagementModal.vue
+// In ItemManagementModal.vue
+async function saveItem() {
+  if (!form.value) return
+  const { valid } = await form.value.validate()
+  if (!valid) return
 
-    loading.value = true
-    try {
-      // Convert price to cents
+  if (!companyStore.selectedStore) {
+    errorMessage.value = 'No store selected. Please select a store first.'
+    return
+  }
+
+  loading.value = true
+  try {
+    // Create item data object matching the CoreBill structure
+    const itemData = {
+      name: itemForm.name,
+      description: itemForm.description || '',
+      price: Math.round(parseFloat(itemForm.price) * 100),
+      unit_id: null,
+      item_category_id: itemForm.category_id,
+      unit: null,
+      allow_pos: true,
+      allow_taxes: false,
+      avalara_bool: false,
+      avalara_discount_type: {
+        name: "None",
+        value: "0"
+      },
+      avalara_sale_type: {
+        name: "Retail",
+        value: "Retail"
+      },
+      avalara_service_type: null,
+      avalara_service_type_name: "",
+      avalara_service_types: [],
+      avalara_type: null,
+      no_taxable: false,
+      retentions: null,
+      retentions_bool: false,
+      tax_inclusion: false,
+      taxes: [],
+      // Categories and store associations
+      item_categories: [{
+        id: itemForm.category_id,
+        name: posStore.categories.find(c => c.item_category_id === itemForm.category_id)?.name || '',
+        is_group: 1,
+        is_item: 1
+      }],
+      item_groups: [],
+      item_section: [],
+      item_store: [{
+        id: companyStore.selectedStore,
+        name: companyStore.storesForDisplay.find(s => s.value === companyStore.selectedStore)?.title || '',
+        company_name: 'xyz', // This should come from your company store
+        description: ''
+      }]
+    }
+
+    // If there's an image, we need to create a FormData
+    if (itemForm.image instanceof File) {
       const formData = new FormData()
-    
-      // Basic item information
-      formData.append('name', itemForm.name)
-      formData.append('price', Math.round(parseFloat(itemForm.price) * 100))
-      formData.append('description', itemForm.description || '')
-      formData.append('item_category_id', itemForm.category_id)
-      formData.append('stock_level', itemForm.stock_level)
-      formData.append('reorder_level', itemForm.reorder_level || 0)
       
-      // Handle image upload
-      if (itemForm.image instanceof File) {
-        formData.append('image', itemForm.image)
-      }
+      // Append the JSON data
+      Object.keys(itemData).forEach(key => {
+        if (typeof itemData[key] === 'object') {
+          formData.append(key, JSON.stringify(itemData[key]))
+        } else {
+          formData.append(key, itemData[key])
+        }
+      })
       
-      // Add SKU if provided
-      if (itemForm.sku) {
-        formData.append('sku', itemForm.sku)
-      }
-  
-      let response
-      if (editingItem.value) {
-        response = await posStore.updateItem(editingItem.value.id, formData)
-      } else {
-        response = await posStore.createItem(formData)
-      }
-  
+      // Append the image
+      formData.append('image', itemForm.image)
+
+      // Use the FormData instead of the JSON
+      itemData = formData
+    }
+
+    let response
+    if (editingItem.value) {
+      response = await posStore.updateItem(editingItem.value.id, itemData)
+    } else {
+      response = await posStore.createItem(itemData)
+    }
+
+    if (response.success) {
       emit('item-saved', response)
       closeDialog()
-    } catch (error) {
-      logger.error('Failed to save item:', error)
-    } finally {
-      loading.value = false
+    } else {
+      throw new Error(response.message || 'Failed to save item')
     }
+  } catch (error) {
+    logger.error('Failed to save item:', error)
+    errorMessage.value = error.message || 'Failed to save item'
+  } finally {
+    loading.value = false
   }
+}
   
-  function closeDialog() {
-    dialogVisible.value = false
-    form.value?.reset()
-    previewImage.value = null
-    Object.keys(itemForm).forEach(key => {
-      itemForm[key] = key === 'stock_level' || key === 'reorder_level' ? 0 : ''
-    })
-  }
-  </script>
+function closeDialog() {
+  dialogVisible.value = false
+  form.value?.reset()
+  previewImage.value = null
+  errorMessage.value = null // Clear error message
+  Object.keys(itemForm).forEach(key => {
+    itemForm[key] = key === 'stock_level' || key === 'reorder_level' ? 0 : ''
+  })
+}
+</script>
