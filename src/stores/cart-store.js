@@ -13,7 +13,6 @@ export const useCartStore = defineStore('cart', {
 
   getters: {
     subtotal: (state) => {
-      // Prices are already in cents
       return state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     },
 
@@ -21,7 +20,6 @@ export const useCartStore = defineStore('cart', {
       if (state.discountType === '%') {
         return Math.round(state.subtotal * (state.discountValue / 100))
       }
-      // If discount is in dollars, convert to cents
       return Math.round(Number(state.discountValue) * 100) || 0
     },
 
@@ -30,7 +28,6 @@ export const useCartStore = defineStore('cart', {
     },
 
     taxAmount: (state) => {
-      // Calculate tax on the amount in cents
       return Math.round(state.taxableAmount * state.taxRate)
     },
 
@@ -48,12 +45,28 @@ export const useCartStore = defineStore('cart', {
   },
 
   actions: {
-    addItem(product, quantity = 1) {
-      logger.info('Adding item to cart:', { product, quantity })
+    addItem(product, quantity = 1, modifications = []) {
+      logger.info('Adding item to cart:', { product, quantity, modifications })
       
-      const existingItem = this.items.find(item => item.id === product.id)
-      // Price is already in cents from the backend, no need to multiply by 100
-      const price = product.sale_price || product.price
+      // When adding a new item with modifications, always create a new entry
+      if (modifications && modifications.length > 0) {
+        this.items.push({
+          id: product.id,
+          name: product.name,
+          price: product.sale_price || product.price,
+          quantity,
+          modifications,
+          product
+        })
+        logger.info('Added new item with modifications')
+        return
+      }
+
+      // For items without modifications, combine quantities
+      const existingItem = this.items.find(item => 
+        item.id === product.id && 
+        (!item.modifications || item.modifications.length === 0)
+      )
       
       if (existingItem) {
         existingItem.quantity += quantity
@@ -62,30 +75,70 @@ export const useCartStore = defineStore('cart', {
         this.items.push({
           id: product.id,
           name: product.name,
-          price: price,
+          price: product.sale_price || product.price,
           quantity,
-          product // Keep reference to original product
+          modifications: [],
+          product
         })
-        logger.info('Added new item to cart')
+        logger.info('Added new item')
       }
     },
 
-    updateItemQuantity(itemId, quantity) {
-      logger.info('Updating item quantity:', { itemId, quantity })
+    updateItemQuantity(itemId, quantity, index = null) {
+      logger.info('Updating item quantity:', { itemId, quantity, index })
       
-      const item = this.items.find(item => item.id === itemId)
+      let item
+      if (index !== null) {
+        item = this.items[index]
+      } else {
+        item = this.items.find(item => item.id === itemId)
+      }
+
       if (item) {
         if (quantity > 0) {
           item.quantity = quantity
         } else {
-          this.removeItem(itemId)
+          this.removeItem(itemId, index)
         }
       }
     },
 
-    removeItem(itemId) {
-      logger.info('Removing item from cart:', itemId)
-      this.items = this.items.filter(item => item.id !== itemId)
+    removeItem(itemId, index = null) {
+      logger.info('Removing item from cart:', { itemId, index })
+      if (index !== null) {
+        this.items.splice(index, 1)
+      } else {
+        this.items = this.items.filter(item => item.id !== itemId)
+      }
+    },
+
+    updateItemModifications(index, modifications) {
+      logger.info('Updating item modifications:', { index, modifications })
+      if (index >= 0 && index < this.items.length) {
+        this.items[index].modifications = modifications
+      }
+    },
+
+    splitItem(index, quantity, modifications) {
+      logger.info('Splitting item:', { index, quantity, modifications })
+      if (index >= 0 && index < this.items.length) {
+        const originalItem = this.items[index]
+        
+        // Reduce quantity from original item
+        originalItem.quantity -= quantity
+
+        // Create new item with specified quantity and modifications
+        this.items.push({
+          ...originalItem,
+          quantity,
+          modifications: modifications || []
+        })
+
+        // Remove original item if quantity becomes 0
+        if (originalItem.quantity <= 0) {
+          this.items.splice(index, 1)
+        }
+      }
     },
 
     setDiscount(type, value) {
@@ -107,22 +160,22 @@ export const useCartStore = defineStore('cart', {
       this.error = null
 
       try {
-        // Format items for hold invoice
         const holdItems = this.items.map(item => ({
           item_id: item.id,
           quantity: item.quantity,
-          price: item.price, // Already in cents
-          name: item.name
+          price: item.price,
+          name: item.name,
+          modifications: item.modifications
         }))
 
         const holdInvoice = {
           description,
-          total: this.total, // Already in cents
-          sub_total: this.subtotal, // Already in cents
-          tax: this.taxAmount, // Already in cents
+          total: this.total,
+          sub_total: this.subtotal,
+          tax: this.taxAmount,
           discount_type: this.discountType,
           discount: this.discountValue,
-          discount_val: this.discountAmount, // Already in cents
+          discount_val: this.discountAmount,
           items: holdItems
         }
 
@@ -148,22 +201,22 @@ export const useCartStore = defineStore('cart', {
       this.error = null
 
       try {
-        // Format items for order submission
         const orderItems = this.items.map(item => ({
           item_id: item.id,
           quantity: item.quantity,
-          price: item.price, // Already in cents
-          name: item.name
+          price: item.price,
+          name: item.name,
+          modifications: item.modifications
         }))
 
         const order = {
           items: orderItems,
-          total: this.total, // Already in cents
-          subtotal: this.subtotal, // Already in cents
-          tax: this.taxAmount, // Already in cents
+          total: this.total,
+          subtotal: this.subtotal,
+          tax: this.taxAmount,
           discount_type: this.discountType,
           discount: this.discountValue,
-          discount_amount: this.discountAmount // Already in cents
+          discount_amount: this.discountAmount
         }
 
         logger.info('Order data prepared:', order)
