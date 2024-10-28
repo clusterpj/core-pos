@@ -94,7 +94,7 @@
         <v-btn
           prepend-icon="mdi-account-group"
           color="primary"
-          :disabled="!companyStore.isConfigured"
+          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
           @click="assignTable"
         >
           Assign Table
@@ -102,7 +102,7 @@
         <v-btn
           prepend-icon="mdi-shopping-outline"
           color="success"
-          :disabled="!companyStore.isConfigured"
+          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
           @click="toGoOrder"
         >
           To-Go Order
@@ -110,7 +110,7 @@
         <v-btn
           prepend-icon="mdi-notebook-outline"
           color="secondary"
-          :disabled="!companyStore.isConfigured"
+          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
           @click="openTab"
         >
           Open Tab
@@ -129,14 +129,14 @@
         <v-btn
           prepend-icon="mdi-cash-register"
           color="success"
-          :disabled="!companyStore.isConfigured"
+          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
           @click="processPayment"
         >
           Pay
         </v-btn>
         <v-btn
           color="pink"
-          :disabled="!companyStore.isConfigured"
+          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
           @click="submitOrder"
         >
           Submit Order
@@ -144,11 +144,188 @@
         <v-btn
           icon="mdi-printer"
           variant="outlined"
-          :disabled="!companyStore.isConfigured"
+          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
           @click="printOrder"
         />
       </div>
     </v-footer>
+
+    <!-- Table Assignment Dialog -->
+    <v-dialog v-model="showTableDialog" max-width="500">
+      <v-card>
+        <v-card-title>Assign Table</v-card-title>
+        <v-card-text>
+          <v-select
+            v-model="selectedTable"
+            label="Select Table"
+            :items="availableTables"
+            item-title="name"
+            item-value="id"
+            :loading="loadingTables"
+            density="compact"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            color="grey"
+            variant="text"
+            @click="showTableDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="primary"
+            :loading="assigningTable"
+            :disabled="!selectedTable"
+            @click="confirmTableAssignment"
+          >
+            Assign
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Payment Dialog -->
+    <v-dialog v-model="showPaymentDialog" max-width="600">
+      <v-card>
+        <v-card-title>Process Payment</v-card-title>
+        <v-card-text>
+          <v-select
+            v-model="selectedPaymentMethod"
+            label="Payment Method"
+            :items="paymentMethods"
+            item-title="name"
+            item-value="id"
+            density="compact"
+            class="mb-4"
+          />
+
+          <div class="d-flex justify-space-between mb-4">
+            <span class="text-h6">Total Amount:</span>
+            <span class="text-h6">${{ formatPrice(cartStore.total) }}</span>
+          </div>
+
+          <template v-if="selectedPaymentMethod">
+            <v-text-field
+              v-model="paymentAmount"
+              label="Amount"
+              type="number"
+              :min="0"
+              :max="cartStore.total"
+              density="compact"
+              class="mb-4"
+            />
+
+            <v-textarea
+              v-model="paymentNotes"
+              label="Notes"
+              rows="2"
+              density="compact"
+            />
+          </template>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            color="grey"
+            variant="text"
+            @click="showPaymentDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="success"
+            :loading="processingPayment"
+            :disabled="!canProcessPayment"
+            @click="confirmPayment"
+          >
+            Process Payment
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Orders Dialog -->
+    <v-dialog v-model="showOrdersDialog" max-width="800">
+      <v-card>
+        <v-card-title>Current Orders</v-card-title>
+        <v-card-text>
+          <v-tabs v-model="orderTab">
+            <v-tab value="hold">Hold Orders</v-tab>
+            <v-tab value="active">Active Orders</v-tab>
+          </v-tabs>
+
+          <v-window v-model="orderTab">
+            <!-- Hold Orders -->
+            <v-window-item value="hold">
+              <v-list v-if="holdOrders.length > 0">
+                <v-list-item
+                  v-for="order in holdOrders"
+                  :key="order.id"
+                  :title="order.description || `Order #${order.id}`"
+                  :subtitle="`Total: $${formatPrice(order.total)}`"
+                >
+                  <template #append>
+                    <v-btn
+                      icon="mdi-delete"
+                      variant="text"
+                      color="error"
+                      size="small"
+                      @click="deleteHoldOrder(order.id)"
+                    />
+                  </template>
+                </v-list-item>
+              </v-list>
+              <v-alert
+                v-else
+                type="info"
+                class="mt-4"
+              >
+                No hold orders found
+              </v-alert>
+            </v-window-item>
+
+            <!-- Active Orders -->
+            <v-window-item value="active">
+              <v-list v-if="activeOrders.length > 0">
+                <v-list-item
+                  v-for="order in activeOrders"
+                  :key="order.id"
+                  :title="`Order #${order.id}`"
+                  :subtitle="`Total: $${formatPrice(order.total)}`"
+                >
+                  <template #append>
+                    <v-btn
+                      icon="mdi-printer"
+                      variant="text"
+                      size="small"
+                      @click="printOrder(order.id)"
+                    />
+                  </template>
+                </v-list-item>
+              </v-list>
+              <v-alert
+                v-else
+                type="info"
+                class="mt-4"
+              >
+                No active orders found
+              </v-alert>
+            </v-window-item>
+          </v-window>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            color="primary"
+            @click="showOrdersDialog = false"
+          >
+            Close
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Loading Overlay -->
     <v-overlay
@@ -165,13 +342,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useCompanyStore } from '@/stores/company'
+import { useCartStore } from '@/stores/cart-store'
 import PosCart from './components/PosCart.vue'
 import PosProducts from './components/PosProducts.vue'
+import { posOperations } from '@/services/api/pos-operations'
 import { logger } from '@/utils/logger'
 
 const companyStore = useCompanyStore()
+const cartStore = useCartStore()
 
 // UI state
 const loading = ref(false)
@@ -182,6 +362,44 @@ const notifications = ref([])
 const selectedCustomer = ref(companyStore.selectedCustomer)
 const selectedStore = ref(companyStore.selectedStore)
 const selectedCashier = ref(companyStore.selectedCashier)
+
+// Table Dialog State
+const showTableDialog = ref(false)
+const loadingTables = ref(false)
+const assigningTable = ref(false)
+const selectedTable = ref(null)
+const availableTables = ref([])
+
+// Payment Dialog State
+const showPaymentDialog = ref(false)
+const processingPayment = ref(false)
+const selectedPaymentMethod = ref(null)
+const paymentAmount = ref(0)
+const paymentNotes = ref('')
+const paymentMethods = ref([
+  { id: 'cash', name: 'Cash' },
+  { id: 'card', name: 'Credit Card' },
+  { id: 'other', name: 'Other' }
+])
+
+// Orders Dialog State
+const showOrdersDialog = ref(false)
+const orderTab = ref('hold')
+const holdOrders = ref([])
+const activeOrders = ref([])
+
+// Computed
+const canProcessPayment = computed(() => {
+  return selectedPaymentMethod.value && 
+         paymentAmount.value > 0 && 
+         paymentAmount.value <= cartStore.total
+})
+
+// Format price
+const formatPrice = (price) => {
+  if (!price) return '0.00'
+  return Number(price).toFixed(2)
+}
 
 // Handle selection changes
 const handleCustomerChange = async (customerId) => {
@@ -220,6 +438,191 @@ const handleCashierChange = async (cashierId) => {
   }
 }
 
+// Table Management
+const loadTables = async () => {
+  if (!companyStore.selectedCashier) return
+  
+  loadingTables.value = true
+  try {
+    const response = await posOperations.getTables(companyStore.selectedCashier)
+    // Remove the .data access since the response is already the data we need
+    availableTables.value = response || []
+    logger.info('Loaded tables:', availableTables.value)
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to load tables:', err)
+  } finally {
+    loadingTables.value = false
+  }
+}
+
+const assignTable = async () => {
+  showTableDialog.value = true
+  await loadTables()
+}
+
+const confirmTableAssignment = async () => {
+  if (!selectedTable.value) return
+  
+  assigningTable.value = true
+  try {
+    await posOperations.assignTable({
+      table_id: selectedTable.value,
+      cash_register_id: companyStore.selectedCashier
+    })
+    
+    showTableDialog.value = false
+    selectedTable.value = null
+    
+    // Create hold invoice for the table
+    await createHoldInvoice(`Table ${selectedTable.value} Order`)
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to assign table:', err)
+  } finally {
+    assigningTable.value = false
+  }
+}
+
+// Order Management
+const createHoldInvoice = async (description = '') => {
+  try {
+    const holdInvoice = await cartStore.createHoldInvoice(description)
+    await posOperations.createHoldInvoice(holdInvoice)
+    cartStore.clearCart()
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to create hold invoice:', err)
+  }
+}
+
+const toGoOrder = async () => {
+  try {
+    await createHoldInvoice('To-Go Order')
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to create to-go order:', err)
+  }
+}
+
+const openTab = async () => {
+  try {
+    await createHoldInvoice('Open Tab')
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to open tab:', err)
+  }
+}
+
+const loadOrders = async () => {
+  try {
+    // Load hold orders
+    const holdResponse = await posOperations.getHoldInvoices()
+    holdOrders.value = holdResponse.data || []
+    
+    // TODO: Load active orders when endpoint is available
+    activeOrders.value = []
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to load orders:', err)
+  }
+}
+
+const viewOrders = async () => {
+  showOrdersDialog.value = true
+  await loadOrders()
+}
+
+const deleteHoldOrder = async (orderId) => {
+  try {
+    await posOperations.deleteHoldInvoice(orderId)
+    await loadOrders()
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to delete hold order:', err)
+  }
+}
+
+// Payment Processing
+const processPayment = () => {
+  showPaymentDialog.value = true
+  paymentAmount.value = cartStore.total
+}
+
+const confirmPayment = async () => {
+  if (!canProcessPayment.value) return
+  
+  processingPayment.value = true
+  try {
+    const orderData = {
+      items: cartStore.items,
+      total: cartStore.total,
+      subtotal: cartStore.subtotal,
+      tax: cartStore.taxAmount,
+      discount_type: cartStore.discountType,
+      discount: cartStore.discountValue,
+      discount_amount: cartStore.discountAmount,
+      payment: {
+        amount: paymentAmount.value,
+        payment_method_id: selectedPaymentMethod.value,
+        notes: paymentNotes.value
+      }
+    }
+    
+    await posOperations.submitOrder(orderData)
+    
+    showPaymentDialog.value = false
+    cartStore.clearCart()
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to process payment:', err)
+  } finally {
+    processingPayment.value = false
+  }
+}
+
+const submitOrder = async () => {
+  try {
+    const orderData = {
+      items: cartStore.items,
+      total: cartStore.total,
+      subtotal: cartStore.subtotal,
+      tax: cartStore.taxAmount,
+      discount_type: cartStore.discountType,
+      discount: cartStore.discountValue,
+      discount_amount: cartStore.discountAmount
+    }
+    
+    await posOperations.submitOrder(orderData)
+    cartStore.clearCart()
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to submit order:', err)
+  }
+}
+
+const printOrder = async (orderId = null) => {
+  try {
+    if (orderId) {
+      await posOperations.printOrder(orderId)
+    } else {
+      // Print current cart
+      const orderData = {
+        items: cartStore.items,
+        total: cartStore.total,
+        subtotal: cartStore.subtotal,
+        tax: cartStore.taxAmount
+      }
+      
+      const response = await posOperations.submitOrder(orderData)
+      await posOperations.printOrder(response.invoice.id)
+    }
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to print order:', err)
+  }
+}
+
 // Initialize store data
 onMounted(async () => {
   logger.startGroup('POS View: Mount')
@@ -247,77 +650,6 @@ onMounted(async () => {
     logger.endGroup()
   }
 })
-
-// Action handlers
-const assignTable = async () => {
-  try {
-    // Implement table assignment logic
-    logger.info('Table assignment requested')
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to assign table:', err)
-  }
-}
-
-const toGoOrder = async () => {
-  try {
-    // Implement to-go order logic
-    logger.info('To-go order requested')
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to create to-go order:', err)
-  }
-}
-
-const openTab = async () => {
-  try {
-    // Implement open tab logic
-    logger.info('Open tab requested')
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to open tab:', err)
-  }
-}
-
-const viewOrders = async () => {
-  try {
-    // Implement orders view logic
-    logger.info('View orders requested')
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to view orders:', err)
-  }
-}
-
-const processPayment = async () => {
-  try {
-    // Implement payment processing logic
-    logger.info('Payment processing requested')
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to process payment:', err)
-  }
-}
-
-const submitOrder = async () => {
-  try {
-    // Implement order submission logic
-    logger.info('Order submission requested')
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to submit order:', err)
-  }
-}
-
-const printOrder = async () => {
-  try {
-    // Implement print functionality
-    logger.info('Print order requested')
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to print order:', err)
-  }
-}
 </script>
 
 <style scoped>
