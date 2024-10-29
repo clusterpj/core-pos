@@ -8,7 +8,11 @@ export const useCartStore = defineStore('cart', {
     discountValue: 0,
     taxRate: 0.08, // 8% tax rate
     loading: false,
-    error: null
+    error: null,
+    notes: '',
+    selectedTables: [],
+    tipType: 'fixed',
+    tipValue: 0
   }),
 
   getters: {
@@ -31,8 +35,15 @@ export const useCartStore = defineStore('cart', {
       return Math.round(state.taxableAmount * state.taxRate)
     },
 
+    tipAmount: (state) => {
+      if (state.tipType === '%') {
+        return Math.round(state.taxableAmount * (state.tipValue / 100))
+      }
+      return Math.round(Number(state.tipValue) * 100) || 0
+    },
+
     total: (state) => {
-      return state.taxableAmount + state.taxAmount
+      return state.taxableAmount + state.taxAmount + state.tipAmount
     },
 
     itemCount: (state) => {
@@ -147,90 +158,72 @@ export const useCartStore = defineStore('cart', {
       this.discountValue = value
     },
 
+    setTip(type, value) {
+      logger.info('Setting tip:', { type, value })
+      this.tipType = type
+      this.tipValue = value
+    },
+
+    setNotes(notes) {
+      this.notes = notes
+    },
+
+    setSelectedTables(tables) {
+      this.selectedTables = tables
+    },
+
     clearCart() {
       logger.info('Clearing cart')
       this.items = []
       this.discountType = '%'
       this.discountValue = 0
+      this.tipType = 'fixed'
+      this.tipValue = 0
+      this.notes = ''
+      this.selectedTables = []
     },
 
-    async createHoldInvoice(description = '') {
-      logger.startGroup('Cart Store: Create Hold Invoice')
-      this.loading = true
-      this.error = null
-
+    prepareHoldInvoiceData(storeId) {
+      logger.startGroup('Cart Store: Prepare Hold Invoice Data')
       try {
         const holdItems = this.items.map(item => ({
           item_id: item.id,
           quantity: item.quantity,
           price: item.price,
           name: item.name,
-          modifications: item.modifications
+          modifications: item.modifications,
+          total: item.price * item.quantity,
+          discount_type: 'fixed',
+          discount: 0,
+          discount_val: 0,
+          sub_total: item.price * item.quantity
         }))
 
         const holdInvoice = {
-          description,
+          description: this.notes || 'POS Order',
           total: this.total,
           sub_total: this.subtotal,
           tax: this.taxAmount,
           discount_type: this.discountType,
           discount: this.discountValue,
           discount_val: this.discountAmount,
-          items: holdItems
+          tip_type: this.tipType,
+          tip: this.tipValue,
+          tip_val: this.tipAmount,
+          notes: this.notes,
+          store_id: storeId,
+          items: holdItems,
+          taxes: {},
+          tables_selected: this.selectedTables,
+          contact: {}
         }
 
         logger.info('Hold invoice data prepared:', holdInvoice)
-        
-        return {
-          success: true,
-          holdInvoice
-        }
+        return holdInvoice
       } catch (error) {
-        logger.error('Failed to create hold invoice:', error)
-        this.error = error.message
+        logger.error('Failed to prepare hold invoice data:', error)
         throw error
       } finally {
-        this.loading = false
-        logger.endGroup()
-      }
-    },
-
-    async submitOrder() {
-      logger.startGroup('Cart Store: Submit Order')
-      this.loading = true
-      this.error = null
-
-      try {
-        const orderItems = this.items.map(item => ({
-          item_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          name: item.name,
-          modifications: item.modifications
-        }))
-
-        const order = {
-          items: orderItems,
-          total: this.total,
-          subtotal: this.subtotal,
-          tax: this.taxAmount,
-          discount_type: this.discountType,
-          discount: this.discountValue,
-          discount_amount: this.discountAmount
-        }
-
-        logger.info('Order data prepared:', order)
-        
-        return {
-          success: true,
-          order
-        }
-      } catch (error) {
-        logger.error('Failed to submit order:', error)
-        this.error = error.message
-        throw error
-      } finally {
-        this.loading = false
         logger.endGroup()
       }
     }

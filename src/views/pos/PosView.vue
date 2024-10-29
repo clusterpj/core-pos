@@ -82,6 +82,26 @@
 
           <!-- Right Side - Products -->
           <v-col cols="12" md="8" class="pos-products">
+            <div class="d-flex align-center px-4 py-2">
+              <v-text-field
+                v-model="searchQuery"
+                label="Search products"
+                prepend-inner-icon="mdi-magnify"
+                variant="outlined"
+                density="comfortable"
+                class="mr-4"
+                @update:model-value="handleSearch"
+              ></v-text-field>
+              
+              <v-select
+                v-model="selectedCategory"
+                :items="categories"
+                label="Category"
+                variant="outlined"
+                density="comfortable"
+                @update:model-value="handleCategoryChange"
+              ></v-select>
+            </div>
             <pos-products />
           </v-col>
         </v-row>
@@ -118,14 +138,7 @@
       </div>
 
       <div class="d-flex gap-2">
-        <v-btn
-          prepend-icon="mdi-clock-outline"
-          color="info"
-          :disabled="!companyStore.isConfigured"
-          @click="viewOrders"
-        >
-          Orders
-        </v-btn>
+        <held-orders-modal />
         <v-btn
           prepend-icon="mdi-cash-register"
           color="success"
@@ -246,87 +259,6 @@
       </v-card>
     </v-dialog>
 
-    <!-- Orders Dialog -->
-    <v-dialog v-model="showOrdersDialog" max-width="800">
-      <v-card>
-        <v-card-title>Current Orders</v-card-title>
-        <v-card-text>
-          <v-tabs v-model="orderTab">
-            <v-tab value="hold">Hold Orders</v-tab>
-            <v-tab value="active">Active Orders</v-tab>
-          </v-tabs>
-
-          <v-window v-model="orderTab">
-            <!-- Hold Orders -->
-            <v-window-item value="hold">
-              <v-list v-if="holdOrders.length > 0">
-                <v-list-item
-                  v-for="order in holdOrders"
-                  :key="order.id"
-                  :title="order.description || `Order #${order.id}`"
-                  :subtitle="`Total: $${formatPrice(order.total)}`"
-                >
-                  <template #append>
-                    <v-btn
-                      icon="mdi-delete"
-                      variant="text"
-                      color="error"
-                      size="small"
-                      @click="deleteHoldOrder(order.id)"
-                    />
-                  </template>
-                </v-list-item>
-              </v-list>
-              <v-alert
-                v-else
-                type="info"
-                class="mt-4"
-              >
-                No hold orders found
-              </v-alert>
-            </v-window-item>
-
-            <!-- Active Orders -->
-            <v-window-item value="active">
-              <v-list v-if="activeOrders.length > 0">
-                <v-list-item
-                  v-for="order in activeOrders"
-                  :key="order.id"
-                  :title="`Order #${order.id}`"
-                  :subtitle="`Total: $${formatPrice(order.total)}`"
-                >
-                  <template #append>
-                    <v-btn
-                      icon="mdi-printer"
-                      variant="text"
-                      size="small"
-                      @click="printOrder(order.id)"
-                    />
-                  </template>
-                </v-list-item>
-              </v-list>
-              <v-alert
-                v-else
-                type="info"
-                class="mt-4"
-              >
-                No active orders found
-              </v-alert>
-            </v-window-item>
-          </v-window>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="primary"
-            @click="showOrdersDialog = false"
-          >
-            Close
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
     <!-- Loading Overlay -->
     <v-overlay
       :model-value="loading"
@@ -347,6 +279,7 @@ import { useCompanyStore } from '@/stores/company'
 import { useCartStore } from '@/stores/cart-store'
 import PosCart from './components/PosCart.vue'
 import PosProducts from './components/PosProducts.vue'
+import HeldOrdersModal from './components/HeldOrdersModal.vue'
 import { posOperations } from '@/services/api/pos-operations'
 import { logger } from '@/utils/logger'
 
@@ -357,6 +290,8 @@ const cartStore = useCartStore()
 const loading = ref(false)
 const error = ref(null)
 const notifications = ref([])
+const searchQuery = ref('')
+const selectedCategory = ref('all')
 
 // Selected values - synced with store
 const selectedCustomer = ref(companyStore.selectedCustomer)
@@ -382,11 +317,10 @@ const paymentMethods = ref([
   { id: 'other', name: 'Other' }
 ])
 
-// Orders Dialog State
-const showOrdersDialog = ref(false)
-const orderTab = ref('hold')
-const holdOrders = ref([])
-const activeOrders = ref([])
+// Categories
+const categories = ref([
+  { title: 'All Categories', value: 'all' }
+])
 
 // Computed
 const canProcessPayment = computed(() => {
@@ -438,6 +372,14 @@ const handleCashierChange = async (cashierId) => {
   }
 }
 
+const handleSearch = (value) => {
+  searchQuery.value = value
+}
+
+const handleCategoryChange = (value) => {
+  selectedCategory.value = value
+}
+
 // Table Management
 const loadTables = async () => {
   if (!companyStore.selectedCashier) return
@@ -445,7 +387,6 @@ const loadTables = async () => {
   loadingTables.value = true
   try {
     const response = await posOperations.getTables(companyStore.selectedCashier)
-    // Remove the .data access since the response is already the data we need
     availableTables.value = response || []
     logger.info('Loaded tables:', availableTables.value)
   } catch (err) {
@@ -511,35 +452,6 @@ const openTab = async () => {
   } catch (err) {
     error.value = err.message
     logger.error('Failed to open tab:', err)
-  }
-}
-
-const loadOrders = async () => {
-  try {
-    // Load hold orders
-    const holdResponse = await posOperations.getHoldInvoices()
-    holdOrders.value = holdResponse.data || []
-    
-    // TODO: Load active orders when endpoint is available
-    activeOrders.value = []
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to load orders:', err)
-  }
-}
-
-const viewOrders = async () => {
-  showOrdersDialog.value = true
-  await loadOrders()
-}
-
-const deleteHoldOrder = async (orderId) => {
-  try {
-    await posOperations.deleteHoldInvoice(orderId)
-    await loadOrders()
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to delete hold order:', err)
   }
 }
 

@@ -13,7 +13,8 @@ export const usePosStore = defineStore('pos', {
       stores: false,
       cashiers: false,
       employees: false,
-      itemOperation: false
+      itemOperation: false,
+      holdInvoices: false
     },
     error: null,
     categories: [],
@@ -25,7 +26,8 @@ export const usePosStore = defineStore('pos', {
     totalItems: 0,
     stores: [],
     cashiers: [],
-    employees: []
+    employees: [],
+    holdInvoices: []
   }),
 
   getters: {
@@ -79,6 +81,7 @@ export const usePosStore = defineStore('pos', {
         const companyStore = useCompanyStore()
         await companyStore.initializeStore()
         await this.fetchCategories()
+        await this.fetchHoldInvoices()
         logger.info('POS Store initialized successfully')
       } catch (error) {
         logger.error('Failed to initialize POS store', error)
@@ -309,6 +312,99 @@ export const usePosStore = defineStore('pos', {
       }
     },
 
+    // Hold Invoice Operations
+    async fetchHoldInvoices() {
+      logger.startGroup('POS Store: Fetch Hold Invoices')
+      this.loading.holdInvoices = true
+      this.error = null
+      
+      try {
+        const response = await posApi.holdInvoice.getAll()
+        if (response.data?.success) {
+          this.holdInvoices = response.data.hold_invoices?.data || []
+          logger.info(`Loaded ${this.holdInvoices.length} hold invoices`)
+        } else {
+          logger.warn('Failed to load hold invoices', response.error)
+          this.holdInvoices = []
+        }
+      } catch (error) {
+        logger.error('Failed to fetch hold invoices', error)
+        this.error = error.message || 'Failed to load hold invoices'
+        this.holdInvoices = []
+      } finally {
+        this.loading.holdInvoices = false
+        logger.endGroup()
+      }
+    },
+
+    async holdOrder(orderData) {
+      logger.startGroup('POS Store: Hold Order')
+      this.loading.holdInvoices = true
+      this.error = null
+      
+      try {
+        const response = await posApi.holdInvoice.create(orderData)
+        if (response.data?.success) {
+          await this.fetchHoldInvoices()
+          return response.data
+        } else {
+          throw new Error(response.data?.message || 'Failed to hold order')
+        }
+      } catch (error) {
+        logger.error('Failed to hold order', error)
+        this.error = error.message || 'Failed to hold order'
+        throw error
+      } finally {
+        this.loading.holdInvoices = false
+        logger.endGroup()
+      }
+    },
+
+    async loadHoldInvoice(id) {
+      logger.startGroup('POS Store: Load Hold Invoice')
+      this.loading.holdInvoices = true
+      this.error = null
+      
+      try {
+        const response = await posApi.holdInvoice.getById(id)
+        if (response.data?.success) {
+          return response.data
+        } else {
+          throw new Error(response.data?.message || 'Failed to load hold invoice')
+        }
+      } catch (error) {
+        logger.error('Failed to load hold invoice', error)
+        this.error = error.message || 'Failed to load hold invoice'
+        throw error
+      } finally {
+        this.loading.holdInvoices = false
+        logger.endGroup()
+      }
+    },
+
+    async deleteHoldInvoice(id) {
+      logger.startGroup('POS Store: Delete Hold Invoice')
+      this.loading.holdInvoices = true
+      this.error = null
+      
+      try {
+        const response = await posApi.holdInvoice.delete(id)
+        if (response.data?.success) {
+          await this.fetchHoldInvoices()
+          return response.data
+        } else {
+          throw new Error(response.data?.message || 'Failed to delete hold invoice')
+        }
+      } catch (error) {
+        logger.error('Failed to delete hold invoice', error)
+        this.error = error.message || 'Failed to delete hold invoice'
+        throw error
+      } finally {
+        this.loading.holdInvoices = false
+        logger.endGroup()
+      }
+    },
+
     setCategory(categoryId) {
       this.selectedCategory = categoryId
       this.currentPage = 1
@@ -326,20 +422,6 @@ export const usePosStore = defineStore('pos', {
       this.fetchProducts()
     },
 
-    setStore(storeId) {
-      const companyStore = useCompanyStore()
-      companyStore.setSelectedStore(storeId)
-    },
-
-    setCashier(cashierId) {
-      const companyStore = useCompanyStore()
-      companyStore.setselectedCashier(cashierId)
-    },
-
-    setEmployee(employeeId) {
-      logger.info('Setting employee:', employeeId)
-    },
-
     resetState() {
       this.categories = []
       this.products = []
@@ -348,6 +430,7 @@ export const usePosStore = defineStore('pos', {
       this.currentPage = 1
       this.totalItems = 0
       this.error = null
+      this.holdInvoices = []
     }
   }
 })

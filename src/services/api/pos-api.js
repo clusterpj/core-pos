@@ -1,5 +1,6 @@
+// src/services/api/pos-api.js
 import apiClient from './client'
-import { logger } from '@/utils/logger'
+import { logger } from '../../utils/logger'
 import { apiConfig } from './config'
 
 /**
@@ -167,12 +168,32 @@ export const getStores = async () => {
   }
 }
 
+// Hold Invoice Operations
+export const holdInvoiceOperations = {
+  create(invoiceData) {
+    return apiClient.post('/v1/core-pos/hold-invoices', invoiceData)
+  },
+
+  getAll() {
+    return apiClient.get('/v1/core-pos/hold-invoices')
+  },
+
+  getById(id) {
+    return apiClient.get(`/v1/core-pos/hold-invoices/${id}`)
+  },
+
+  delete(id) {
+    return apiClient.delete(`/v1/core-pos/hold-invoices/${id}`)
+  }
+}
+
 export const posApi = {
   getCashiers,
   getEmployees,
   getItems,
   getItemCategories,
-  getStores
+  getStores,
+  holdInvoice: holdInvoiceOperations
 }
 
 export default posApi

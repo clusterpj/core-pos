@@ -1,5 +1,6 @@
 import apiClient from './client'
 import { logger } from '../../utils/logger'
+import { posApi } from './pos-api'
 
 /**
  * POS Operations Service
@@ -11,7 +12,7 @@ export const posOperations = {
   async getTables(cashRegisterId) {
     logger.startGroup('POS Operations: Get Tables')
     try {
-      const response = await apiClient.get(`/api/core-pos/table-cash-register/${cashRegisterId}`)
+      const response = await apiClient.get(`/api/v1/core-pos/table-cash-register/${cashRegisterId}`)
       logger.info('Tables fetched successfully')
       return response.data
     } catch (error) {
@@ -25,7 +26,7 @@ export const posOperations = {
   async assignTable(tableData) {
     logger.startGroup('POS Operations: Assign Table')
     try {
-      const response = await apiClient.post('/api/core-pos/tables', tableData)
+      const response = await apiClient.post('/api/v1/core-pos/tables', tableData)
       logger.info('Table assigned successfully')
       return response.data
     } catch (error) {
@@ -40,7 +41,7 @@ export const posOperations = {
   async createHoldInvoice(invoiceData) {
     logger.startGroup('POS Operations: Create Hold Invoice')
     try {
-      const response = await apiClient.post('/api/core-pos/hold-invoices', invoiceData)
+      const response = await posApi.holdInvoice.create(invoiceData)
       logger.info('Hold invoice created successfully')
       return response.data
     } catch (error) {
@@ -54,7 +55,7 @@ export const posOperations = {
   async getHoldInvoices() {
     logger.startGroup('POS Operations: Get Hold Invoices')
     try {
-      const response = await apiClient.get('/api/core-pos/hold-invoices')
+      const response = await posApi.holdInvoice.getAll()
       logger.info('Hold invoices fetched successfully')
       return response.data
     } catch (error) {
@@ -65,12 +66,24 @@ export const posOperations = {
     }
   },
 
-  async deleteHoldInvoice(invoiceId) {
+  async getHoldInvoice(id) {
+    logger.startGroup('POS Operations: Get Hold Invoice')
+    try {
+      const response = await posApi.holdInvoice.getById(id)
+      logger.info('Hold invoice fetched successfully')
+      return response.data
+    } catch (error) {
+      logger.error('Failed to fetch hold invoice', error)
+      throw error
+    } finally {
+      logger.endGroup()
+    }
+  },
+
+  async deleteHoldInvoice(id) {
     logger.startGroup('POS Operations: Delete Hold Invoice')
     try {
-      const response = await apiClient.post('/api/core-pos/hold-invoice/delete', {
-        id: invoiceId
-      })
+      const response = await posApi.holdInvoice.delete(id)
       logger.info('Hold invoice deleted successfully')
       return response.data
     } catch (error) {
@@ -85,7 +98,7 @@ export const posOperations = {
   async getCashRegisterReport(registerId, cashHistoryId) {
     logger.startGroup('POS Operations: Get Cash Register Report')
     try {
-      const response = await apiClient.get(`/api/core-pos/cash-register/report/${registerId}`, {
+      const response = await apiClient.get(`/api/v1/core-pos/cash-register/report/${registerId}`, {
         params: { cash_history_id: cashHistoryId }
       })
       logger.info('Cash register report fetched successfully')
@@ -101,7 +114,7 @@ export const posOperations = {
   async getCashAmountPayments(params) {
     logger.startGroup('POS Operations: Get Cash Amount Payments')
     try {
-      const response = await apiClient.get('/api/core-pos/cash-register/getCashAmountPayments', { params })
+      const response = await apiClient.get('/api/v1/core-pos/cash-register/getCashAmountPayments', { params })
       logger.info('Cash amount payments fetched successfully')
       return response.data
     } catch (error) {
@@ -116,7 +129,7 @@ export const posOperations = {
   async processPayment(paymentData) {
     logger.startGroup('POS Operations: Process Payment')
     try {
-      const response = await apiClient.post('/api/core-pos/payments', paymentData)
+      const response = await apiClient.post('/api/v1/core-pos/payments', paymentData)
       logger.info('Payment processed successfully')
       return response.data
     } catch (error) {
@@ -131,33 +144,33 @@ export const posOperations = {
   async submitOrder(orderData) {
     logger.startGroup('POS Operations: Submit Order')
     try {
-      // First create the invoice
-      const invoiceResponse = await apiClient.post('/api/core-pos/invoices', {
+      // Create a hold invoice first
+      const holdInvoiceResponse = await this.createHoldInvoice({
         ...orderData,
-        status: 'COMPLETED'
+        description: orderData.description || 'POS Order'
       })
       
-      logger.info('Invoice created successfully')
+      logger.info('Hold invoice created successfully')
       
       // Then process the payment if provided
       if (orderData.payment) {
         const paymentResponse = await this.processPayment({
           ...orderData.payment,
-          invoice_id: invoiceResponse.data.invoice.id
+          hold_invoice_id: holdInvoiceResponse.id
         })
         
         logger.info('Payment processed successfully')
         
         return {
           success: true,
-          invoice: invoiceResponse.data.invoice,
-          payment: paymentResponse.data.payment
+          holdInvoice: holdInvoiceResponse,
+          payment: paymentResponse
         }
       }
       
       return {
         success: true,
-        invoice: invoiceResponse.data.invoice
+        holdInvoice: holdInvoiceResponse
       }
     } catch (error) {
       logger.error('Failed to submit order', error)
@@ -171,7 +184,7 @@ export const posOperations = {
   async printOrder(orderId) {
     logger.startGroup('POS Operations: Print Order')
     try {
-      const response = await apiClient.get(`/api/core-pos/print/order/${orderId}`)
+      const response = await apiClient.get(`/api/v1/core-pos/print/order/${orderId}`)
       logger.info('Print request sent successfully')
       return response.data
     } catch (error) {

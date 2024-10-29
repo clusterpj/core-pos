@@ -1,4 +1,3 @@
-<!-- src/views/pos/components/PosProducts.vue -->
 <template>
   <div class="pos-products-container pa-4">
     <!-- System Prerequisites Check -->
@@ -70,7 +69,7 @@
             :disabled="item.stock <= 0"
             elevation="2"
             class="product-card h-100"
-            @click="selectProduct(item)"
+            @click="quickAdd(item)"
           >
             <!-- Item Image -->
             <v-img
@@ -106,18 +105,6 @@
                 </v-chip>
               </div>
             </v-card-text>
-
-            <!-- Quick Add Button -->
-            <v-card-actions v-if="item.stock > 0">
-              <v-btn
-                variant="text"
-                color="primary"
-                block
-                @click.stop="quickAdd(item)"
-              >
-                Add to Cart
-              </v-btn>
-            </v-card-actions>
           </v-card>
         </v-col>
       </v-row>
@@ -143,62 +130,6 @@
         />
       </div>
     </template>
-
-    <!-- Product Selection Dialog -->
-    <v-dialog
-      v-model="showQuantityDialog"
-      max-width="400px"
-    >
-      <v-card>
-        <v-card-title>
-          {{ selectedItem?.name }}
-        </v-card-title>
-
-        <v-card-text>
-          <v-text-field
-            v-model="selectedQuantity"
-            label="Quantity"
-            type="number"
-            min="1"
-            :max="selectedItem?.stock"
-            density="compact"
-            hide-details
-            class="mb-4"
-          />
-
-          <div class="d-flex gap-2 mb-4">
-            <v-btn
-              v-for="qty in [1, 2, 5, 10]"
-              :key="qty"
-              variant="outlined"
-              size="small"
-              :disabled="selectedItem?.stock < qty"
-              @click="selectedQuantity = qty"
-            >
-              {{ qty }}
-            </v-btn>
-          </div>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="showQuantityDialog = false"
-          >
-            Cancel
-          </v-btn>
-          <v-btn
-            color="primary"
-            @click="addToCart"
-            :disabled="!selectedQuantity || selectedQuantity < 1"
-          >
-            Add to Cart
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
   </div>
 </template>
 
@@ -213,9 +144,6 @@ const cartStore = useCartStore()
 
 // Local state
 const selectedCategory = ref(posStore.selectedCategory)
-const showQuantityDialog = ref(false)
-const selectedItem = ref(null)
-const selectedQuantity = ref(1)
 
 // Format price from cents to dollars
 const formatPrice = (price) => {
@@ -269,34 +197,11 @@ const handleCategoryChange = async (categoryId) => {
 }
 
 // Product Selection and Cart Operations
-const selectProduct = (product) => {
-  if (product.stock <= 0) return
-  
-  logger.info('Product selected', { product })
-  selectedItem.value = product
-  selectedQuantity.value = 1
-  showQuantityDialog.value = true
-}
-
 const quickAdd = (product) => {
   if (product.stock <= 0) return
   
   logger.info('Quick adding product', { product })
   cartStore.addItem(product, 1)
-}
-
-const addToCart = () => {
-  if (!selectedItem.value || !selectedQuantity.value) return
-  
-  logger.info('Adding to cart', {
-    product: selectedItem.value,
-    quantity: selectedQuantity.value
-  })
-  
-  cartStore.addItem(selectedItem.value, Number(selectedQuantity.value))
-  showQuantityDialog.value = false
-  selectedItem.value = null
-  selectedQuantity.value = 1
 }
 </script>
 
