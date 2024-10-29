@@ -361,32 +361,62 @@ async function saveItem() {
       }]
     }
 
-    // If there's an image, we need to create a FormData
     if (itemForm.image instanceof File) {
-      const formData = new FormData()
-      
-      // Append the JSON data
-      Object.keys(itemData).forEach(key => {
-        if (typeof itemData[key] === 'object') {
-          formData.append(key, JSON.stringify(itemData[key]))
-        } else {
-          formData.append(key, itemData[key])
-        }
-      })
-      
-      // Append the image
-      formData.append('image', itemForm.image)
+  const formData = new FormData()
+  
+  // Append all the fields in the correct format
+  formData.append('name', itemData.name)
+  formData.append('description', itemData.description)
+  formData.append('price', itemData.price)
+  formData.append('unit_id', itemData.unit_id)
+  formData.append('item_category_id', itemData.item_category_id)
+  formData.append('allow_pos', itemData.allow_pos)
+  formData.append('allow_taxes', itemData.allow_taxes)
+  formData.append('avalara_bool', itemData.avalara_bool)
+  formData.append('no_taxable', itemData.no_taxable)
+  formData.append('retentions_bool', itemData.retentions_bool)
+  formData.append('tax_inclusion', itemData.tax_inclusion)
 
-      // Use the FormData instead of the JSON
-      itemData = formData
-    }
+  // Handle objects that need to be stringified
+  formData.append('avalara_discount_type', JSON.stringify(itemData.avalara_discount_type))
+  formData.append('avalara_sale_type', JSON.stringify(itemData.avalara_sale_type))
+  formData.append('item_categories', JSON.stringify(itemData.item_categories))
+  formData.append('item_store', JSON.stringify(itemData.item_store))
+  formData.append('item_groups', JSON.stringify(itemData.item_groups))
+  formData.append('item_section', JSON.stringify(itemData.item_section))
+  formData.append('taxes', JSON.stringify(itemData.taxes))
 
-    let response
-    if (editingItem.value) {
-      response = await posStore.updateItem(editingItem.value.id, itemData)
-    } else {
-      response = await posStore.createItem(itemData)
-    }
+  // Append arrays empty if they're null
+  formData.append('avalara_service_types', JSON.stringify([]))
+
+  // Append null values
+  formData.append('avalara_service_type', '')
+  formData.append('avalara_service_type_name', '')
+  formData.append('avalara_type', '')
+  formData.append('retentions', '')
+  formData.append('unit', '')
+
+  // Append the image last
+  formData.append('image', itemForm.image)
+
+  // Add some debug logging
+  logger.debug('FormData entries:', {
+    name: formData.get('name'),
+    price: formData.get('price'),
+    item_store: formData.get('item_store'),
+    image: formData.get('image')
+  })
+
+  // Use the FormData instead of the JSON
+  itemData = formData
+}
+
+let response
+if (editingItem.value) {
+  response = await posStore.updateItem(editingItem.value.id, itemData)
+} else {
+  response = await posStore.createItem(itemData)
+}
 
     if (response.success) {
       emit('item-saved', response)

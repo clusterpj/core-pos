@@ -31,6 +31,14 @@ const routes = [
           title: 'Dashboard'
         }
       },
+      {
+        path: 'items',
+        name: 'items',
+        component: () => import('../views/Items.vue'),
+        meta: {
+          title: 'Items Management'
+        }
+      },
       posRoutes // Add POS routes here
     ]
   },

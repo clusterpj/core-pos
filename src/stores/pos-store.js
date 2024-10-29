@@ -7,7 +7,6 @@ import apiClient from '../services/api/client'
 
 export const usePosStore = defineStore('pos', {
   state: () => ({
-    // Loading States
     loading: {
       categories: false,
       products: false,
@@ -17,8 +16,6 @@ export const usePosStore = defineStore('pos', {
       itemOperation: false
     },
     error: null,
-
-    // Product Data
     categories: [],
     products: [],
     selectedCategory: 'all',
@@ -26,15 +23,12 @@ export const usePosStore = defineStore('pos', {
     currentPage: 1,
     itemsPerPage: 20,
     totalItems: 0,
-
-    // Store Data
     stores: [],
     cashiers: [],
     employees: []
   }),
 
   getters: {
-    // Format categories for display in UI components
     categoriesForDisplay: (state) => {
       return (state.categories || []).map(category => ({
         id: category.item_category_id,
@@ -43,7 +37,6 @@ export const usePosStore = defineStore('pos', {
       }))
     },
 
-    // Format stores for display
     storesForDisplay: (state) => {
       return (state.stores || []).map(store => ({
         title: store.name,
@@ -51,7 +44,6 @@ export const usePosStore = defineStore('pos', {
       }))
     },
 
-    // Format cashiers for display
     cashiersForDisplay: (state) => {
       return (state.cashiers || []).map(cashier => ({
         title: cashier.name,
@@ -59,7 +51,6 @@ export const usePosStore = defineStore('pos', {
       }))
     },
 
-    // Format employees for display
     employeesForDisplay: (state) => {
       return (state.employees || []).map(employee => ({
         title: employee.name,
@@ -67,13 +58,11 @@ export const usePosStore = defineStore('pos', {
       }))
     },
 
-    // Check if the POS system is ready for use
     systemReady: (state) => {
       const companyStore = useCompanyStore()
       return companyStore.isConfigured
     },
 
-    // Get setup message if system is not ready
     setupMessage: () => {
       const companyStore = useCompanyStore()
       if (!companyStore.selectedCustomer) return 'Please select a customer'
@@ -84,18 +73,12 @@ export const usePosStore = defineStore('pos', {
   },
 
   actions: {
-    // Initialize the POS store
     async initialize() {
       logger.startGroup('POS Store: Initialize')
       try {
         const companyStore = useCompanyStore()
-        
-        // First ensure company store is initialized
         await companyStore.initializeStore()
-        
-        // Then fetch our categories and products
         await this.fetchCategories()
-        
         logger.info('POS Store initialized successfully')
       } catch (error) {
         logger.error('Failed to initialize POS store', error)
@@ -105,7 +88,6 @@ export const usePosStore = defineStore('pos', {
       }
     },
 
-    // Product Category Management
     async fetchCategories() {
       const companyStore = useCompanyStore()
       if (!companyStore.isConfigured) {
@@ -144,7 +126,6 @@ export const usePosStore = defineStore('pos', {
       }
     },
 
-    // Product Management
     async fetchProducts() {
       const companyStore = useCompanyStore()
       if (!companyStore.isConfigured) {
@@ -194,34 +175,33 @@ export const usePosStore = defineStore('pos', {
       }
     },
 
-    // Item Management (Create/Update/Delete)
     async createItem(itemData) {
       logger.startGroup('POS Store: Create Item')
       this.loading.itemOperation = true
       this.error = null
     
       try {
-        // Log the request data
         logger.debug('Creating item with data:', itemData)
     
-        const headers = {
-          'Accept': 'application/json'
-        }
+        const response = await apiClient.post('/v1/items', itemData, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        })
     
-        // Set the correct Content-Type based on the data type
-        if (itemData instanceof FormData) {
-          headers['Content-Type'] = 'multipart/form-data'
-        } else {
-          headers['Content-Type'] = 'application/json'
-        }
-    
-        const response = await apiClient.post('/v1/items', itemData, { headers })
-    
+        logger.debug('Raw API response:', response)
         logger.info('Item created successfully:', response.data)
+    
         await this.fetchProducts()
         return response.data
       } catch (error) {
-        logger.error('Failed to create item:', error)
+        logger.error('Create item error:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          headers: error.response?.headers
+        })
         this.error = error.message || 'Failed to create item'
         throw error
       } finally {
@@ -229,38 +209,16 @@ export const usePosStore = defineStore('pos', {
         logger.endGroup()
       }
     },
-    
-    async updateItem(itemId, formData) {
+
+    async updateItem(itemId, itemData) {
       logger.startGroup('POS Store: Update Item')
       this.loading.itemOperation = true
       this.error = null
     
       try {
-        const companyStore = useCompanyStore()
-        if (!formData.has('stores[]') && companyStore.selectedStore) {
-          formData.append('stores[]', companyStore.selectedStore)
-          
-          // Add pivot table data if not present
-          if (!formData.has('item_store')) {
-            const storeData = [{
-              id: companyStore.selectedStore,
-              status: 'A'
-            }];
-            formData.append('item_store', JSON.stringify(storeData));
-          }
-        }
-    
-        formData.append('_method', 'PUT')
-    
-        // Log the form data before sending
-        logger.debug('Updating item with store data:', {
-          stores: formData.getAll('stores[]'),
-          storeData: formData.get('item_store')
-        });
-    
-        const response = await apiClient.post(`/v1/items/${itemId}`, formData, {
+        const response = await apiClient.put(`/v1/items/${itemId}`, itemData, {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            'Content-Type': 'application/json',
             'Accept': 'application/json'
           }
         })
@@ -278,18 +236,46 @@ export const usePosStore = defineStore('pos', {
       }
     },
 
+    async uploadItemImage(itemId, imageFile) {
+      logger.startGroup('POS Store: Upload Item Image')
+      this.loading.itemOperation = true
+      this.error = null
+    
+      try {
+        const formData = new FormData()
+        formData.append('image', imageFile)
+    
+        const response = await apiClient.post(`/v1/items/${itemId}/image`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json'
+          }
+        })
+    
+        logger.info('Image uploaded successfully:', response.data)
+        await this.fetchProducts()
+        return response.data
+      } catch (error) {
+        logger.error('Failed to upload image:', error)
+        this.error = error.message || 'Failed to upload image'
+        throw error
+      } finally {
+        this.loading.itemOperation = false
+        logger.endGroup()
+      }
+    },
+
     async deleteItem(itemId) {
       logger.startGroup('POS Store: Delete Item')
       this.loading.itemOperation = true
       this.error = null
 
       try {
-        // Using the correct endpoint for single item deletion
         const response = await apiClient.post('/v1/items/delete', {
           ids: [itemId]
         })
         logger.info('Item deleted successfully:', response.data)
-        await this.fetchProducts() // Refresh product list
+        await this.fetchProducts()
         return response.data
       } catch (error) {
         logger.error('Failed to delete item:', error)
@@ -311,7 +297,7 @@ export const usePosStore = defineStore('pos', {
           ids: itemIds
         })
         logger.info('Items deleted successfully:', response.data)
-        await this.fetchProducts() // Refresh product list
+        await this.fetchProducts()
         return response.data
       } catch (error) {
         logger.error('Failed to delete items:', error)
@@ -323,16 +309,15 @@ export const usePosStore = defineStore('pos', {
       }
     },
 
-    // Search and Filter Actions
     setCategory(categoryId) {
       this.selectedCategory = categoryId
-      this.currentPage = 1 // Reset to first page
+      this.currentPage = 1
       this.fetchProducts()
     },
 
     setSearchQuery(query) {
       this.searchQuery = query
-      this.currentPage = 1 // Reset to first page
+      this.currentPage = 1
       this.fetchProducts()
     },
 
@@ -341,7 +326,6 @@ export const usePosStore = defineStore('pos', {
       this.fetchProducts()
     },
 
-    // Store Management
     setStore(storeId) {
       const companyStore = useCompanyStore()
       companyStore.setSelectedStore(storeId)
@@ -353,11 +337,9 @@ export const usePosStore = defineStore('pos', {
     },
 
     setEmployee(employeeId) {
-      // TODO: Implement employee selection logic
       logger.info('Setting employee:', employeeId)
     },
 
-    // Reset store state
     resetState() {
       this.categories = []
       this.products = []

@@ -47,6 +47,11 @@ const navItems = computed(() => [
     to: '/pos'
   },
   {
+    title: 'Items',
+    icon: 'mdi-package-variant-closed',
+    to: '/items'
+  },
+  {
     title: 'Reports',
     icon: 'mdi-chart-bar',
     to: '/reports'
