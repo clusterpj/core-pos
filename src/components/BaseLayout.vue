@@ -2,58 +2,6 @@
 <template>
   <v-app>
     <v-navigation-drawer v-model="drawer" permanent>
-      <!-- Company Selection Section -->
-      <v-list-item>
-        <v-select
-          :model-value="companyStore.selectedCustomerDisplay"
-          label="Customer"
-          :items="companyStore.customersForDisplay"
-          :loading="companyStore.loading"
-          item-title="title"
-          item-value="value"
-          density="compact"
-          hide-details
-          class="mb-2"
-          @update:model-value="handleCustomerChange"
-          :return-object="false"
-        />
-      </v-list-item>
-
-      <v-list-item>
-        <v-select
-          :model-value="companyStore.selectedStoreDisplay"
-          label="Store"
-          :items="companyStore.storesForDisplay"
-          :loading="companyStore.loadingStores"
-          item-title="title"
-          item-value="value"
-          density="compact"
-          hide-details
-          class="mb-2"
-          :disabled="!companyStore.selectedCustomer"
-          @update:model-value="handleStoreChange"
-          :return-object="false"
-        />
-      </v-list-item>
-
-      <v-list-item class="mb-4">
-        <v-select
-          :model-value="companyStore.selectedCashierDisplay"
-          label="Cash Register"
-          :items="companyStore.cashRegistersForDisplay"
-          :loading="companyStore.loadingCashRegisters"
-          item-title="title"
-          item-value="value"
-          density="compact"
-          hide-details
-          :disabled="!companyStore.selectedStore"
-          @update:model-value="handleCashierChange"
-          :return-object="false"
-        />
-      </v-list-item>
-
-      <v-divider class="mb-2"></v-divider>
-
       <!-- Navigation Items -->
       <v-list>
         <v-list-item
@@ -67,7 +15,57 @@
     </v-navigation-drawer>
 
     <v-app-bar>
-      <v-app-bar-title>{{ appTitle }}</v-app-bar-title>
+      <v-app-bar-title class="mr-4">{{ appTitle }}</v-app-bar-title>
+      
+      <!-- Selection Controls -->
+      <div class="d-flex align-center selection-controls">
+        <v-select
+          :model-value="companyStore.selectedCustomerDisplay"
+          label="Customer"
+          :items="companyStore.customersForDisplay"
+          :loading="companyStore.loading"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          class="selection-field mr-2"
+          @update:model-value="handleCustomerChange"
+          :return-object="false"
+          variant="outlined"
+        />
+
+        <v-select
+          :model-value="companyStore.selectedStoreDisplay"
+          label="Store"
+          :items="companyStore.storesForDisplay"
+          :loading="companyStore.loadingStores"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          class="selection-field mr-2"
+          :disabled="!companyStore.selectedCustomer"
+          @update:model-value="handleStoreChange"
+          :return-object="false"
+          variant="outlined"
+        />
+
+        <v-select
+          :model-value="companyStore.selectedCashierDisplay"
+          label="Cash Register"
+          :items="companyStore.cashRegistersForDisplay"
+          :loading="companyStore.loadingCashRegisters"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          class="selection-field"
+          :disabled="!companyStore.selectedStore"
+          @update:model-value="handleCashierChange"
+          :return-object="false"
+          variant="outlined"
+        />
+      </div>
     </v-app-bar>
 
     <v-main>
@@ -183,5 +181,19 @@ onMounted(async () => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Selection controls styles */
+.selection-controls {
+  flex: 1;
+  max-width: 800px;
+}
+
+.selection-field {
+  width: 200px;
+}
+
+:deep(.v-field) {
+  background-color: white !important;
 }
 </style>
