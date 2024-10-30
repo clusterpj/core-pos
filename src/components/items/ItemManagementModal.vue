@@ -276,22 +276,96 @@ function triggerImageUpload() {
 
 async function handleImageUpload(event) {
   const file = event.target.files[0]
-  if (!file) return
+  if (!file) {
+    logger.error('No file selected')
+    return
+  }
 
   try {
-    // Show preview
+    // Log file details
+    logger.debug('File selected:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    })
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Please select an image file')
+    }
+
+    // Store file object
+    fileObject.value = file
+    
+    // Create base64 preview
     const reader = new FileReader()
     reader.onload = (e) => {
-      previewImage.value = e.target.result
+      const result = e.target.result
+      logger.debug('Image loaded:', {
+        resultLength: result.length,
+        hasData: !!result
+      })
+
+      // Store the full base64 string for now
+      previewImage.value = result
+    }
+    reader.onerror = (e) => {
+      logger.error('FileReader error:', e)
+      throw new Error('Failed to read image file')
     }
     reader.readAsDataURL(file)
 
-    // Store file for upload
-    itemForm.image = file
   } catch (error) {
     logger.error('Failed to handle image upload:', error)
-    errorMessage.value = 'Failed to handle image upload'
-    emit('error', 'Failed to handle image upload')
+    errorMessage.value = error.message || 'Failed to handle image upload'
+  }
+}
+
+// Inside saveItem function, after successful item creation:
+
+// Step 2: If we have an image, upload it using the item ID
+if (fileObject.value && previewImage.value) {
+  try {
+    logger.debug('Preparing image upload:', {
+      fileName: fileObject.value.name,
+      itemId: itemResponse.item.id,
+      hasPreviewImage: !!previewImage.value
+    })
+
+    // Get the base64 data without the prefix
+    const base64Data = previewImage.value.split(',')[1]
+    
+    const pictureData = {
+      picture: JSON.stringify({
+        name: fileObject.value.name,
+        data: base64Data,
+        item_id: itemResponse.item.id
+      })
+    }
+
+    logger.debug('Picture data prepared:', {
+      hasName: !!pictureData.picture.name,
+      hasData: !!pictureData.picture.data,
+      itemId: pictureData.picture.item_id
+    })
+
+    // Make the upload request
+    const imageResponse = await posStore.uploadItemPicture(pictureData)
+    
+    if (imageResponse.success) {
+      window.toastr?.['success']('Image uploaded successfully')
+      logger.info('Image upload successful for item:', itemResponse.item.id)
+    } else {
+      logger.error('Image upload response indicated failure:', imageResponse)
+      throw new Error('Image upload failed')
+    }
+  } catch (imageError) {
+    logger.error('Image upload error:', {
+      error: imageError,
+      itemId: itemResponse.item.id,
+      fileName: fileObject.value.name
+    })
+    window.toastr?.['error']('Failed to upload image: ' + (imageError.message || 'Unknown error'))
   }
 }
 
@@ -307,128 +381,130 @@ async function saveItem() {
   if (!valid) return
 
   if (!companyStore.selectedStore) {
-    const msg = 'No store selected. Please select a store first.'
-    errorMessage.value = msg
-    emit('error', msg)
+    errorMessage.value = 'No store selected. Please select a store first.'
     return
   }
 
   loading.value = true
   try {
-    // Get the selected category details
-    const selectedCategory = posStore.categories.find(c => c.item_category_id === itemForm.category_id)
-    logger.debug('Selected category:', selectedCategory)
-
-    // Create item data object matching the backend structure
+    // Step 1: Create/Update the item first
     const itemData = {
       name: itemForm.name,
       description: itemForm.description || '',
       price: Math.round(parseFloat(itemForm.price) * 100),
-      unit_id: 12,
+      unit_id: itemForm.unit?.id,
       item_category_id: itemForm.category_id,
-      unit: {
-        id: 12,
-        name: 'food',
-        company_id: 1
-      },
-      allow_taxes: false,
+      unit: itemForm.unit,
       allow_pos: true,
-      no_taxable: false,
-      taxes: [],
-      item_groups: [],
       avalara_bool: false,
-      avalara_type: null,
-      avalara_sale_type: {
-        name: "Retail",
-        value: "Retail"
-      },
       avalara_discount_type: {
         name: "None",
         value: "0"
       },
-      avalara_service_types: [],
+      avalara_sale_type: {
+        name: "Retail",
+        value: "Retail"
+      },
       avalara_service_type: null,
       avalara_service_type_name: "",
-      retentions_bool: false,
+      avalara_service_types: [],
+      avalara_type: null,
+      no_taxable: false,
       retentions: null,
+      retentions_bool: false,
       tax_inclusion: false,
+      taxes: [],
       item_categories: [{
         id: itemForm.category_id,
-        name: selectedCategory?.name || '',
+        name: posStore.categories.find(c => c.item_category_id === itemForm.category_id)?.name || '',
         is_group: 1,
         is_item: 1
       }],
+      item_groups: [],
+      item_section: [],
       item_store: [{
-        company_name: companyStore.companyName || 'xyz',
         id: companyStore.selectedStore,
         name: companyStore.storesForDisplay.find(s => s.value === companyStore.selectedStore)?.title || '',
+        company_name: companyStore.currentCustomer?.name || 'xyz',
         description: ''
-      }],
-      item_section: []
+      }]
     }
 
-    // Log the constructed item data
-    logger.debug('Constructed item data:', JSON.stringify(itemData, null, 2))
+    let itemResponse
+    if (editingItem.value) {
+      itemResponse = await posStore.updateItem(editingItem.value.id, itemData)
+    } else {
+      itemResponse = await posStore.createItem(itemData)
+    }
 
-    // Store the image file if one was selected
-    const imageFile = itemForm.image instanceof File ? itemForm.image : null
+    // Check if we got a valid item ID back
+    if (!itemResponse?.item?.id) {
+      throw new Error('Failed to get item ID from response')
+    }
 
-    let response
-    try {
-      if (editingItem.value) {
-        logger.debug('Updating existing item:', editingItem.value.id)
-        response = await posStore.updateItem(editingItem.value.id, itemData)
-      } else {
-        logger.debug('Creating new item')
-        response = await posStore.createItem(itemData)
-      }
-
-      // Log response
-      logger.debug('API Response:', response)
-
-      // If we have an image file, upload it in a separate request
-      if (imageFile && response?.item?.id) {
-        logger.debug('Uploading image for item:', response.item.id)
-        try {
-          await posStore.uploadItemImage(response.item.id, imageFile)
-          logger.debug('Image upload successful')
-        } catch (imageError) {
-          logger.error('Failed to upload image:', {
-            error: imageError,
-            response: imageError.response?.data,
-            status: imageError.response?.status
-          })
-          // Don't throw here, as the item was created successfully
-          emit('error', 'Item created but failed to upload image')
-        }
-      }
-
-      // Emit success and close modal
-      emit('item-saved', response)
-      closeDialog()
-    } catch (error) {
-      logger.error('Failed to save item:', {
-        error,
-        response: error.response?.data,
-        status: error.response?.status
+// Step 2: If we have an image, upload it using the item ID
+if (fileObject.value && previewImage.value) {
+  try {
+    const pictureData = {
+      picture: JSON.stringify({
+        name: fileObject.value.name,
+        data: previewImage.value, // This should now be just the base64 string without the prefix
+        item_id: itemResponse.item.id
       })
-      throw error // Re-throw to be caught by outer try-catch
     }
-  } catch (error) {
-    logger.error('Failed to save item - Exception:', {
-      message: error.message,
-      stack: error.stack,
-      response: error.response?.data,
-      status: error.response?.status
+    
+    logger.debug('Attempting to upload picture:', {
+      itemId: itemResponse.item.id,
+      fileName: fileObject.value.name,
+      hasData: !!previewImage.value
     })
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to save item'
-    errorMessage.value = errorMsg
-    emit('error', errorMsg)
+
+    const imageResponse = await posStore.uploadItemPicture(pictureData)
+    
+    if (imageResponse.success) {
+      window.toastr?.['success']('Image uploaded successfully')
+      logger.info('Image upload successful for item:', itemResponse.item.id)
+    } else {
+      throw new Error('Image upload failed')
+    }
+  } catch (imageError) {
+    window.toastr?.['error']('Failed to upload image: ' + (imageError.message || 'Unknown error'))
+    logger.error('Image upload failed:', {
+      error: imageError,
+      itemId: itemResponse.item.id,
+      fileName: fileObject.value.name
+    })
+  }
+}
+
+    // Show success message for item creation/update
+    window.toastr?.['success'](
+      editingItem.value 
+        ? 'Item updated successfully' 
+        : 'Item created successfully'
+    )
+
+    logger.info(`Item ${editingItem.value ? 'updated' : 'created'} successfully:`, {
+      itemId: itemResponse.item.id,
+      name: itemResponse.item.name
+    })
+
+    emit('item-saved', itemResponse)
+    closeDialog()
+
+  } catch (error) {
+    // Show error message
+    window.toastr?.['error'](error.message || 'Failed to save item')
+    logger.error('Failed to save item:', {
+      error,
+      formData: itemForm,
+      isEdit: !!editingItem.value
+    })
+    errorMessage.value = error.message || 'Failed to save item'
   } finally {
     loading.value = false
   }
 }
-
 function closeDialog() {
   dialogVisible.value = false
   form.value?.reset()

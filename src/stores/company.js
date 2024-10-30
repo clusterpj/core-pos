@@ -33,6 +33,14 @@ export const useCompanyStore = defineStore('company', {
       return state.customers.find(customer => customer.id === state.selectedCustomer)
     },
 
+    currentStore: (state) => {
+      return state.stores.find(store => store.id === state.selectedStore)
+    },
+
+    currentCashRegister: (state) => {
+      return state.cashRegisters.find(register => register.id === state.selectedCashier)
+    },
+
     customersForDisplay: (state) => {
       return (state.customers || [])
         .filter(customer => customer.status_customer === 'A')
@@ -41,6 +49,11 @@ export const useCompanyStore = defineStore('company', {
           value: customer.id,
           companyId: customer.company_id
         }))
+    },
+
+    selectedCustomerDisplay: (state) => {
+      const customer = state.customers.find(c => c.id === state.selectedCustomer)
+      return customer?.name || ''
     },
 
     storesForDisplay: (state) => {
@@ -52,6 +65,11 @@ export const useCompanyStore = defineStore('company', {
       }))
     },
 
+    selectedStoreDisplay: (state) => {
+      const store = state.stores.find(s => s.id === state.selectedStore)
+      return store?.name || ''
+    },
+
     cashRegistersForDisplay: (state) => {
       return (state.cashRegisters || []).map(register => ({
         title: register.name,
@@ -59,6 +77,11 @@ export const useCompanyStore = defineStore('company', {
         description: register.description,
         storeName: register.store_name
       }))
+    },
+
+    selectedCashierDisplay: (state) => {
+      const register = state.cashRegisters.find(r => r.id === state.selectedCashier)
+      return register?.name || ''
     },
 
     isConfigured: (state) => {
@@ -100,26 +123,26 @@ export const useCompanyStore = defineStore('company', {
 
     async setSelectedCustomer(customerId) {
       logger.info('Setting selected customer:', customerId)
-      this.selectedCustomer = customerId
       
+      // Only set if customer exists
       const customer = this.customers.find(c => c.id === customerId)
       if (customer) {
+        this.selectedCustomer = customerId
         logger.debug('Found customer:', customer)
         localStorage.setItem('companyId', customer.company_id)
+        localStorage.setItem('selectedCustomer', customerId)
+        
+        // Reset dependent selections
+        this.selectedStore = null
+        this.selectedCashier = null
+        this.stores = []
+        this.cashRegisters = []
+        
+        // Fetch stores
+        await this.fetchStores()
       } else {
         logger.warn('Customer not found for ID:', customerId)
       }
-      
-      // Reset dependent selections
-      this.selectedStore = null
-      this.selectedCashier = null
-      this.stores = []
-      this.cashRegisters = []
-      
-      localStorage.setItem('selectedCustomer', customerId)
-      
-      // Only fetch stores if explicitly requested
-      await this.fetchStores()
     },
 
     async fetchStores() {
@@ -176,16 +199,22 @@ export const useCompanyStore = defineStore('company', {
 
     async setSelectedStore(storeId) {
       logger.info('Setting selected store:', storeId)
-      this.selectedStore = storeId
       
-      // Reset dependent selections
-      this.selectedCashier = null
-      this.cashRegisters = []
-      
-      localStorage.setItem('selectedStore', storeId)
-      
-      // Only fetch registers if explicitly requested
-      await this.fetchCashRegisters()
+      // Only set if store exists
+      const store = this.stores.find(s => s.id === storeId)
+      if (store) {
+        this.selectedStore = storeId
+        localStorage.setItem('selectedStore', storeId)
+        
+        // Reset dependent selections
+        this.selectedCashier = null
+        this.cashRegisters = []
+        
+        // Fetch registers
+        await this.fetchCashRegisters()
+      } else {
+        logger.warn('Store not found for ID:', storeId)
+      }
     },
 
     async fetchCashRegisters() {
@@ -236,14 +265,20 @@ export const useCompanyStore = defineStore('company', {
 
     setselectedCashier(registerId) {
       logger.info('Setting selected cash register:', registerId)
-      this.selectedCashier = registerId
-      localStorage.setItem('selectedCashier', registerId)
+      
+      // Only set if register exists
+      const register = this.cashRegisters.find(r => r.id === registerId)
+      if (register) {
+        this.selectedCashier = registerId
+        localStorage.setItem('selectedCashier', registerId)
+      } else {
+        logger.warn('Cash register not found for ID:', registerId)
+      }
     },
 
     async initializeStore() {
       logger.startGroup('Company Store: Initialize')
       try {
-        // Only fetch customers initially
         await this.fetchCustomers()
         logger.info('Company store initialized successfully')
       } catch (error) {

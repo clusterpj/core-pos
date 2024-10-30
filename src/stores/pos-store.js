@@ -268,6 +268,46 @@ export const usePosStore = defineStore('pos', {
       }
     },
 
+// In pos-store.js
+async uploadItemPicture(pictureData) {
+  logger.startGroup('POS Store: Upload Item Picture')
+  this.loading.itemOperation = true
+  this.error = null
+
+  try {
+    logger.debug('Making upload request:', {
+      endpoint: '/v1/items/upload-picture',
+      dataPresent: !!pictureData.picture
+    })
+
+    const response = await apiClient.post('/v1/items/upload-picture', pictureData)
+    
+    logger.debug('Upload response received:', {
+      status: response.status,
+      success: response.data?.success
+    })
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Failed to upload image')
+    }
+
+    logger.info('Picture uploaded successfully')
+    await this.fetchProducts()
+    return response.data
+
+  } catch (error) {
+    logger.error('Upload picture error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    })
+    throw error
+  } finally {
+    this.loading.itemOperation = false
+    logger.endGroup()
+  }
+},
+
     async deleteItem(itemId) {
       logger.startGroup('POS Store: Delete Item')
       this.loading.itemOperation = true

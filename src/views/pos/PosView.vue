@@ -2,54 +2,6 @@
 <template>
   <v-layout class="pos-layout fill-height">
     <!-- Top Bar -->
-    <v-app-bar flat class="px-4">
-      <v-select
-        v-model="selectedCustomer"
-        label="Customer"
-        :items="companyStore.customersForDisplay"
-        :loading="companyStore.loading"
-        density="compact"
-        hide-details
-        class="max-w-[200px] mr-2"
-        @update:model-value="handleCustomerChange"
-      />
-
-      <v-select
-        v-model="selectedStore"
-        label="Store"
-        :items="companyStore.storesForDisplay"
-        :loading="companyStore.loadingStores"
-        density="compact"
-        hide-details
-        class="max-w-[200px] mr-2"
-        :disabled="!selectedCustomer"
-        @update:model-value="handleStoreChange"
-      />
-
-      <v-select
-        v-model="selectedCashier"
-        label="Cash Register"
-        :items="companyStore.cashRegistersForDisplay"
-        :loading="companyStore.loadingCashRegisters"
-        density="compact"
-        hide-details
-        class="max-w-[200px]"
-        :disabled="!selectedStore"
-        @update:model-value="handleCashierChange"
-      />
-
-      <v-spacer />
-      
-      <div class="notification-indicator">
-        <v-badge
-          :content="notifications.length"
-          :model-value="notifications.length > 0"
-          color="error"
-        >
-          <v-icon icon="mdi-bell" />
-        </v-badge>
-      </div>
-    </v-app-bar>
 
     <!-- Error Alert -->
     <v-alert

@@ -2,6 +2,59 @@
 <template>
   <v-app>
     <v-navigation-drawer v-model="drawer" permanent>
+      <!-- Company Selection Section -->
+      <v-list-item>
+        <v-select
+          :model-value="companyStore.selectedCustomerDisplay"
+          label="Customer"
+          :items="companyStore.customersForDisplay"
+          :loading="companyStore.loading"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          class="mb-2"
+          @update:model-value="handleCustomerChange"
+          :return-object="false"
+        />
+      </v-list-item>
+
+      <v-list-item>
+        <v-select
+          :model-value="companyStore.selectedStoreDisplay"
+          label="Store"
+          :items="companyStore.storesForDisplay"
+          :loading="companyStore.loadingStores"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          class="mb-2"
+          :disabled="!companyStore.selectedCustomer"
+          @update:model-value="handleStoreChange"
+          :return-object="false"
+        />
+      </v-list-item>
+
+      <v-list-item class="mb-4">
+        <v-select
+          :model-value="companyStore.selectedCashierDisplay"
+          label="Cash Register"
+          :items="companyStore.cashRegistersForDisplay"
+          :loading="companyStore.loadingCashRegisters"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          :disabled="!companyStore.selectedStore"
+          @update:model-value="handleCashierChange"
+          :return-object="false"
+        />
+      </v-list-item>
+
+      <v-divider class="mb-2"></v-divider>
+
+      <!-- Navigation Items -->
       <v-list>
         <v-list-item
           v-for="item in navItems"
@@ -28,10 +81,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useCompanyStore } from '../stores/company'
 
 const authStore = useAuthStore()
+const companyStore = useCompanyStore()
 const drawer = ref(true)
 const appTitle = ref('CorePOS')
 
@@ -62,6 +117,60 @@ const navItems = computed(() => [
     to: '/settings'
   }
 ])
+
+// Handle selection changes
+const handleCustomerChange = async (value) => {
+  if (!value) return
+  await companyStore.setSelectedCustomer(value)
+}
+
+const handleStoreChange = async (value) => {
+  if (!value) return
+  await companyStore.setSelectedStore(value)
+}
+
+const handleCashierChange = (value) => {
+  if (!value) return
+  companyStore.setselectedCashier(value)
+}
+
+// Initialize
+onMounted(async () => {
+  try {
+    // First fetch customers
+    await companyStore.fetchCustomers()
+
+    // Get stored selections
+    const storedCustomer = localStorage.getItem('selectedCustomer')
+    const storedStore = localStorage.getItem('selectedStore')
+    const storedCashier = localStorage.getItem('selectedCashier')
+
+    // Wait for customers to load before setting stored values
+    if (companyStore.customers.length > 0) {
+      // If we have a stored customer and it exists in the loaded customers
+      if (storedCustomer && companyStore.customers.find(c => c.id === storedCustomer)) {
+        await companyStore.setSelectedCustomer(storedCustomer)
+
+        // If we have a stored store
+        if (storedStore) {
+          await companyStore.setSelectedStore(storedStore)
+
+          // If we have a stored cashier
+          if (storedCashier) {
+            companyStore.setselectedCashier(storedCashier)
+          }
+        }
+      }
+      // If no stored customer but only one available, select it
+      else if (companyStore.customersForDisplay.length === 1) {
+        const customer = companyStore.customersForDisplay[0]
+        await handleCustomerChange(customer.value)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to initialize selections:', error)
+  }
+})
 </script>
 
 <style scoped>
