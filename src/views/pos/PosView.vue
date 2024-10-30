@@ -34,26 +34,7 @@
 
           <!-- Right Side - Products -->
           <v-col cols="12" md="8" class="pos-products">
-            <div class="d-flex align-center px-4 py-2">
-              <v-text-field
-                v-model="searchQuery"
-                label="Search products"
-                prepend-inner-icon="mdi-magnify"
-                variant="outlined"
-                density="comfortable"
-                class="mr-4"
-                @update:model-value="handleSearch"
-              ></v-text-field>
-              
-              <v-select
-                v-model="selectedCategory"
-                :items="categories"
-                label="Category"
-                variant="outlined"
-                density="comfortable"
-                @update:model-value="handleCategoryChange"
-              ></v-select>
-            </div>
+
             <pos-products />
           </v-col>
         </v-row>
@@ -242,8 +223,7 @@ const cartStore = useCartStore()
 const loading = ref(false)
 const error = ref(null)
 const notifications = ref([])
-const searchQuery = ref('')
-const selectedCategory = ref('all')
+
 
 // Selected values - synced with store
 const selectedCustomer = ref(companyStore.selectedCustomer)
