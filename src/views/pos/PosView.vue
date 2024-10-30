@@ -34,7 +34,6 @@
 
           <!-- Right Side - Products -->
           <v-col cols="12" md="8" class="pos-products">
-
             <pos-products />
           </v-col>
         </v-row>
@@ -95,6 +94,39 @@
         />
       </div>
     </v-footer>
+
+    <!-- Reference Number Dialog -->
+    <v-dialog v-model="showReferenceDialog" max-width="400">
+      <v-card>
+        <v-card-title>Enter Reference Number</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="referenceNumber"
+            label="Reference Number"
+            :rules="[v => !!v || 'Reference number is required']"
+            required
+            density="compact"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            color="grey"
+            variant="text"
+            @click="cancelHoldOrder"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="primary"
+            :disabled="!referenceNumber"
+            @click="confirmHoldOrder"
+          >
+            Hold Order
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Table Assignment Dialog -->
     <v-dialog v-model="showTableDialog" max-width="500">
@@ -208,13 +240,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useCompanyStore } from '@/stores/company'
-import { useCartStore } from '@/stores/cart-store'
+import { useCompanyStore } from '../../stores/company'
+import { useCartStore } from '../../stores/cart-store'
 import PosCart from './components/PosCart.vue'
 import PosProducts from './components/PosProducts.vue'
 import HeldOrdersModal from './components/HeldOrdersModal.vue'
-import { posOperations } from '@/services/api/pos-operations'
-import { logger } from '@/utils/logger'
+import { posOperations } from '../../services/api/pos-operations'
+import { logger } from '../../utils/logger'
 
 const companyStore = useCompanyStore()
 const cartStore = useCartStore()
@@ -224,6 +256,9 @@ const loading = ref(false)
 const error = ref(null)
 const notifications = ref([])
 
+// Hold Order Dialog State
+const showReferenceDialog = ref(false)
+const referenceNumber = ref('')
 
 // Selected values - synced with store
 const selectedCustomer = ref(companyStore.selectedCustomer)
@@ -247,11 +282,6 @@ const paymentMethods = ref([
   { id: 'cash', name: 'Cash' },
   { id: 'card', name: 'Credit Card' },
   { id: 'other', name: 'Other' }
-])
-
-// Categories
-const categories = ref([
-  { title: 'All Categories', value: 'all' }
 ])
 
 // Computed
@@ -346,9 +376,6 @@ const confirmTableAssignment = async () => {
     
     showTableDialog.value = false
     selectedTable.value = null
-    
-    // Create hold invoice for the table
-    await createHoldInvoice(`Table ${selectedTable.value} Order`)
   } catch (err) {
     error.value = err.message
     logger.error('Failed to assign table:', err)
@@ -357,21 +384,55 @@ const confirmTableAssignment = async () => {
   }
 }
 
-// Order Management
-const createHoldInvoice = async (description = '') => {
+// Hold Order Management
+const cancelHoldOrder = () => {
+  showReferenceDialog.value = false
+  referenceNumber.value = ''
+}
+
+const confirmHoldOrder = async () => {
+  if (!referenceNumber.value) return
+  
   try {
-    const holdInvoice = await cartStore.createHoldInvoice(description)
+    await createHoldInvoice()
+    showReferenceDialog.value = false
+    referenceNumber.value = ''
+  } catch (err) {
+    error.value = err.message
+    logger.error('Failed to create hold order:', err)
+  }
+}
+
+const createHoldInvoice = async () => {
+  try {
+    const holdInvoice = cartStore.prepareHoldInvoiceData(
+      companyStore.selectedStore,
+      companyStore.selectedCashier,
+      referenceNumber.value
+    )
     await posOperations.createHoldInvoice(holdInvoice)
     cartStore.clearCart()
   } catch (err) {
     error.value = err.message
     logger.error('Failed to create hold invoice:', err)
+    throw err
   }
 }
 
 const toGoOrder = async () => {
   try {
-    await createHoldInvoice('To-Go Order')
+    const orderData = {
+      items: cartStore.items,
+      total: cartStore.total,
+      subtotal: cartStore.subtotal,
+      tax: cartStore.taxAmount,
+      discount_type: cartStore.discountType,
+      discount: cartStore.discountValue,
+      discount_amount: cartStore.discountAmount
+    }
+    
+    await posOperations.submitOrder(orderData)
+    cartStore.clearCart()
   } catch (err) {
     error.value = err.message
     logger.error('Failed to create to-go order:', err)
@@ -380,7 +441,18 @@ const toGoOrder = async () => {
 
 const openTab = async () => {
   try {
-    await createHoldInvoice('Open Tab')
+    const orderData = {
+      items: cartStore.items,
+      total: cartStore.total,
+      subtotal: cartStore.subtotal,
+      tax: cartStore.taxAmount,
+      discount_type: cartStore.discountType,
+      discount: cartStore.discountValue,
+      discount_amount: cartStore.discountAmount
+    }
+    
+    await posOperations.submitOrder(orderData)
+    cartStore.clearCart()
   } catch (err) {
     error.value = err.message
     logger.error('Failed to open tab:', err)
@@ -425,24 +497,8 @@ const confirmPayment = async () => {
   }
 }
 
-const submitOrder = async () => {
-  try {
-    const orderData = {
-      items: cartStore.items,
-      total: cartStore.total,
-      subtotal: cartStore.subtotal,
-      tax: cartStore.taxAmount,
-      discount_type: cartStore.discountType,
-      discount: cartStore.discountValue,
-      discount_amount: cartStore.discountAmount
-    }
-    
-    await posOperations.submitOrder(orderData)
-    cartStore.clearCart()
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to submit order:', err)
-  }
+const submitOrder = () => {
+  showReferenceDialog.value = true
 }
 
 const printOrder = async (orderId = null) => {

@@ -183,15 +183,16 @@ export const useCartStore = defineStore('cart', {
       this.selectedTables = []
     },
 
-    prepareHoldInvoiceData(storeId) {
+    prepareHoldInvoiceData(storeId, cashRegisterId, referenceNumber) {
       logger.startGroup('Cart Store: Prepare Hold Invoice Data')
       try {
+        // Map cart items to hold invoice items format
         const holdItems = this.items.map(item => ({
           item_id: item.id,
           quantity: item.quantity,
           price: item.price,
           name: item.name,
-          modifications: item.modifications,
+          modifications: item.modifications || [],
           total: item.price * item.quantity,
           discount_type: 'fixed',
           discount: 0,
@@ -199,8 +200,11 @@ export const useCartStore = defineStore('cart', {
           sub_total: item.price * item.quantity
         }))
 
+        // Get current date in YYYY-MM-DD format
+        const currentDate = new Date().toISOString().split('T')[0]
+
         const holdInvoice = {
-          description: this.notes || 'POS Order',
+          description: referenceNumber,
           total: this.total,
           sub_total: this.subtotal,
           tax: this.taxAmount,
@@ -212,10 +216,31 @@ export const useCartStore = defineStore('cart', {
           tip_val: this.tipAmount,
           notes: this.notes,
           store_id: storeId,
+          cash_register_id: cashRegisterId,
           items: holdItems,
           taxes: {},
           tables_selected: this.selectedTables,
-          contact: {}
+          contact: {},
+          // Additional fields from old POS implementation
+          avalara_bool: false,
+          banType: true,
+          discount_per_item: "NO",
+          hold_invoice_id: null,
+          invoice_date: currentDate,
+          due_date: currentDate, // Set due date same as invoice date
+          invoice_number: "-",
+          invoice_pbx_modify: 0,
+          invoice_template_id: 1,
+          is_hold_invoice: false,
+          is_invoice_pos: 1,
+          is_pdf_pos: true,
+          not_charge_automatically: false,
+          package_bool: false,
+          packages: [],
+          print_pdf: false,
+          save_as_draft: false,
+          send_email: false,
+          due_amount: this.total
         }
 
         logger.info('Hold invoice data prepared:', holdInvoice)
