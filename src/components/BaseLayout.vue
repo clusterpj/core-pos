@@ -1,15 +1,35 @@
 <!-- src/components/BaseLayout.vue -->
 <template>
   <v-app>
-    <v-navigation-drawer v-model="drawer" permanent>
+    <v-navigation-drawer 
+      v-model="drawer" 
+      :rail="rail"
+      permanent
+      @click="rail = false"
+    >
+      <v-list-item>
+        <template v-slot:prepend>
+          <v-btn
+            variant="text"
+            icon="mdi-format-list-bulleted"
+            @click.stop="rail = !rail"
+          />
+        </template>
+        <v-list-item-title v-if="!rail">
+          Menu
+        </v-list-item-title>
+      </v-list-item>
+
+      <v-divider></v-divider>
       <!-- Navigation Items -->
-      <v-list>
+      <v-list density="compact" nav>
         <v-list-item
           v-for="item in navItems"
           :key="item.title"
           :to="item.to"
           :prepend-icon="item.icon"
-          :title="item.title"
+          :title="rail ? '' : item.title"
+          :value="item.title"
         />
       </v-list>
     </v-navigation-drawer>
@@ -79,14 +99,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useCompanyStore } from '../stores/company'
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const drawer = ref(true)
+const rail = ref(false)
 const appTitle = ref('CorePOS')
+
+// Save rail state to localStorage
+watch(rail, (newValue) => {
+  localStorage.setItem('navigationRail', newValue.toString())
+})
 
 const navItems = computed(() => [
   {
@@ -142,6 +168,10 @@ onMounted(async () => {
     const storedCustomer = localStorage.getItem('selectedCustomer')
     const storedStore = localStorage.getItem('selectedStore')
     const storedCashier = localStorage.getItem('selectedCashier')
+    const savedRail = localStorage.getItem('navigationRail')
+  if (savedRail !== null) {
+    rail.value = savedRail === 'true'
+  }
 
     // Wait for customers to load before setting stored values
     if (companyStore.customers.length > 0) {
