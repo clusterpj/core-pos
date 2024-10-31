@@ -74,9 +74,9 @@ defineProps({
 
 defineEmits(['edit', 'remove', 'updateQuantity'])
 
+// Format price for display only, keeping raw values in the store
 const formatPrice = (price) => {
   if (!price) return '0.00'
-  const priceInDollars = Number(price) / 100
-  return priceInDollars.toFixed(2)
+  return Number(price).toFixed(2)
 }
 </script>

@@ -173,14 +173,9 @@ const loadOrder = async (id) => {
       // Clear current cart
       cartStore.clearCart()
       
-      // Load items into cart
+      // Load items into cart with all original properties
       response.hold_invoice.hold_items?.forEach(item => {
-        cartStore.addItem({
-          id: item.item_id,
-          name: item.name,
-          price: item.price,
-          sale_price: item.price
-        }, item.quantity, item.modifications || [])
+        cartStore.addItem(item, item.quantity, item.modifications || [])
       })
 
       // Set other cart properties

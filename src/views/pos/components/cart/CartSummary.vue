@@ -11,7 +11,12 @@
         <span class="mr-2">Discount:</span>
         <v-select
           v-model="discountType"
-          :items="['%', '$']"
+          :items="[
+            { title: '%', value: '%' },
+            { title: '$', value: 'fixed' }
+          ]"
+          item-title="title"
+          item-value="value"
           density="compact"
           hide-details
           class="discount-type-select"
@@ -62,10 +67,10 @@ const props = defineProps({
 
 const { discountType, discountValue, updateDiscount } = useCartDiscount()
 
+// Format price for display only, keeping raw values in the store
 const formatPrice = (price) => {
   if (!price) return '0.00'
-  const priceInDollars = Number(price) / 100
-  return priceInDollars.toFixed(2)
+  return Number(price).toFixed(2)
 }
 </script>
 

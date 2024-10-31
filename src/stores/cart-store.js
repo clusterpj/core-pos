@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { logger } from '../utils/logger'
+import { useCompanyStore } from './company'
 
 export const useCartStore = defineStore('cart', {
   state: () => ({
     items: [],
-    discountType: '%',
+    discountType: 'fixed',
     discountValue: 0,
     taxRate: 0.08, // 8% tax rate
     loading: false,
@@ -24,7 +25,7 @@ export const useCartStore = defineStore('cart', {
       if (state.discountType === '%') {
         return Math.round(state.subtotal * (state.discountValue / 100))
       }
-      return Math.round(Number(state.discountValue) * 100) || 0
+      return Number(state.discountValue) || 0
     },
 
     taxableAmount: (state) => {
@@ -39,7 +40,7 @@ export const useCartStore = defineStore('cart', {
       if (state.tipType === '%') {
         return Math.round(state.taxableAmount * (state.tipValue / 100))
       }
-      return Math.round(Number(state.tipValue) * 100) || 0
+      return Number(state.tipValue) || 0
     },
 
     total: (state) => {
@@ -62,12 +63,15 @@ export const useCartStore = defineStore('cart', {
       // When adding a new item with modifications, always create a new entry
       if (modifications && modifications.length > 0) {
         this.items.push({
-          id: product.id,
-          name: product.name,
-          price: product.sale_price || product.price,
+          ...product, // Keep all original product properties
           quantity,
           modifications,
-          product
+          total: product.price * quantity,
+          sub_total: product.price * quantity,
+          discount_type: 'fixed',
+          discount: 0,
+          discount_val: 0,
+          item_id: product.id // Required by API
         })
         logger.info('Added new item with modifications')
         return
@@ -81,15 +85,20 @@ export const useCartStore = defineStore('cart', {
       
       if (existingItem) {
         existingItem.quantity += quantity
+        existingItem.total = existingItem.price * existingItem.quantity
+        existingItem.sub_total = existingItem.total
         logger.info('Updated existing item quantity:', existingItem)
       } else {
         this.items.push({
-          id: product.id,
-          name: product.name,
-          price: product.sale_price || product.price,
+          ...product, // Keep all original product properties
           quantity,
           modifications: [],
-          product
+          total: product.price * quantity,
+          sub_total: product.price * quantity,
+          discount_type: 'fixed',
+          discount: 0,
+          discount_val: 0,
+          item_id: product.id // Required by API
         })
         logger.info('Added new item')
       }
@@ -108,6 +117,8 @@ export const useCartStore = defineStore('cart', {
       if (item) {
         if (quantity > 0) {
           item.quantity = quantity
+          item.total = item.price * quantity
+          item.sub_total = item.total
         } else {
           this.removeItem(itemId, index)
         }
@@ -127,28 +138,6 @@ export const useCartStore = defineStore('cart', {
       logger.info('Updating item modifications:', { index, modifications })
       if (index >= 0 && index < this.items.length) {
         this.items[index].modifications = modifications
-      }
-    },
-
-    splitItem(index, quantity, modifications) {
-      logger.info('Splitting item:', { index, quantity, modifications })
-      if (index >= 0 && index < this.items.length) {
-        const originalItem = this.items[index]
-        
-        // Reduce quantity from original item
-        originalItem.quantity -= quantity
-
-        // Create new item with specified quantity and modifications
-        this.items.push({
-          ...originalItem,
-          quantity,
-          modifications: modifications || []
-        })
-
-        // Remove original item if quantity becomes 0
-        if (originalItem.quantity <= 0) {
-          this.items.splice(index, 1)
-        }
       }
     },
 
@@ -175,7 +164,7 @@ export const useCartStore = defineStore('cart', {
     clearCart() {
       logger.info('Clearing cart')
       this.items = []
-      this.discountType = '%'
+      this.discountType = 'fixed'
       this.discountValue = 0
       this.tipType = 'fixed'
       this.tipValue = 0
@@ -186,26 +175,33 @@ export const useCartStore = defineStore('cart', {
     prepareHoldInvoiceData(storeId, cashRegisterId, referenceNumber) {
       logger.startGroup('Cart Store: Prepare Hold Invoice Data')
       try {
-        // Map cart items to hold invoice items format
-        const holdItems = this.items.map(item => ({
-          item_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          name: item.name,
-          modifications: item.modifications || [],
-          total: item.price * item.quantity,
-          discount_type: 'fixed',
-          discount: 0,
-          discount_val: 0,
-          sub_total: item.price * item.quantity
-        }))
+        const companyStore = useCompanyStore()
+        const currentCustomer = companyStore.currentCustomer
 
-        // Get current date in YYYY-MM-DD format
+        if (!currentCustomer?.creator_id) {
+          throw new Error('Creator ID not found in current customer')
+        }
+
+        // Get current date and due date (7 days from now)
         const currentDate = new Date().toISOString().split('T')[0]
+        const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
+        // Prepare data according to API documentation structure
         const holdInvoice = {
-          description: referenceNumber,
+          print_pdf: false,
+          is_invoice_pos: 1,
+          is_pdf_pos: true,
+          avalara_bool: false,
+          send_email: false,
+          save_as_draft: false,
+          not_charge_automatically: false,
+          package_bool: false,
+          invoice_date: currentDate,
+          due_date: dueDate,
+          invoice_number: "-",
+          user_id: currentCustomer.creator_id,
           total: this.total,
+          due_amount: this.total,
           sub_total: this.subtotal,
           tax: this.taxAmount,
           discount_type: this.discountType,
@@ -214,33 +210,21 @@ export const useCartStore = defineStore('cart', {
           tip_type: this.tipType,
           tip: this.tipValue,
           tip_val: this.tipAmount,
-          notes: this.notes,
-          store_id: storeId,
-          cash_register_id: cashRegisterId,
-          items: holdItems,
-          taxes: {},
-          tables_selected: this.selectedTables,
-          contact: {},
-          // Additional fields from old POS implementation
-          avalara_bool: false,
-          banType: true,
           discount_per_item: "NO",
-          hold_invoice_id: null,
-          invoice_date: currentDate,
-          due_date: currentDate, // Set due date same as invoice date
-          invoice_number: "-",
-          invoice_pbx_modify: 0,
+          items: this.items, // Using full item objects with all properties
           invoice_template_id: 1,
-          is_hold_invoice: false,
-          is_invoice_pos: 1,
-          is_pdf_pos: true,
-          not_charge_automatically: false,
-          package_bool: false,
+          banType: true,
+          invoice_pbx_modify: 0,
           packages: [],
-          print_pdf: false,
-          save_as_draft: false,
-          send_email: false,
-          due_amount: this.total
+          cash_register_id: cashRegisterId,
+          taxes: {},
+          notes: this.notes,
+          contact: {},
+          description: referenceNumber,
+          tables_selected: this.selectedTables,
+          hold_invoice_id: null,
+          is_hold_invoice: false,
+          store_id: storeId
         }
 
         logger.info('Hold invoice data prepared:', holdInvoice)

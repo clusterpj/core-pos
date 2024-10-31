@@ -41,12 +41,29 @@ export const posOperations = {
   async createHoldInvoice(invoiceData) {
     logger.startGroup('POS Operations: Create Hold Invoice')
     try {
-      const response = await posApi.holdInvoice.create(invoiceData)
+      // Log the request data
+      logger.debug('Creating hold invoice with data:', invoiceData)
+
+      // Send the data exactly as received, without modifications
+      const response = await apiClient.post('/v1/core-pos/hold-invoices', invoiceData)
+
+      // Log the response
+      logger.debug('Hold invoice API response:', response)
+
+      if (!response.data) {
+        throw new Error('Invalid API response: missing data')
+      }
+
       logger.info('Hold invoice created successfully')
       return response.data
     } catch (error) {
-      logger.error('Failed to create hold invoice', error)
-      throw error
+      // Log the full error details
+      logger.error('Failed to create hold invoice', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      })
+      throw error.response?.data || error
     } finally {
       logger.endGroup()
     }
@@ -55,7 +72,12 @@ export const posOperations = {
   async getHoldInvoices() {
     logger.startGroup('POS Operations: Get Hold Invoices')
     try {
-      const response = await posApi.holdInvoice.getAll()
+      const response = await apiClient.get('/v1/core-pos/hold-invoices')
+      
+      if (!response.data) {
+        throw new Error('Invalid API response: missing data')
+      }
+      
       logger.info('Hold invoices fetched successfully')
       return response.data
     } catch (error) {
@@ -69,7 +91,12 @@ export const posOperations = {
   async getHoldInvoice(id) {
     logger.startGroup('POS Operations: Get Hold Invoice')
     try {
-      const response = await posApi.holdInvoice.getById(id)
+      const response = await apiClient.get(`/v1/core-pos/hold-invoices/${id}`)
+      
+      if (!response.data) {
+        throw new Error('Invalid API response: missing data')
+      }
+      
       logger.info('Hold invoice fetched successfully')
       return response.data
     } catch (error) {
@@ -83,7 +110,12 @@ export const posOperations = {
   async deleteHoldInvoice(id) {
     logger.startGroup('POS Operations: Delete Hold Invoice')
     try {
-      const response = await posApi.holdInvoice.delete(id)
+      const response = await apiClient.delete(`/v1/core-pos/hold-invoices/${id}`)
+      
+      if (!response.data) {
+        throw new Error('Invalid API response: missing data')
+      }
+      
       logger.info('Hold invoice deleted successfully')
       return response.data
     } catch (error) {
@@ -144,33 +176,37 @@ export const posOperations = {
   async submitOrder(orderData) {
     logger.startGroup('POS Operations: Submit Order')
     try {
-      // Create a hold invoice first
-      const holdInvoiceResponse = await this.createHoldInvoice({
+      // For regular orders, submit directly to orders endpoint
+      const response = await apiClient.post('/api/v1/core-pos/orders', {
         ...orderData,
-        description: orderData.description || 'POS Order'
+        is_hold_invoice: false,
+        avalara_bool: false,
+        banType: true,
+        is_invoice_pos: 1,
+        is_pdf_pos: true
       })
       
-      logger.info('Hold invoice created successfully')
+      logger.info('Order submitted successfully')
       
-      // Then process the payment if provided
+      // Process payment if provided
       if (orderData.payment) {
         const paymentResponse = await this.processPayment({
           ...orderData.payment,
-          hold_invoice_id: holdInvoiceResponse.id
+          order_id: response.data.id
         })
         
         logger.info('Payment processed successfully')
         
         return {
           success: true,
-          holdInvoice: holdInvoiceResponse,
+          order: response.data,
           payment: paymentResponse
         }
       }
       
       return {
         success: true,
-        holdInvoice: holdInvoiceResponse
+        order: response.data
       }
     } catch (error) {
       logger.error('Failed to submit order', error)

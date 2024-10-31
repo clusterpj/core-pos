@@ -1,17 +1,11 @@
-// src/services/api/pos-api.js
 import apiClient from './client'
 import { logger } from '../../utils/logger'
-import { apiConfig } from './config'
+import { getApiEndpoint } from './config'
 
 /**
  * POS API Service
  * Implements endpoints from CorePOS API Implementation Guide
  */
-
-const getApiEndpoint = (path) => {
-  const endpoints = path.split('.')
-  return endpoints.reduce((acc, curr) => acc[curr], apiConfig.endpoints)
-}
 
 // User Management
 export const getEmployees = async () => {
@@ -93,35 +87,6 @@ export const getItems = async (params = {}) => {
   }
 }
 
-export const deleteItems = async (itemIds) => {
-  logger.startGroup('POS API: Delete Items')
-  try {
-    const endpoint = `${getApiEndpoint('pos.items')}/delete`
-    logger.info('Deleting items at endpoint:', endpoint)
-    
-    const response = await apiClient.post(endpoint, { ids: itemIds })
-    logger.http('POST', endpoint, { ids: itemIds }, response)
-
-    if (!response.data) {
-      throw new Error('Invalid response format: missing data')
-    }
-
-    return {
-      success: true,
-      data: response.data
-    }
-  } catch (error) {
-    logger.error('Failed to delete items', {
-      error,
-      itemIds,
-      endpoint: getApiEndpoint('pos.items')
-    })
-    throw error
-  } finally {
-    logger.endGroup()
-  }
-}
-
 export const getItemCategories = async () => {
   logger.startGroup('POS API: Get Item Categories')
   try {
@@ -166,7 +131,7 @@ export const getItemCategories = async () => {
 export const getStores = async () => {
   logger.startGroup('POS API: Get Stores')
   try {
-    const endpoint = getApiEndpoint('pos.stores')
+    const endpoint = getApiEndpoint('pos.store')
     logger.info('Fetching stores from endpoint:', endpoint)
 
     const params = {
@@ -189,7 +154,7 @@ export const getStores = async () => {
   } catch (error) {
     logger.error('Failed to fetch stores', {
       error,
-      endpoint: getApiEndpoint('pos.stores')
+      endpoint: getApiEndpoint('pos.store')
     })
     throw error
   } finally {
@@ -199,20 +164,115 @@ export const getStores = async () => {
 
 // Hold Invoice Operations
 export const holdInvoiceOperations = {
-  create(invoiceData) {
-    return apiClient.post('/v1/core-pos/hold-invoices', invoiceData)
+  async create(invoiceData) {
+    logger.startGroup('POS API: Create Hold Invoice')
+    try {
+      const endpoint = getApiEndpoint('pos.holdInvoices')
+      logger.info('Creating hold invoice at endpoint:', endpoint)
+      logger.debug('Hold invoice data:', invoiceData)
+
+      const response = await apiClient.post(endpoint, invoiceData)
+      logger.debug('Hold invoice response:', response.data)
+
+      if (!response.data) {
+        throw new Error('Invalid response format: missing data')
+      }
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to create hold invoice')
+      }
+
+      logger.info('Hold invoice created successfully')
+      return response.data
+    } catch (error) {
+      logger.error('Failed to create hold invoice', {
+        error,
+        endpoint: getApiEndpoint('pos.holdInvoices')
+      })
+      throw error
+    } finally {
+      logger.endGroup()
+    }
   },
 
-  getAll() {
-    return apiClient.get('/v1/core-pos/hold-invoices')
+  async getAll() {
+    logger.startGroup('POS API: Get All Hold Invoices')
+    try {
+      const endpoint = getApiEndpoint('pos.holdInvoices')
+      logger.info('Fetching hold invoices from endpoint:', endpoint)
+
+      const response = await apiClient.get(endpoint)
+      logger.debug('Hold invoices response:', response.data)
+
+      if (!response.data) {
+        throw new Error('Invalid response format: missing data')
+      }
+
+      logger.info('Hold invoices fetched successfully')
+      return response
+    } catch (error) {
+      logger.error('Failed to fetch hold invoices', {
+        error,
+        endpoint: getApiEndpoint('pos.holdInvoices')
+      })
+      throw error
+    } finally {
+      logger.endGroup()
+    }
   },
 
-  getById(id) {
-    return apiClient.get(`/v1/core-pos/hold-invoices/${id}`)
+  async getById(id) {
+    logger.startGroup('POS API: Get Hold Invoice')
+    try {
+      const endpoint = `${getApiEndpoint('pos.holdInvoices')}/${id}`
+      logger.info('Fetching hold invoice from endpoint:', endpoint)
+
+      const response = await apiClient.get(endpoint)
+      logger.debug('Hold invoice response:', response.data)
+
+      if (!response.data) {
+        throw new Error('Invalid response format: missing data')
+      }
+
+      logger.info('Hold invoice fetched successfully')
+      return response
+    } catch (error) {
+      logger.error('Failed to fetch hold invoice', {
+        error,
+        id,
+        endpoint: getApiEndpoint('pos.holdInvoices')
+      })
+      throw error
+    } finally {
+      logger.endGroup()
+    }
   },
 
-  delete(id) {
-    return apiClient.delete(`/v1/core-pos/hold-invoices/${id}`)
+  async delete(id) {
+    logger.startGroup('POS API: Delete Hold Invoice')
+    try {
+      const endpoint = `${getApiEndpoint('pos.holdInvoices')}/${id}`
+      logger.info('Deleting hold invoice at endpoint:', endpoint)
+
+      const response = await apiClient.delete(endpoint)
+      logger.debug('Delete response:', response.data)
+
+      if (!response.data) {
+        throw new Error('Invalid response format: missing data')
+      }
+
+      logger.info('Hold invoice deleted successfully')
+      return response
+    } catch (error) {
+      logger.error('Failed to delete hold invoice', {
+        error,
+        id,
+        endpoint: getApiEndpoint('pos.holdInvoices')
+      })
+      throw error
+    } finally {
+      logger.endGroup()
+    }
   }
 }
 
@@ -220,7 +280,6 @@ export const posApi = {
   getCashiers,
   getEmployees,
   getItems,
-  deleteItems,
   getItemCategories,
   getStores,
   holdInvoice: holdInvoiceOperations
