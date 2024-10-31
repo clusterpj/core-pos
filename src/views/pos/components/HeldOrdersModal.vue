@@ -1,4 +1,3 @@
-# src/views/pos/components/HeldOrdersModal.vue
 <template>
   <v-dialog v-model="dialog" max-width="800">
     <template v-slot:activator="{ props }">
@@ -36,7 +35,8 @@
 
           <template v-else>
             <v-row>
-              <v-col cols="12">
+              <!-- Search Field -->
+              <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="search"
                   label="Search orders"
@@ -45,6 +45,18 @@
                   density="comfortable"
                 ></v-text-field>
               </v-col>
+              
+              <!-- Type Filter -->
+              <v-col cols="12" sm="6">
+                <v-select
+                  v-model="selectedType"
+                  :items="orderTypes"
+                  label="Filter by type"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="mdi-filter"
+                ></v-select>
+              </v-col>
             </v-row>
 
             <v-row>
@@ -52,6 +64,7 @@
                 <v-table>
                   <thead>
                     <tr>
+                      <th>Type</th>
                       <th>Description</th>
                       <th>Date</th>
                       <th>Items</th>
@@ -61,6 +74,14 @@
                   </thead>
                   <tbody>
                     <tr v-for="invoice in filteredInvoices" :key="invoice.id">
+                      <td>
+                        <v-chip
+                          :color="getOrderTypeColor(getOrderType(invoice))"
+                          size="small"
+                        >
+                          {{ getOrderType(invoice) }}
+                        </v-chip>
+                      </td>
                       <td>{{ invoice.description }}</td>
                       <td>{{ formatDate(invoice.created_at) }}</td>
                       <td>{{ invoice.hold_items?.length || 0 }} items</td>
@@ -125,6 +146,7 @@ import { usePosStore } from '../../../stores/pos-store'
 import { useCartStore } from '../../../stores/cart-store'
 import { storeToRefs } from 'pinia'
 import { logger } from '../../../utils/logger'
+import { ORDER_TYPES } from '../composables/useOrderType'
 
 const posStore = usePosStore()
 const cartStore = useCartStore()
@@ -133,21 +155,66 @@ const { holdInvoices } = storeToRefs(posStore)
 const dialog = ref(false)
 const deleteDialog = ref(false)
 const search = ref('')
+const selectedType = ref('ALL')
 const loading = ref(false)
 const loadingOrder = ref(null)
 const deletingOrder = ref(null)
 const selectedInvoice = ref(null)
 const isDeleting = ref(false)
 
-// Filter invoices based on search
-const filteredInvoices = computed(() => {
-  if (!search.value) return holdInvoices.value
+// Order type options for filter
+const orderTypes = [
+  { title: 'All Orders', value: 'ALL' },
+  { title: 'Dine In', value: ORDER_TYPES.DINE_IN },
+  { title: 'To Go', value: ORDER_TYPES.TO_GO },
+  { title: 'Delivery', value: ORDER_TYPES.DELIVERY },
+  { title: 'Pickup', value: ORDER_TYPES.PICKUP }
+]
 
-  const searchTerm = search.value.toLowerCase()
-  return holdInvoices.value.filter(invoice => 
-    invoice.description?.toLowerCase().includes(searchTerm) ||
-    invoice.id?.toString().includes(searchTerm)
-  )
+// Get order type from invoice
+const getOrderType = (invoice) => {
+  try {
+    if (invoice.notes) {
+      const orderInfo = JSON.parse(invoice.notes)
+      return orderInfo.type || 'UNKNOWN'
+    }
+  } catch (err) {
+    logger.error('Failed to parse order type:', err)
+  }
+  return 'UNKNOWN'
+}
+
+// Get color for order type chip
+const getOrderTypeColor = (type) => {
+  const colors = {
+    [ORDER_TYPES.DINE_IN]: 'primary',
+    [ORDER_TYPES.TO_GO]: 'success',
+    [ORDER_TYPES.DELIVERY]: 'warning',
+    [ORDER_TYPES.PICKUP]: 'info',
+    'UNKNOWN': 'grey'
+  }
+  return colors[type] || 'grey'
+}
+
+// Filter invoices based on search and type
+const filteredInvoices = computed(() => {
+  let filtered = holdInvoices.value
+
+  // Apply type filter
+  if (selectedType.value !== 'ALL') {
+    filtered = filtered.filter(invoice => getOrderType(invoice) === selectedType.value)
+  }
+
+  // Apply search filter
+  if (search.value) {
+    const searchTerm = search.value.toLowerCase()
+    filtered = filtered.filter(invoice => 
+      invoice.description?.toLowerCase().includes(searchTerm) ||
+      invoice.id?.toString().includes(searchTerm)
+    )
+  }
+
+  return filtered
 })
 
 // Format date
@@ -226,14 +293,14 @@ const deleteOrder = async () => {
     
     const response = await posStore.deleteHoldInvoice(selectedInvoice.value.id)
     
-    if (response.data?.success) {
+    if (response.success) {
       deleteDialog.value = false
       // Show success message
       window.toastr?.['success']('Order deleted successfully')
       // Refresh the list after deletion
       await fetchHoldInvoices()
     } else {
-      throw new Error(response.data?.message || 'Failed to delete order')
+      throw new Error(response.message || 'Failed to delete order')
     }
   } catch (error) {
     logger.error('Failed to delete order:', error)

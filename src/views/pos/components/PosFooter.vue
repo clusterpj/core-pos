@@ -5,27 +5,10 @@
       <!-- Order Type Actions -->
       <div class="d-flex gap-2">
         <held-orders-modal />
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-table"
-          @click="$emit('assign-table')"
-        >
-          Assign Table
-        </v-btn>
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-food-takeout-box"
-          @click="$emit('to-go')"
-        >
-          To Go
-        </v-btn>
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-notebook"
-          @click="$emit('open-tab')"
-        >
-          Open Tab
-        </v-btn>
+        <dine-in-modal :disabled="isDisabled" />
+        <to-go-modal :disabled="isDisabled" />
+        <delivery-modal :disabled="isDisabled" />
+        <pickup-modal :disabled="isDisabled" />
       </div>
 
       <!-- Order Actions -->
@@ -34,6 +17,7 @@
           color="success"
           prepend-icon="mdi-cash-register"
           @click="$emit('process-payment')"
+          :disabled="isDisabled"
         >
           Payment
         </v-btn>
@@ -41,6 +25,7 @@
           color="info"
           prepend-icon="mdi-printer"
           @click="$emit('print-order')"
+          :disabled="isDisabled"
         >
           Print
         </v-btn>
@@ -48,6 +33,7 @@
           color="warning"
           prepend-icon="mdi-send"
           @click="$emit('submit-order')"
+          :disabled="isDisabled"
         >
           Submit
         </v-btn>
@@ -57,12 +43,32 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import HeldOrdersModal from './HeldOrdersModal.vue'
+import DineInModal from './order-types/DineInModal.vue'
+import ToGoModal from './order-types/ToGoModal.vue'
+import DeliveryModal from './order-types/DeliveryModal.vue'
+import PickupModal from './order-types/PickupModal.vue'
+import { useCartStore } from '@/stores/cart-store'
+import { useCompanyStore } from '@/stores/company'
+
+const cartStore = useCartStore()
+const companyStore = useCompanyStore()
+
+// Use storeToRefs to maintain reactivity for store state
+const { items } = storeToRefs(cartStore)
+const { isConfigured } = storeToRefs(companyStore)
+
+// Compute if cart is empty based on items length
+const isEmpty = computed(() => items.value.length === 0)
+
+// Compute disabled state for all buttons
+const isDisabled = computed(() => {
+  return isEmpty.value || !isConfigured.value
+})
 
 defineEmits([
-  'assign-table',
-  'to-go',
-  'open-tab',
   'process-payment',
   'print-order',
   'submit-order'

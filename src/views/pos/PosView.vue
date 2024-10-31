@@ -1,8 +1,6 @@
 <!-- src/views/pos/PosView.vue -->
 <template>
   <v-layout class="pos-layout fill-height">
-    <!-- Top Bar -->
-
     <!-- Error Alert -->
     <v-alert
       v-if="error"
@@ -56,76 +54,13 @@
       </v-container>
     </v-main>
 
-    <!-- Bottom Bar -->
-    <v-footer app class="pos-footer px-2 py-2">
-      <v-row no-gutters>
-        <!-- Left side buttons -->
-        <v-col cols="12" sm="6" class="d-flex gap-2 mb-2 mb-sm-0">
-          <v-btn
-            prepend-icon="mdi-account-group"
-            color="primary"
-            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-            @click="assignTable"
-            :block="$vuetify.display.smAndDown"
-          >
-            <span class="d-none d-sm-block">Assign Table</span>
-            <span class="d-sm-none">Table</span>
-          </v-btn>
-          <v-btn
-            prepend-icon="mdi-shopping-outline"
-            color="success"
-            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-            @click="toGoOrder"
-            :block="$vuetify.display.smAndDown"
-          >
-            <span class="d-none d-sm-block">To-Go Order</span>
-            <span class="d-sm-none">To-Go</span>
-          </v-btn>
-          <v-btn
-            prepend-icon="mdi-notebook-outline"
-            color="secondary"
-            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-            @click="openTab"
-            :block="$vuetify.display.smAndDown"
-          >
-            <span class="d-none d-sm-block">Open Tab</span>
-            <span class="d-sm-none">Tab</span>
-          </v-btn>
-        </v-col>
+    <!-- Footer -->
+    <pos-footer
+      @process-payment="processPayment"
+      @print-order="printOrder"
+      @submit-order="submitOrder"
+    />
 
-        <!-- Right side buttons -->
-        <v-col cols="12" sm="6" class="d-flex gap-2 justify-end">
-          <held-orders-modal />
-          <v-btn
-            prepend-icon="mdi-cash-register"
-            color="success"
-            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-            @click="processPayment"
-            :block="$vuetify.display.smAndDown"
-          >
-            <span class="d-none d-sm-block">Pay</span>
-            <span class="d-sm-none">Pay</span>
-          </v-btn>
-          <v-btn
-            color="pink"
-            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-            @click="submitOrder"
-            :block="$vuetify.display.smAndDown"
-          >
-            <span class="d-none d-sm-block">Submit Order</span>
-            <span class="d-sm-none">Submit</span>
-          </v-btn>
-          <v-btn
-            icon="mdi-printer"
-            variant="outlined"
-            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-            @click="printOrder"
-          />
-        </v-col>
-      </v-row>
-    </v-footer>
-
-    <!-- Dialogs remain unchanged -->
     <!-- Reference Number Dialog -->
     <v-dialog v-model="showReferenceDialog" max-width="400">
       <v-card>
@@ -154,42 +89,6 @@
             @click="confirmHoldOrder"
           >
             Hold Order
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Table Assignment Dialog -->
-    <v-dialog v-model="showTableDialog" max-width="500">
-      <v-card>
-        <v-card-title>Assign Table</v-card-title>
-        <v-card-text>
-          <v-select
-            v-model="selectedTable"
-            label="Select Table"
-            :items="availableTables"
-            item-title="name"
-            item-value="id"
-            :loading="loadingTables"
-            density="compact"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="showTableDialog = false"
-          >
-            Cancel
-          </v-btn>
-          <v-btn
-            color="primary"
-            :loading="assigningTable"
-            :disabled="!selectedTable"
-            @click="confirmTableAssignment"
-          >
-            Assign
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -270,13 +169,12 @@
 </template>
 
 <script setup>
-// Script section remains unchanged
 import { ref, computed, onMounted } from 'vue'
 import { useCompanyStore } from '../../stores/company'
 import { useCartStore } from '../../stores/cart-store'
 import PosCart from './components/PosCart.vue'
 import PosProducts from './components/PosProducts.vue'
-import HeldOrdersModal from './components/HeldOrdersModal.vue'
+import PosFooter from './components/PosFooter.vue'
 import { posOperations } from '../../services/api/pos-operations'
 import { logger } from '../../utils/logger'
 
@@ -286,7 +184,6 @@ const cartStore = useCartStore()
 // UI state
 const loading = ref(false)
 const error = ref(null)
-const notifications = ref([])
 
 // Hold Order Dialog State
 const showReferenceDialog = ref(false)
@@ -296,13 +193,6 @@ const referenceNumber = ref('')
 const selectedCustomer = ref(companyStore.selectedCustomer)
 const selectedStore = ref(companyStore.selectedStore)
 const selectedCashier = ref(companyStore.selectedCashier)
-
-// Table Dialog State
-const showTableDialog = ref(false)
-const loadingTables = ref(false)
-const assigningTable = ref(false)
-const selectedTable = ref(null)
-const availableTables = ref([])
 
 // Payment Dialog State
 const showPaymentDialog = ref(false)
@@ -366,56 +256,6 @@ const handleCashierChange = async (cashierId) => {
   }
 }
 
-const handleSearch = (value) => {
-  searchQuery.value = value
-}
-
-const handleCategoryChange = (value) => {
-  selectedCategory.value = value
-}
-
-// Table Management
-const loadTables = async () => {
-  if (!companyStore.selectedCashier) return
-  
-  loadingTables.value = true
-  try {
-    const response = await posOperations.getTables(companyStore.selectedCashier)
-    availableTables.value = response || []
-    logger.info('Loaded tables:', availableTables.value)
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to load tables:', err)
-  } finally {
-    loadingTables.value = false
-  }
-}
-
-const assignTable = async () => {
-  showTableDialog.value = true
-  await loadTables()
-}
-
-const confirmTableAssignment = async () => {
-  if (!selectedTable.value) return
-  
-  assigningTable.value = true
-  try {
-    await posOperations.assignTable({
-      table_id: selectedTable.value,
-      cash_register_id: companyStore.selectedCashier
-    })
-    
-    showTableDialog.value = false
-    selectedTable.value = null
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to assign table:', err)
-  } finally {
-    assigningTable.value = false
-  }
-}
-
 // Hold Order Management
 const cancelHoldOrder = () => {
   showReferenceDialog.value = false
@@ -448,46 +288,6 @@ const createHoldInvoice = async () => {
     error.value = err.message
     logger.error('Failed to create hold invoice:', err)
     throw err
-  }
-}
-
-const toGoOrder = async () => {
-  try {
-    const orderData = {
-      items: cartStore.items,
-      total: cartStore.total,
-      subtotal: cartStore.subtotal,
-      tax: cartStore.taxAmount,
-      discount_type: cartStore.discountType,
-      discount: cartStore.discountValue,
-      discount_amount: cartStore.discountAmount
-    }
-    
-    await posOperations.submitOrder(orderData)
-    cartStore.clearCart()
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to create to-go order:', err)
-  }
-}
-
-const openTab = async () => {
-  try {
-    const orderData = {
-      items: cartStore.items,
-      total: cartStore.total,
-      subtotal: cartStore.subtotal,
-      tax: cartStore.taxAmount,
-      discount_type: cartStore.discountType,
-      discount: cartStore.discountValue,
-      discount_amount: cartStore.discountAmount
-    }
-    
-    await posOperations.submitOrder(orderData)
-    cartStore.clearCart()
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to open tab:', err)
   }
 }
 
@@ -613,19 +413,5 @@ onMounted(async () => {
 
 .border-r {
   border-right: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.pos-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
-  background: white;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-}
-
-@media (max-width: 600px) {
-  .pos-footer {
-    padding: 8px !important;
-  }
 }
 </style>
