@@ -27,14 +27,14 @@
                 icon="mdi-minus"
                 size="x-small"
                 variant="text"
-                @click="updateQuantity(item.id, item.quantity - 1, index)"
+                @click="emit('updateQuantity', item.id, Math.max(0, item.quantity - 1), index)"
               />
               {{ item.quantity }}
               <v-btn
                 icon="mdi-plus"
                 size="x-small"
                 variant="text"
-                @click="updateQuantity(item.id, item.quantity + 1, index)"
+                @click="emit('updateQuantity', item.id, item.quantity + 1, index)"
               />
             </div>
           </td>
@@ -47,14 +47,14 @@
                 size="x-small"
                 variant="text"
                 color="primary"
-                @click="$emit('edit', item, index)"
+                @click="emit('edit', item, index)"
               />
               <v-btn
                 icon="mdi-delete"
                 size="x-small"
                 variant="text"
                 color="error"
-                @click="$emit('remove', item.id, index)"
+                @click="emit('remove', item.id, index)"
               />
             </div>
           </td>
@@ -65,14 +65,14 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   items: {
     type: Array,
     required: true
   }
 })
 
-defineEmits(['edit', 'remove', 'updateQuantity'])
+const emit = defineEmits(['edit', 'remove', 'updateQuantity'])
 
 // Format price for display only, keeping raw values in the store
 const formatPrice = (price) => {
