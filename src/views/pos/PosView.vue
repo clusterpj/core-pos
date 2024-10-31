@@ -28,12 +28,28 @@
       <v-container fluid class="fill-height pa-0">
         <v-row no-gutters class="fill-height">
           <!-- Left Side - Cart -->
-          <v-col cols="12" md="4" class="pos-cart border-r">
+          <v-col 
+            cols="12" 
+            sm="12" 
+            md="5" 
+            lg="4" 
+            xl="3" 
+            class="pos-cart border-r"
+            :class="{'pos-cart-mobile': $vuetify.display.smAndDown}"
+          >
             <pos-cart />
           </v-col>
 
           <!-- Right Side - Products -->
-          <v-col cols="12" md="8" class="pos-products">
+          <v-col 
+            cols="12" 
+            sm="12" 
+            md="7" 
+            lg="8" 
+            xl="9" 
+            class="pos-products"
+            :class="{'pos-products-mobile': $vuetify.display.smAndDown}"
+          >
             <pos-products />
           </v-col>
         </v-row>
@@ -41,60 +57,75 @@
     </v-main>
 
     <!-- Bottom Bar -->
-    <v-footer app class="pos-footer d-flex justify-space-between px-4 py-2">
-      <div class="d-flex gap-2">
-        <v-btn
-          prepend-icon="mdi-account-group"
-          color="primary"
-          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-          @click="assignTable"
-        >
-          Assign Table
-        </v-btn>
-        <v-btn
-          prepend-icon="mdi-shopping-outline"
-          color="success"
-          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-          @click="toGoOrder"
-        >
-          To-Go Order
-        </v-btn>
-        <v-btn
-          prepend-icon="mdi-notebook-outline"
-          color="secondary"
-          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-          @click="openTab"
-        >
-          Open Tab
-        </v-btn>
-      </div>
+    <v-footer app class="pos-footer px-2 py-2">
+      <v-row no-gutters>
+        <!-- Left side buttons -->
+        <v-col cols="12" sm="6" class="d-flex gap-2 mb-2 mb-sm-0">
+          <v-btn
+            prepend-icon="mdi-account-group"
+            color="primary"
+            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
+            @click="assignTable"
+            :block="$vuetify.display.smAndDown"
+          >
+            <span class="d-none d-sm-block">Assign Table</span>
+            <span class="d-sm-none">Table</span>
+          </v-btn>
+          <v-btn
+            prepend-icon="mdi-shopping-outline"
+            color="success"
+            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
+            @click="toGoOrder"
+            :block="$vuetify.display.smAndDown"
+          >
+            <span class="d-none d-sm-block">To-Go Order</span>
+            <span class="d-sm-none">To-Go</span>
+          </v-btn>
+          <v-btn
+            prepend-icon="mdi-notebook-outline"
+            color="secondary"
+            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
+            @click="openTab"
+            :block="$vuetify.display.smAndDown"
+          >
+            <span class="d-none d-sm-block">Open Tab</span>
+            <span class="d-sm-none">Tab</span>
+          </v-btn>
+        </v-col>
 
-      <div class="d-flex gap-2">
-        <held-orders-modal />
-        <v-btn
-          prepend-icon="mdi-cash-register"
-          color="success"
-          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-          @click="processPayment"
-        >
-          Pay
-        </v-btn>
-        <v-btn
-          color="pink"
-          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-          @click="submitOrder"
-        >
-          Submit Order
-        </v-btn>
-        <v-btn
-          icon="mdi-printer"
-          variant="outlined"
-          :disabled="!companyStore.isConfigured || cartStore.isEmpty"
-          @click="printOrder"
-        />
-      </div>
+        <!-- Right side buttons -->
+        <v-col cols="12" sm="6" class="d-flex gap-2 justify-end">
+          <held-orders-modal />
+          <v-btn
+            prepend-icon="mdi-cash-register"
+            color="success"
+            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
+            @click="processPayment"
+            :block="$vuetify.display.smAndDown"
+          >
+            <span class="d-none d-sm-block">Pay</span>
+            <span class="d-sm-none">Pay</span>
+          </v-btn>
+          <v-btn
+            color="pink"
+            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
+            @click="submitOrder"
+            :block="$vuetify.display.smAndDown"
+          >
+            <span class="d-none d-sm-block">Submit Order</span>
+            <span class="d-sm-none">Submit</span>
+          </v-btn>
+          <v-btn
+            icon="mdi-printer"
+            variant="outlined"
+            :disabled="!companyStore.isConfigured || cartStore.isEmpty"
+            @click="printOrder"
+          />
+        </v-col>
+      </v-row>
     </v-footer>
 
+    <!-- Dialogs remain unchanged -->
     <!-- Reference Number Dialog -->
     <v-dialog v-model="showReferenceDialog" max-width="400">
       <v-card>
@@ -239,6 +270,7 @@
 </template>
 
 <script setup>
+// Script section remains unchanged
 import { ref, computed, onMounted } from 'vue'
 import { useCompanyStore } from '../../stores/company'
 import { useCartStore } from '../../stores/cart-store'
@@ -557,6 +589,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
 .pos-main {
@@ -569,7 +602,30 @@ onMounted(async () => {
   overflow-y: auto;
 }
 
+.pos-cart-mobile {
+  height: 50vh;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.pos-products-mobile {
+  height: 50vh;
+}
+
 .border-r {
   border-right: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.pos-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  background: white;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 600px) {
+  .pos-footer {
+    padding: 8px !important;
+  }
 }
 </style>
