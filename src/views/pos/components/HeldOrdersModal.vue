@@ -63,7 +63,7 @@
                     <tr v-for="invoice in filteredInvoices" :key="invoice.id">
                       <td>{{ invoice.description }}</td>
                       <td>{{ formatDate(invoice.created_at) }}</td>
-                      <td>{{ invoice.hold_items?.length || 0 }} items</td>
+                      <td>{{ invoice.items?.length || 0 }} items</td>
                       <td>{{ formatCurrency(invoice.total) }}</td>
                       <td>
                         <v-btn
@@ -157,10 +157,11 @@ const formatDate = (date) => {
 
 // Format currency
 const formatCurrency = (amount) => {
+  if (!amount) return '$0.00'
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD'
-  }).format(amount)
+  }).format(Number(amount))
 }
 
 // Load order
@@ -168,22 +169,33 @@ const loadOrder = async (id) => {
   try {
     loadingOrder.value = id
     const response = await posStore.loadHoldInvoice(id)
+    logger.debug('Load order response:', response)
     
-    if (response.success && response.hold_invoice) {
+    if (response?.data?.success && response.data.hold_invoice) {
       // Clear current cart
       cartStore.clearCart()
       
+      const holdInvoice = response.data.hold_invoice
+      
       // Load items into cart with all original properties
-      response.hold_invoice.hold_items?.forEach(item => {
-        cartStore.addItem(item, item.quantity, item.modifications || [])
+      holdInvoice.items?.forEach(item => {
+        cartStore.addItem({
+          ...item,
+          id: item.item_id,
+          price: Number(item.price),
+          sale_price: Number(item.price)
+        }, Number(item.quantity), item.modifications || [])
       })
 
       // Set other cart properties
-      if (response.hold_invoice.discount_type && response.hold_invoice.discount) {
-        cartStore.setDiscount(response.hold_invoice.discount_type, response.hold_invoice.discount)
+      if (holdInvoice.discount_type && holdInvoice.discount) {
+        cartStore.setDiscount(
+          holdInvoice.discount_type,
+          Number(holdInvoice.discount)
+        )
       }
-      if (response.hold_invoice.notes) {
-        cartStore.setNotes(response.hold_invoice.notes)
+      if (holdInvoice.notes) {
+        cartStore.setNotes(holdInvoice.notes)
       }
 
       dialog.value = false
@@ -209,6 +221,8 @@ const deleteOrder = async () => {
     deletingOrder.value = selectedInvoice.value.id
     await posStore.deleteHoldInvoice(selectedInvoice.value.id)
     deleteDialog.value = false
+    // Refresh the list after deletion
+    await fetchHoldInvoices()
   } catch (error) {
     logger.error('Failed to delete order:', error)
   } finally {
@@ -231,14 +245,15 @@ const fetchHoldInvoices = async () => {
 }
 
 // Watch for dialog open to refresh the list
-watch(dialog, (newValue) => {
+watch(dialog, async (newValue) => {
   if (newValue) {
-    fetchHoldInvoices()
+    await fetchHoldInvoices()
   }
 })
 
-onMounted(() => {
-  fetchHoldInvoices()
+// Initial fetch
+onMounted(async () => {
+  await fetchHoldInvoices()
 })
 </script>
 

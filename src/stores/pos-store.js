@@ -1,4 +1,3 @@
-// src/stores/pos-store.js
 import { defineStore } from 'pinia'
 import { posApi } from '../services/api/pos-api'
 import { useCompanyStore } from './company'
@@ -178,180 +177,6 @@ export const usePosStore = defineStore('pos', {
       }
     },
 
-    async createItem(itemData) {
-      logger.startGroup('POS Store: Create Item')
-      this.loading.itemOperation = true
-      this.error = null
-    
-      try {
-        logger.debug('Creating item with data:', itemData)
-    
-        const response = await apiClient.post('/v1/items', itemData, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        })
-    
-        logger.debug('Raw API response:', response)
-        logger.info('Item created successfully:', response.data)
-    
-        await this.fetchProducts()
-        return response.data
-      } catch (error) {
-        logger.error('Create item error:', {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status,
-          headers: error.response?.headers
-        })
-        this.error = error.message || 'Failed to create item'
-        throw error
-      } finally {
-        this.loading.itemOperation = false
-        logger.endGroup()
-      }
-    },
-
-    async updateItem(itemId, itemData) {
-      logger.startGroup('POS Store: Update Item')
-      this.loading.itemOperation = true
-      this.error = null
-    
-      try {
-        const response = await apiClient.put(`/v1/items/${itemId}`, itemData, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        })
-    
-        logger.info('Item updated successfully:', response.data)
-        await this.fetchProducts()
-        return response.data
-      } catch (error) {
-        logger.error('Failed to update item:', error)
-        this.error = error.message || 'Failed to update item'
-        throw error
-      } finally {
-        this.loading.itemOperation = false
-        logger.endGroup()
-      }
-    },
-
-    async uploadItemImage(itemId, imageFile) {
-      logger.startGroup('POS Store: Upload Item Image')
-      this.loading.itemOperation = true
-      this.error = null
-    
-      try {
-        const formData = new FormData()
-        formData.append('image', imageFile)
-    
-        const response = await apiClient.post(`/v1/items/${itemId}/image`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Accept': 'application/json'
-          }
-        })
-    
-        logger.info('Image uploaded successfully:', response.data)
-        await this.fetchProducts()
-        return response.data
-      } catch (error) {
-        logger.error('Failed to upload image:', error)
-        this.error = error.message || 'Failed to upload image'
-        throw error
-      } finally {
-        this.loading.itemOperation = false
-        logger.endGroup()
-      }
-    },
-
-// In pos-store.js
-async uploadItemPicture(pictureData) {
-  logger.startGroup('POS Store: Upload Item Picture')
-  this.loading.itemOperation = true
-  this.error = null
-
-  try {
-    logger.debug('Making upload request:', {
-      endpoint: '/v1/items/upload-picture',
-      dataPresent: !!pictureData.picture
-    })
-
-    const response = await apiClient.post('/v1/items/upload-picture', pictureData)
-    
-    logger.debug('Upload response received:', {
-      status: response.status,
-      success: response.data?.success
-    })
-
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Failed to upload image')
-    }
-
-    logger.info('Picture uploaded successfully')
-    await this.fetchProducts()
-    return response.data
-
-  } catch (error) {
-    logger.error('Upload picture error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    })
-    throw error
-  } finally {
-    this.loading.itemOperation = false
-    logger.endGroup()
-  }
-},
-
-    async deleteItem(itemId) {
-      logger.startGroup('POS Store: Delete Item')
-      this.loading.itemOperation = true
-      this.error = null
-
-      try {
-        const response = await apiClient.post('/v1/items/delete', {
-          ids: [itemId]
-        })
-        logger.info('Item deleted successfully:', response.data)
-        await this.fetchProducts()
-        return response.data
-      } catch (error) {
-        logger.error('Failed to delete item:', error)
-        this.error = error.message || 'Failed to delete item'
-        throw error
-      } finally {
-        this.loading.itemOperation = false
-        logger.endGroup()
-      }
-    },
-
-    async deleteMultipleItems(itemIds) {
-      logger.startGroup('POS Store: Delete Multiple Items')
-      this.loading.itemOperation = true
-      this.error = null
-
-      try {
-        const response = await apiClient.post('/v1/items/delete', {
-          ids: itemIds
-        })
-        logger.info('Items deleted successfully:', response.data)
-        await this.fetchProducts()
-        return response.data
-      } catch (error) {
-        logger.error('Failed to delete items:', error)
-        this.error = error.message || 'Failed to delete items'
-        throw error
-      } finally {
-        this.loading.itemOperation = false
-        logger.endGroup()
-      }
-    },
-
     // Hold Invoice Operations
     async fetchHoldInvoices() {
       logger.startGroup('POS Store: Fetch Hold Invoices')
@@ -361,8 +186,10 @@ async uploadItemPicture(pictureData) {
       try {
         const response = await posApi.holdInvoice.getAll()
         if (response.data?.success) {
+          // Extract hold invoices from the response data
           this.holdInvoices = response.data.hold_invoices?.data || []
           logger.info(`Loaded ${this.holdInvoices.length} hold invoices`)
+          logger.debug('Hold invoices:', this.holdInvoices)
         } else {
           logger.warn('Failed to load hold invoices', response.error)
           this.holdInvoices = []
