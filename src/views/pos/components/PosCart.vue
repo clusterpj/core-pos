@@ -23,117 +23,23 @@
     </v-alert>
 
     <!-- Cart Items -->
-    <div v-else class="cart-items mb-4">
-      <v-table density="compact">
-        <thead>
-          <tr>
-            <th>Products</th>
-            <th class="text-center">Qty</th>
-            <th class="text-right">Price</th>
-            <th class="text-right">Subtotal</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(item, index) in cartStore.items" :key="index">
-            <td>
-              {{ item.name }}
-              <div v-if="item.modifications?.length > 0" class="text-caption text-grey">
-                <div v-for="(mod, i) in item.modifications" :key="i">
-                  - {{ mod }}
-                </div>
-              </div>
-            </td>
-            <td class="text-center">
-              <div class="d-flex align-center justify-center">
-                <v-btn
-                  icon="mdi-minus"
-                  size="x-small"
-                  variant="text"
-                  @click="updateQuantity(item.id, item.quantity - 1, index)"
-                />
-                {{ item.quantity }}
-                <v-btn
-                  icon="mdi-plus"
-                  size="x-small"
-                  variant="text"
-                  @click="updateQuantity(item.id, item.quantity + 1, index)"
-                />
-              </div>
-            </td>
-            <td class="text-right">${{ formatPrice(item.price) }}</td>
-            <td class="text-right">${{ formatPrice(item.price * item.quantity) }}</td>
-            <td>
-              <div class="d-flex gap-1">
-                <v-btn
-                  icon="mdi-pencil"
-                  size="x-small"
-                  variant="text"
-                  color="primary"
-                  @click="editItem(item, index)"
-                />
-                <v-btn
-                  icon="mdi-delete"
-                  size="x-small"
-                  variant="text"
-                  color="error"
-                  @click="removeItem(item.id, index)"
-                />
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </v-table>
-    </div>
+    <template v-else>
+      <cart-item-list
+        :items="cartStore.items"
+        @edit="editItem"
+        @remove="removeItem"
+        @update-quantity="updateQuantity"
+      />
+    </template>
 
     <!-- Order Summary -->
-    <div class="order-summary">
-      <div class="d-flex justify-space-between mb-2">
-        <span>Subtotal:</span>
-        <span>${{ formatPrice(cartStore.subtotal) }}</span>
-      </div>
-      
-      <div class="d-flex align-center justify-space-between mb-2">
-        <div class="d-flex align-center">
-          <span class="mr-2">Discount:</span>
-          <v-select
-            v-model="discountType"
-            :items="['%', '$']"
-            density="compact"
-            hide-details
-            class="discount-type-select"
-            style="max-width: 80px"
-            @update:model-value="updateDiscount"
-          />
-        </div>
-        <v-text-field
-          v-model="discountValue"
-          density="compact"
-          hide-details
-          type="number"
-          style="max-width: 100px"
-          class="text-right"
-          @update:model-value="updateDiscount"
-        />
-      </div>
-
-      <div class="d-flex justify-space-between mb-2 success--text">
-        <span>Discount Amount:</span>
-        <span>-${{ formatPrice(cartStore.discountAmount) }}</span>
-      </div>
-
-      <div class="d-flex justify-space-between mb-2">
-        <span>Tax ({{ cartStore.taxRate * 100 }}%):</span>
-        <span>${{ formatPrice(cartStore.taxAmount) }}</span>
-      </div>
-
-      <v-divider class="my-2" />
-
-      <div class="d-flex justify-space-between text-h6">
-        <span>Total:</span>
-        <span>${{ formatPrice(cartStore.total) }}</span>
-      </div>
-    </div>
+    <cart-summary
+      :subtotal="cartStore.subtotal"
+      :discount-amount="cartStore.discountAmount"
+      :tax-rate="cartStore.taxRate"
+      :tax-amount="cartStore.taxAmount"
+      :total="cartStore.total"
+    />
 
     <!-- Edit Item Dialog -->
     <v-dialog v-model="showEditDialog" max-width="500">
@@ -147,7 +53,7 @@
           <!-- Quick Modifications -->
           <div class="mb-4">
             <div class="text-subtitle-2 mb-2">Quick Modifications</div>
-            <v-chip-group v-model="selectedQuickMods" multiple>
+            <v-chip-group v-model="selectedQuickMods" multiple @update:modelValue="handleQuickModsChange">
               <v-chip
                 v-for="mod in commonModifications"
                 :key="mod"
@@ -261,34 +167,31 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useCartStore } from '../../../stores/cart-store'
-import { logger } from '../../../utils/logger'
+import { ref, computed } from 'vue'
+import { useCartStore } from '@/stores/cart-store'
+import { useCartModifications } from '../composables/useCartModifications'
+import CartItemList from './cart/CartItemList.vue'
+import CartSummary from './cart/CartSummary.vue'
 
 const cartStore = useCartStore()
 
-// Local state for discount inputs
-const discountType = ref(cartStore.$state.discountType)
-const discountValue = ref(cartStore.$state.discountValue)
-
-// Edit dialog state
+// Local state
 const showEditDialog = ref(false)
 const editingItem = ref(null)
 const editingIndex = ref(null)
-const newModification = ref('')
-const currentModifications = ref([])
-const selectedQuickMods = ref([])
 const splitQuantity = ref(1)
 
-// Common modifications that can be quickly added
-const commonModifications = [
-  'No onions',
-  'No tomato',
-  'Extra cheese',
-  'No sauce',
-  'Spicy',
-  'Well done'
-]
+// Composables
+const {
+  currentModifications,
+  selectedQuickMods,
+  newModification,
+  commonModifications,
+  addModification,
+  removeModification,
+  resetModifications,
+  initializeModifications
+} = useCartModifications()
 
 // Computed
 const canSplit = computed(() => {
@@ -297,36 +200,19 @@ const canSplit = computed(() => {
          splitQuantity.value < editingItem.value.quantity
 })
 
-// Format price from cents to dollars
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  const priceInDollars = Number(price) / 100
-  return priceInDollars.toFixed(2)
+// Methods
+const handleQuickModsChange = (selectedIndices) => {
+  // Clear current modifications
+  currentModifications.value = []
+  
+  // Add selected quick modifications
+  selectedIndices.forEach(index => {
+    if (index >= 0 && index < commonModifications.length) {
+      currentModifications.value.push(commonModifications[index])
+    }
+  })
 }
 
-// Watch for external discount changes
-watch(() => cartStore.$state.discountType, (newType) => {
-  discountType.value = newType
-})
-
-watch(() => cartStore.$state.discountValue, (newValue) => {
-  discountValue.value = newValue
-})
-
-// Watch for quick modification changes
-watch(selectedQuickMods, (newMods) => {
-  // Add only new modifications that aren't already in currentModifications
-  const modsToAdd = newMods
-    .map(index => commonModifications[index])
-    .filter(mod => !currentModifications.value.includes(mod))
-  
-  currentModifications.value = [
-    ...currentModifications.value,
-    ...modsToAdd
-  ]
-})
-
-// Methods
 const clearOrder = () => {
   cartStore.clearCart()
 }
@@ -339,33 +225,11 @@ const removeItem = (itemId, index) => {
   cartStore.removeItem(itemId, index)
 }
 
-const updateDiscount = () => {
-  cartStore.setDiscount(discountType.value, Number(discountValue.value))
-}
-
 const editItem = (item, index) => {
   editingItem.value = { ...item }
   editingIndex.value = index
-  currentModifications.value = [...(item.modifications || [])]
-  selectedQuickMods.value = currentModifications.value
-    .map(mod => commonModifications.indexOf(mod))
-    .filter(index => index !== -1)
+  initializeModifications(item.modifications)
   showEditDialog.value = true
-}
-
-const addModification = () => {
-  if (newModification.value && !currentModifications.value.includes(newModification.value)) {
-    currentModifications.value.push(newModification.value)
-    newModification.value = ''
-  }
-}
-
-const removeModification = (index) => {
-  currentModifications.value.splice(index, 1)
-  // Update quick mods selection
-  selectedQuickMods.value = currentModifications.value
-    .map(mod => commonModifications.indexOf(mod))
-    .filter(index => index !== -1)
 }
 
 const splitItem = () => {
@@ -388,9 +252,7 @@ const closeEditDialog = () => {
   showEditDialog.value = false
   editingItem.value = null
   editingIndex.value = null
-  currentModifications.value = []
-  selectedQuickMods.value = []
-  newModification.value = ''
+  resetModifications()
   splitQuantity.value = 1
 }
 </script>
@@ -410,9 +272,5 @@ const closeEditDialog = () => {
 .order-summary {
   margin-top: auto;
   padding-top: 1rem;
-}
-
-.discount-type-select :deep(.v-field__input) {
-  padding: 0;
 }
 </style>

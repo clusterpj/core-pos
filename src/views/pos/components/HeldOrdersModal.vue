@@ -1,3 +1,4 @@
+<!-- src/views/pos/components/HeldOrdersModal.vue -->
 <template>
   <v-dialog v-model="dialog" max-width="800">
     <template v-slot:activator="{ props }">
@@ -119,10 +120,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { usePosStore } from '@/stores/pos-store'
-import { useCartStore } from '@/stores/cart-store'
+import { ref, computed, onMounted, watch } from 'vue'
+import { usePosStore } from '../../../stores/pos-store'
+import { useCartStore } from '../../../stores/cart-store'
 import { storeToRefs } from 'pinia'
+import { logger } from '../../../utils/logger'
 
 const posStore = usePosStore()
 const cartStore = useCartStore()
@@ -165,10 +167,34 @@ const formatCurrency = (amount) => {
 const loadOrder = async (id) => {
   try {
     loadingOrder.value = id
-    await posStore.loadHoldInvoice(id)
-    dialog.value = false
+    const response = await posStore.loadHoldInvoice(id)
+    
+    if (response.success && response.hold_invoice) {
+      // Clear current cart
+      cartStore.clearCart()
+      
+      // Load items into cart
+      response.hold_invoice.hold_items?.forEach(item => {
+        cartStore.addItem({
+          id: item.item_id,
+          name: item.name,
+          price: item.price,
+          sale_price: item.price
+        }, item.quantity, item.modifications || [])
+      })
+
+      // Set other cart properties
+      if (response.hold_invoice.discount_type && response.hold_invoice.discount) {
+        cartStore.setDiscount(response.hold_invoice.discount_type, response.hold_invoice.discount)
+      }
+      if (response.hold_invoice.notes) {
+        cartStore.setNotes(response.hold_invoice.notes)
+      }
+
+      dialog.value = false
+    }
   } catch (error) {
-    console.error('Failed to load order:', error)
+    logger.error('Failed to load order:', error)
   } finally {
     loadingOrder.value = null
   }
@@ -189,7 +215,7 @@ const deleteOrder = async () => {
     await posStore.deleteHoldInvoice(selectedInvoice.value.id)
     deleteDialog.value = false
   } catch (error) {
-    console.error('Failed to delete order:', error)
+    logger.error('Failed to delete order:', error)
   } finally {
     isDeleting.value = false
     deletingOrder.value = null
@@ -203,11 +229,18 @@ const fetchHoldInvoices = async () => {
     loading.value = true
     await posStore.fetchHoldInvoices()
   } catch (error) {
-    console.error('Failed to fetch hold invoices:', error)
+    logger.error('Failed to fetch hold invoices:', error)
   } finally {
     loading.value = false
   }
 }
+
+// Watch for dialog open to refresh the list
+watch(dialog, (newValue) => {
+  if (newValue) {
+    fetchHoldInvoices()
+  }
+})
 
 onMounted(() => {
   fetchHoldInvoices()

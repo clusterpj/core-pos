@@ -93,6 +93,35 @@ export const getItems = async (params = {}) => {
   }
 }
 
+export const deleteItems = async (itemIds) => {
+  logger.startGroup('POS API: Delete Items')
+  try {
+    const endpoint = `${getApiEndpoint('pos.items')}/delete`
+    logger.info('Deleting items at endpoint:', endpoint)
+    
+    const response = await apiClient.post(endpoint, { ids: itemIds })
+    logger.http('POST', endpoint, { ids: itemIds }, response)
+
+    if (!response.data) {
+      throw new Error('Invalid response format: missing data')
+    }
+
+    return {
+      success: true,
+      data: response.data
+    }
+  } catch (error) {
+    logger.error('Failed to delete items', {
+      error,
+      itemIds,
+      endpoint: getApiEndpoint('pos.items')
+    })
+    throw error
+  } finally {
+    logger.endGroup()
+  }
+}
+
 export const getItemCategories = async () => {
   logger.startGroup('POS API: Get Item Categories')
   try {
@@ -191,6 +220,7 @@ export const posApi = {
   getCashiers,
   getEmployees,
   getItems,
+  deleteItems,
   getItemCategories,
   getStores,
   holdInvoice: holdInvoiceOperations

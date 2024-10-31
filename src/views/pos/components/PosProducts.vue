@@ -1,3 +1,4 @@
+<!-- src/views/pos/components/PosProducts.vue -->
 <template>
   <div class="pos-products-container pa-4">
     <!-- System Prerequisites Check -->
@@ -11,35 +12,13 @@
 
     <template v-else>
       <!-- Search Bar -->
-      <div class="d-flex gap-2 mb-4">
-        <v-text-field
-          v-model="posStore.searchQuery"
-          prepend-inner-icon="mdi-magnify"
-          label="Search items"
-          density="compact"
-          hide-details
-          class="flex-grow-1"
-          @update:model-value="handleSearch"
-        />
-      </div>
+      <product-search @search="handleSearch" />
 
       <!-- Categories -->
-      <v-tabs
-        v-model="selectedCategory"
-        density="compact"
-        class="mb-4"
-        show-arrows
-        @update:model-value="handleCategoryChange"
-      >
-        <v-tab value="all">All Items</v-tab>
-        <v-tab
-          v-for="category in posStore.categoriesForDisplay"
-          :key="category.id"
-          :value="category.id"
-        >
-          {{ category.name }}
-        </v-tab>
-      </v-tabs>
+      <category-tabs
+        :categories="posStore.categoriesForDisplay"
+        @change="handleCategoryChange"
+      />
 
       <!-- Loading State -->
       <div v-if="posStore.loading.products" class="d-flex justify-center ma-4">
@@ -56,67 +35,22 @@
       </v-alert>
 
       <!-- Products Grid -->
-      <v-row v-else-if="posStore.products.length > 0">
-        <v-col
-          v-for="item in posStore.products"
-          :key="item.id"
-          cols="12"
-          sm="6"
-          md="4"
-          lg="3"
+      <template v-else>
+        <product-grid
+          v-if="posStore.products.length > 0"
+          :products="posStore.products"
+          @select="quickAdd"
+        />
+
+        <!-- Empty State -->
+        <v-alert
+          v-else
+          type="info"
+          class="ma-4"
         >
-          <v-card
-            :disabled="item.stock <= 0"
-            elevation="2"
-            class="product-card h-100"
-            @click="quickAdd(item)"
-          >
-            <!-- Item Image -->
-            <v-img
-              :src="getImageUrl(item)"
-              height="200"
-              cover
-              class="bg-grey-lighten-2"
-            >
-              <template v-slot:placeholder>
-                <div class="d-flex align-center justify-center fill-height">
-                  <v-progress-circular
-                    color="grey-lighten-4"
-                    indeterminate
-                  />
-                </div>
-              </template>
-            </v-img>
-              
-            <v-card-title class="text-subtitle-1 py-2">
-              {{ item.name }}
-            </v-card-title>
-
-            <v-card-text class="py-2">
-              <div class="d-flex justify-space-between align-center">
-                <span class="text-primary text-h6">
-                  ${{ formatPrice(item.sale_price || item.price) }}
-                </span>
-                <v-chip
-                  size="small"
-                  :color="item.stock > 0 ? 'success' : 'error'"
-                >
-                  {{ item.stock > 0 ? 'In Stock' : 'Out of Stock' }}
-                </v-chip>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Empty State -->
-      <v-alert
-        v-else
-        type="info"
-        class="ma-4"
-      >
-        No items found
-      </v-alert>
+          No items found
+        </v-alert>
+      </template>
 
       <!-- Pagination -->
       <div 
@@ -134,34 +68,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { usePosStore } from '../../../stores/pos-store'
-import { useCartStore } from '../../../stores/cart-store'
-import { logger } from '../../../utils/logger'
+import { onMounted } from 'vue'
+import { usePosStore } from '@/stores/pos-store'
+import { useCartStore } from '@/stores/cart-store'
+import { logger } from '@/utils/logger'
+
+import ProductSearch from './products/ProductSearch.vue'
+import CategoryTabs from './products/CategoryTabs.vue'
+import ProductGrid from './products/ProductGrid.vue'
 
 const posStore = usePosStore()
 const cartStore = useCartStore()
-
-// Local state
-const selectedCategory = ref(posStore.selectedCategory)
-
-// Format price from cents to dollars
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  const priceInDollars = Number(price) / 100
-  return priceInDollars.toFixed(2)
-}
-
-// Get proper image URL
-const getImageUrl = (item) => {
-  if (item.media && item.media.length > 0 && item.media[0].original_url) {
-    return item.media[0].original_url
-  }
-  if (item.picture) {
-    return item.picture
-  }
-  return '/api/placeholder/400/320'
-}
 
 onMounted(async () => {
   logger.startGroup('POS Products Component: Mount')
@@ -174,9 +91,10 @@ onMounted(async () => {
   }
 })
 
-const handleSearch = async () => {
+const handleSearch = async (query) => {
   logger.startGroup('POS Products: Search')
   try {
+    posStore.searchQuery = query
     await posStore.fetchProducts()
   } catch (err) {
     logger.error('Search failed', err)
@@ -196,7 +114,6 @@ const handleCategoryChange = async (categoryId) => {
   }
 }
 
-// Product Selection and Cart Operations
 const quickAdd = (product) => {
   if (product.stock <= 0) return
   
@@ -209,14 +126,5 @@ const quickAdd = (product) => {
 .pos-products-container {
   height: 100%;
   overflow-y: auto;
-}
-
-.product-card {
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.product-card:not(:disabled):hover {
-  transform: translateY(-2px);
 }
 </style>
