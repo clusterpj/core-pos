@@ -72,7 +72,7 @@ export const posOperations = {
   async getHoldInvoices() {
     logger.startGroup('POS Operations: Get Hold Invoices')
     try {
-      const response = await apiClient.get('/v1/core-pos/hold-invoices')
+      const response = await apiClient.get('/api/v1/core-pos/hold-invoices/')
       
       if (!response.data) {
         throw new Error('Invalid API response: missing data')
@@ -91,7 +91,7 @@ export const posOperations = {
   async getHoldInvoice(id) {
     logger.startGroup('POS Operations: Get Hold Invoice')
     try {
-      const response = await apiClient.get(`/v1/core-pos/hold-invoices/${id}`)
+      const response = await apiClient.get(`/api/v1/core-pos/hold-invoices/${id}`)
       
       if (!response.data) {
         throw new Error('Invalid API response: missing data')
@@ -110,7 +110,7 @@ export const posOperations = {
   async deleteHoldInvoice(id) {
     logger.startGroup('POS Operations: Delete Hold Invoice')
     try {
-      const response = await apiClient.delete(`/v1/core-pos/hold-invoices/${id}`)
+      const response = await apiClient.delete(`/api/v1/core-pos/hold-invoices/${id}`)
       
       if (!response.data) {
         throw new Error('Invalid API response: missing data')
