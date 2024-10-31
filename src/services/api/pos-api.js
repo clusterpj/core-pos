@@ -251,10 +251,10 @@ export const holdInvoiceOperations = {
   async delete(id) {
     logger.startGroup('POS API: Delete Hold Invoice')
     try {
-      const endpoint = `${getApiEndpoint('pos.holdInvoices')}/${id}`
+      const endpoint = '/v1/core-pos/hold-invoice/delete'
       logger.info('Deleting hold invoice at endpoint:', endpoint)
 
-      const response = await apiClient.delete(endpoint)
+      const response = await apiClient.post(endpoint, { id })
       logger.debug('Delete response:', response.data)
 
       if (!response.data) {
@@ -267,7 +267,7 @@ export const holdInvoiceOperations = {
       logger.error('Failed to delete hold invoice', {
         error,
         id,
-        endpoint: getApiEndpoint('pos.holdInvoices')
+        endpoint: '/v1/core-pos/hold-invoice/delete'
       })
       throw error
     } finally {

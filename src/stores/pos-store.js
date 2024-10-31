@@ -185,18 +185,15 @@ export const usePosStore = defineStore('pos', {
       
       try {
         const response = await posApi.holdInvoice.getAll()
-        if (response.data?.success) {
-          // Extract hold invoices from the response data
-          this.holdInvoices = response.data.hold_invoices?.data || []
+        if (response.data?.success && response.data.hold_invoices?.data) {
+          this.holdInvoices = response.data.hold_invoices.data
           logger.info(`Loaded ${this.holdInvoices.length} hold invoices`)
-          logger.debug('Hold invoices:', this.holdInvoices)
         } else {
-          logger.warn('Failed to load hold invoices', response.error)
-          this.holdInvoices = []
+          throw new Error(response.data?.message || 'Failed to load hold invoices')
         }
       } catch (error) {
         logger.error('Failed to fetch hold invoices', error)
-        this.error = error.message || 'Failed to load hold invoices'
+        this.error = error.message
         this.holdInvoices = []
       } finally {
         this.loading.holdInvoices = false
@@ -255,21 +252,23 @@ export const usePosStore = defineStore('pos', {
       this.error = null
       
       try {
-        const response = await posApi.holdInvoice.delete(id)
+        const response = await apiClient.post('/v1/core-pos/hold-invoice/delete', { id })
         if (response.data?.success) {
-          await this.fetchHoldInvoices()
-          return response.data
+          // Remove the deleted invoice from the local state
+          this.holdInvoices = this.holdInvoices.filter(invoice => invoice.id !== id)
+          return { success: true }
         } else {
           throw new Error(response.data?.message || 'Failed to delete hold invoice')
         }
       } catch (error) {
         logger.error('Failed to delete hold invoice', error)
-        this.error = error.message || 'Failed to delete hold invoice'
+        this.error = error.message
         throw error
       } finally {
         this.loading.holdInvoices = false
         logger.endGroup()
       }
+  
     },
 
     setCategory(categoryId) {

@@ -18,7 +18,10 @@ export const useCartStore = defineStore('cart', {
 
   getters: {
     subtotal: (state) => {
-      return state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+      return state.items.reduce((sum, item) => {
+        const itemTotal = item.price * item.quantity
+        return sum + itemTotal
+      }, 0)
     },
 
     discountAmount: (state) => {
@@ -44,7 +47,7 @@ export const useCartStore = defineStore('cart', {
     },
 
     total: (state) => {
-      return state.taxableAmount + state.taxAmount + state.tipAmount
+      return Math.round(state.taxableAmount + state.taxAmount + state.tipAmount)
     },
 
     itemCount: (state) => {
@@ -60,18 +63,28 @@ export const useCartStore = defineStore('cart', {
     addItem(product, quantity = 1, modifications = []) {
       logger.info('Adding item to cart:', { product, quantity, modifications })
       
+      // Convert price from cents to dollars if it's a new product (not from hold orders)
+      // We can detect if it's from a hold order by checking if the price is already in dollars
+      const price = product.price > 100 ? product.price / 100 : product.price
+      
+      logger.debug('Price conversion:', {
+        originalPrice: product.price,
+        convertedPrice: price
+      })
+      
       // When adding a new item with modifications, always create a new entry
       if (modifications && modifications.length > 0) {
         this.items.push({
-          ...product, // Keep all original product properties
+          ...product,
+          price, // Use converted price
           quantity,
           modifications,
-          total: product.price * quantity,
-          sub_total: product.price * quantity,
+          total: price * quantity,
+          sub_total: price * quantity,
           discount_type: 'fixed',
           discount: 0,
           discount_val: 0,
-          item_id: product.id // Required by API
+          item_id: product.id
         })
         logger.info('Added new item with modifications')
         return
@@ -90,15 +103,16 @@ export const useCartStore = defineStore('cart', {
         logger.info('Updated existing item quantity:', existingItem)
       } else {
         this.items.push({
-          ...product, // Keep all original product properties
+          ...product,
+          price, // Use converted price
           quantity,
           modifications: [],
-          total: product.price * quantity,
-          sub_total: product.price * quantity,
+          total: price * quantity,
+          sub_total: price * quantity,
           discount_type: 'fixed',
           discount: 0,
           discount_val: 0,
-          item_id: product.id // Required by API
+          item_id: product.id
         })
         logger.info('Added new item')
       }
@@ -172,6 +186,23 @@ export const useCartStore = defineStore('cart', {
       this.selectedTables = []
     },
 
+    // New helper method to prepare items for API
+    prepareItemsForApi() {
+      return this.items.map(item => ({
+        item_id: item.id,
+        name: item.name,
+        description: item.description || null,
+        price: item.price,
+        quantity: item.quantity.toString(), // API expects string
+        unit_name: item.unit_name || null,
+        discount: item.discount || "0.00",
+        discount_val: item.discount_val || 0,
+        tax: 0, // Tax is calculated at invoice level
+        total: item.price * item.quantity,
+        modifications: item.modifications || []
+      }))
+    },
+
     prepareHoldInvoiceData(storeId, cashRegisterId, referenceNumber) {
       logger.startGroup('Cart Store: Prepare Hold Invoice Data')
       try {
@@ -186,7 +217,6 @@ export const useCartStore = defineStore('cart', {
         const currentDate = new Date().toISOString().split('T')[0]
         const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-        // Prepare data according to API documentation structure
         const holdInvoice = {
           print_pdf: false,
           is_invoice_pos: 1,
@@ -200,18 +230,18 @@ export const useCartStore = defineStore('cart', {
           due_date: dueDate,
           invoice_number: "-",
           user_id: currentCustomer.creator_id,
-          total: this.total,
-          due_amount: this.total,
-          sub_total: this.subtotal,
-          tax: this.taxAmount,
+          total: Math.round(this.total),
+          due_amount: Math.round(this.total),
+          sub_total: Math.round(this.subtotal),
+          tax: Math.round(this.taxAmount),
           discount_type: this.discountType,
-          discount: this.discountValue,
-          discount_val: this.discountAmount,
+          discount: this.discountValue.toString(),
+          discount_val: Math.round(this.discountAmount),
           tip_type: this.tipType,
-          tip: this.tipValue,
-          tip_val: this.tipAmount,
+          tip: this.tipValue.toString(),
+          tip_val: Math.round(this.tipAmount),
           discount_per_item: "NO",
-          items: this.items, // Using full item objects with all properties
+          items: this.prepareItemsForApi(), // Use the new helper method
           invoice_template_id: 1,
           banType: true,
           invoice_pbx_modify: 0,
@@ -223,7 +253,7 @@ export const useCartStore = defineStore('cart', {
           description: referenceNumber,
           tables_selected: this.selectedTables,
           hold_invoice_id: null,
-          is_hold_invoice: false,
+          is_hold_invoice: true,
           store_id: storeId
         }
 
