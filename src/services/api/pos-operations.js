@@ -1,6 +1,7 @@
 import apiClient from './client'
 import { logger } from '../../utils/logger'
 import api from './pos-api'
+import { getApiEndpoint } from './config'
 
 /**
  * POS Operations Service
@@ -12,7 +13,19 @@ export const posOperations = {
   async getTables(cashRegisterId) {
     logger.startGroup('POS Operations: Get Tables')
     try {
-      const response = await apiClient.get(`/api/v1/core-pos/table-cash-register/${cashRegisterId}`)
+      const companyId = localStorage.getItem('companyId')
+      const endpoint = `${getApiEndpoint('pos.tables')}/${cashRegisterId}`
+      
+      const config = {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          company: companyId
+        }
+      }
+
+      const response = await apiClient.get(endpoint, config)
       logger.info('Tables fetched successfully')
       return response.data
     } catch (error) {

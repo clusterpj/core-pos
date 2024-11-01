@@ -42,7 +42,9 @@
           <!-- No Tables State -->
           <v-row v-else-if="!tables.length">
             <v-col cols="12" class="text-center">
-              <p>No tables available</p>
+              <v-alert type="info" variant="tonal">
+                No tables available for this cash register
+              </v-alert>
             </v-col>
           </v-row>
 
@@ -94,6 +96,7 @@
                   variant="outlined"
                   density="comfortable"
                   :error-messages="tableError"
+                  :disabled="loading"
                 ></v-select>
               </v-col>
               <v-col cols="4">
@@ -104,6 +107,7 @@
                   label="Persons"
                   density="comfortable"
                   hide-details
+                  :disabled="loading"
                 ></v-text-field>
               </v-col>
             </v-row>
@@ -115,7 +119,7 @@
                   variant="outlined"
                   block
                   @click="addSelectedTable"
-                  :disabled="!selectedTableId"
+                  :disabled="!selectedTableId || loading"
                 >
                   Add Table
                 </v-btn>

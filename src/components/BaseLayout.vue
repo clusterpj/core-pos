@@ -155,7 +155,7 @@ const handleStoreChange = async (value) => {
 
 const handleCashierChange = (value) => {
   if (!value) return
-  companyStore.setselectedCashier(value)
+  companyStore.setSelectedCashier(value)
 }
 
 // Initialize
@@ -169,9 +169,9 @@ onMounted(async () => {
     const storedStore = localStorage.getItem('selectedStore')
     const storedCashier = localStorage.getItem('selectedCashier')
     const savedRail = localStorage.getItem('navigationRail')
-  if (savedRail !== null) {
-    rail.value = savedRail === 'true'
-  }
+    if (savedRail !== null) {
+      rail.value = savedRail === 'true'
+    }
 
     // Wait for customers to load before setting stored values
     if (companyStore.customers.length > 0) {
@@ -185,7 +185,7 @@ onMounted(async () => {
 
           // If we have a stored cashier
           if (storedCashier) {
-            companyStore.setselectedCashier(storedCashier)
+            companyStore.setSelectedCashier(storedCashier)
           }
         }
       }

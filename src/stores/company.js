@@ -27,7 +27,7 @@ export const useCompanyStore = defineStore('company', {
   getters: {
     hasSelectedCustomer: (state) => !!state.selectedCustomer,
     hasSelectedStore: (state) => !!state.selectedStore,
-    hasselectedCashier: (state) => !!state.selectedCashier,
+    hasSelectedCashier: (state) => !!state.selectedCashier,
     
     currentCustomer: (state) => {
       return state.customers.find(customer => customer.id === state.selectedCustomer)
@@ -263,7 +263,7 @@ export const useCompanyStore = defineStore('company', {
       }
     },
 
-    setselectedCashier(registerId) {
+    setSelectedCashier(registerId) {
       logger.info('Setting selected cash register:', registerId)
       
       // Only set if register exists
