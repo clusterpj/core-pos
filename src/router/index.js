@@ -21,15 +21,7 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: '/dashboard'
-      },
-      {
-        path: 'dashboard',
-        name: 'dashboard',
-        component: () => import('../views/Dashboard.vue'),
-        meta: {
-          title: 'Dashboard'
-        }
+        redirect: '/pos'  // Changed from '/dashboard' to '/pos'
       },
       {
         path: 'items',
@@ -39,7 +31,7 @@ const routes = [
           title: 'Items Management'
         }
       },
-      posRoutes // Add POS routes here
+      posRoutes
     ]
   },
   {
@@ -97,9 +89,9 @@ router.beforeEach(async (to, from, next) => {
     // Redirect authenticated users away from login
     if (to.path === '/login' && authStore.isAuthenticated) {
       if (import.meta.env.DEV) {
-        console.log('Already authenticated, redirecting to dashboard')
+        console.log('Already authenticated, redirecting to pos')  // Changed from dashboard to pos
       }
-      return next('/dashboard')
+      return next('/pos')  // Changed from /dashboard to /pos
     }
 
     next()

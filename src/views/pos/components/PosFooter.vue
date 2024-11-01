@@ -29,14 +29,6 @@
         >
           Print
         </v-btn>
-        <v-btn
-          color="warning"
-          prepend-icon="mdi-send"
-          @click="$emit('submit-order')"
-          :disabled="isDisabled"
-        >
-          Submit
-        </v-btn>
       </div>
     </div>
   </v-footer>
@@ -50,8 +42,8 @@ import DineInModal from './order-types/DineInModal.vue'
 import ToGoModal from './order-types/ToGoModal.vue'
 import DeliveryModal from './order-types/DeliveryModal.vue'
 import PickupModal from './order-types/PickupModal.vue'
-import { useCartStore } from '@/stores/cart-store'
-import { useCompanyStore } from '@/stores/company'
+import { useCartStore } from '../../../stores/cart-store'
+import { useCompanyStore } from '../../../stores/company'
 
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
@@ -68,6 +60,7 @@ const isDisabled = computed(() => {
   return isEmpty.value || !isConfigured.value
 })
 
+// Keep all emits defined even though submit button is removed
 defineEmits([
   'process-payment',
   'print-order',

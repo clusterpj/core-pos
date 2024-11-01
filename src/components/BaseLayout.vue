@@ -23,15 +23,36 @@
       <v-divider></v-divider>
       <!-- Navigation Items -->
       <v-list density="compact" nav>
-        <v-list-item
-          v-for="item in navItems"
-          :key="item.title"
-          :to="item.to"
-          :prepend-icon="item.icon"
-          :title="rail ? '' : item.title"
-          :value="item.title"
-        />
+        <div v-for="item in navItems" :key="item.title" class="nav-item-container">
+          <v-list-item
+            :to="item.to"
+            :prepend-icon="item.icon"
+            :title="rail ? '' : item.title"
+            :value="item.title"
+          />
+          <div v-if="rail" class="icon-reference text-caption text-center">{{ item.title }}</div>
+        </div>
       </v-list>
+
+      <!-- Corebill Button -->
+      <template v-slot:append>
+        <v-divider></v-divider>
+        <div class="nav-item-container pa-2">
+          <v-btn
+            block
+            :icon="rail"
+            color="primary"
+            variant="tonal"
+            prepend-icon="mdi-arrow-left-circle"
+            @click="goToCorebill"
+          >
+            <template v-if="!rail">
+              Back to Corebill
+            </template>
+          </v-btn>
+          <div v-if="rail" class="icon-reference text-caption text-center">Corebill</div>
+        </div>
+      </template>
     </v-navigation-drawer>
 
     <v-app-bar>
@@ -106,7 +127,7 @@ import { useCompanyStore } from '../stores/company'
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const drawer = ref(true)
-const rail = ref(false)
+const rail = ref(true) // Set to true by default to keep sidebar collapsed
 const appTitle = ref('CorePOS')
 
 // Save rail state to localStorage
@@ -116,11 +137,6 @@ watch(rail, (newValue) => {
 
 const navItems = computed(() => [
   {
-    title: 'Dashboard',
-    icon: 'mdi-view-dashboard',
-    to: '/dashboard'
-  },
-  {
     title: 'Point of Sale',
     icon: 'mdi-cash-register',
     to: '/pos'
@@ -129,16 +145,6 @@ const navItems = computed(() => [
     title: 'Items',
     icon: 'mdi-package-variant-closed',
     to: '/items'
-  },
-  {
-    title: 'Reports',
-    icon: 'mdi-chart-bar',
-    to: '/reports'
-  },
-  {
-    title: 'Settings',
-    icon: 'mdi-cog',
-    to: '/settings'
   }
 ])
 
@@ -158,6 +164,11 @@ const handleCashierChange = (value) => {
   companyStore.setSelectedCashier(value)
 }
 
+const goToCorebill = () => {
+  // This is a placeholder function - replace URL with actual Corebill URL
+  window.location.href = '/corebill'
+}
+
 // Initialize
 onMounted(async () => {
   try {
@@ -168,10 +179,10 @@ onMounted(async () => {
     const storedCustomer = localStorage.getItem('selectedCustomer')
     const storedStore = localStorage.getItem('selectedStore')
     const storedCashier = localStorage.getItem('selectedCashier')
-    const savedRail = localStorage.getItem('navigationRail')
-    if (savedRail !== null) {
-      rail.value = savedRail === 'true'
-    }
+    
+    // Always start with rail collapsed
+    rail.value = true
+    localStorage.setItem('navigationRail', 'true')
 
     // Wait for customers to load before setting stored values
     if (companyStore.customers.length > 0) {
@@ -225,5 +236,24 @@ onMounted(async () => {
 
 :deep(.v-field) {
   background-color: white !important;
+}
+
+/* Navigation styles */
+.nav-item-container {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.icon-reference {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.6);
+  padding: 0 4px;
+  margin-top: -8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 56px;
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>

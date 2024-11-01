@@ -37,15 +37,6 @@
           <v-progress-circular indeterminate color="primary" />
         </div>
 
-        <!-- Error State -->
-        <v-alert
-          v-else-if="posStore.error"
-          type="error"
-          class="ma-2"
-        >
-          {{ posStore.error }}
-        </v-alert>
-
         <!-- Products Grid -->
         <template v-else>
           <product-grid
