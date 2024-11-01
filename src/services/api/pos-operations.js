@@ -1,6 +1,6 @@
 import apiClient from './client'
 import { logger } from '../../utils/logger'
-import { posApi } from './pos-api'
+import api from './pos-api'
 
 /**
  * POS Operations Service
@@ -41,69 +41,12 @@ export const posOperations = {
   async createHoldInvoice(invoiceData) {
     logger.startGroup('POS Operations: Create Hold Invoice')
     try {
-      // Log the request data
-      logger.debug('Creating hold invoice with data:', invoiceData)
-
-      // Send the data exactly as received, without modifications
-      const response = await apiClient.post('/v1/core-pos/hold-invoices', invoiceData)
-
-      // Log the complete response for debugging
-      logger.debug('Hold invoice API complete response:', response)
-
-      // If we have a response but success is false, check if we still have an ID
-      if (response.data) {
-        if (response.data.id) {
-          // Order was created despite success: false
-          logger.info('Order created successfully despite error response:', response.data)
-          return {
-            success: true,
-            data: response.data
-          }
-        } else if (response.data.hold_invoice_id) {
-          // Some APIs return hold_invoice_id instead of id
-          logger.info('Order created successfully with hold_invoice_id:', response.data)
-          return {
-            success: true,
-            data: {
-              ...response.data,
-              id: response.data.hold_invoice_id
-            }
-          }
-        }
-      }
-
-      // If we get here and success is false, it's a real error
-      if (response.data?.success === false) {
-        logger.warn('Hold invoice creation returned success: false', response.data)
-        return {
-          success: true, // Override to true since orders are still being created
-          data: response.data
-        }
-      }
-
-      // Default success case
-      return {
-        success: true,
-        data: response.data
-      }
-
+      // Use the API service for hold invoice creation
+      const response = await api.holdInvoice.create(invoiceData)
+      logger.debug('Hold invoice created:', response)
+      return response
     } catch (error) {
-      // Log the full error details
-      logger.error('Failed to create hold invoice', {
-        error: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      })
-
-      // Check if the order was still created despite the error
-      if (error.response?.data?.id || error.response?.data?.hold_invoice_id) {
-        logger.info('Order created despite error:', error.response.data)
-        return {
-          success: true,
-          data: error.response.data
-        }
-      }
-
+      logger.error('Failed to create hold invoice', error)
       throw error
     } finally {
       logger.endGroup()
@@ -113,13 +56,7 @@ export const posOperations = {
   async getHoldInvoices() {
     logger.startGroup('POS Operations: Get Hold Invoices')
     try {
-      const response = await apiClient.get('/v1/core-pos/hold-invoices')
-      
-      if (!response.data) {
-        throw new Error('Invalid API response: missing data')
-      }
-      
-      logger.info('Hold invoices fetched successfully')
+      const response = await api.holdInvoice.getAll()
       return response.data
     } catch (error) {
       logger.error('Failed to fetch hold invoices', error)
@@ -132,13 +69,7 @@ export const posOperations = {
   async getHoldInvoice(id) {
     logger.startGroup('POS Operations: Get Hold Invoice')
     try {
-      const response = await apiClient.get(`/v1/core-pos/hold-invoices/${id}`)
-      
-      if (!response.data) {
-        throw new Error('Invalid API response: missing data')
-      }
-      
-      logger.info('Hold invoice fetched successfully')
+      const response = await api.holdInvoice.getById(id)
       return response.data
     } catch (error) {
       logger.error('Failed to fetch hold invoice', error)
@@ -151,13 +82,7 @@ export const posOperations = {
   async deleteHoldInvoice(id) {
     logger.startGroup('POS Operations: Delete Hold Invoice')
     try {
-      const response = await apiClient.delete(`/v1/core-pos/hold-invoices/${id}`)
-      
-      if (!response.data) {
-        throw new Error('Invalid API response: missing data')
-      }
-      
-      logger.info('Hold invoice deleted successfully')
+      const response = await api.holdInvoice.delete(id)
       return response.data
     } catch (error) {
       logger.error('Failed to delete hold invoice', error)
@@ -198,11 +123,42 @@ export const posOperations = {
     }
   },
 
-  // Payment Processing
+  // Payment Operations
+  async getPaymentMethods() {
+    logger.startGroup('POS Operations: Get Payment Methods')
+    try {
+      const response = await apiClient.get('/api/v1/payments/multiple/get-payment-methods')
+      logger.info('Payment methods fetched successfully')
+      return response.data
+    } catch (error) {
+      logger.error('Failed to fetch payment methods', error)
+      throw error
+    } finally {
+      logger.endGroup()
+    }
+  },
+
+  async getNextPaymentNumber() {
+    logger.startGroup('POS Operations: Get Next Payment Number')
+    try {
+      const response = await apiClient.get('/api/v1/next-number', {
+        params: { key: 'payment' }
+      })
+      logger.info('Next payment number fetched successfully')
+      return response.data
+    } catch (error) {
+      logger.error('Failed to fetch next payment number', error)
+      throw error
+    } finally {
+      logger.endGroup()
+    }
+  },
+
   async processPayment(paymentData) {
     logger.startGroup('POS Operations: Process Payment')
     try {
-      const response = await apiClient.post('/api/v1/core-pos/payments', paymentData)
+      logger.debug('Processing payment with data:', paymentData)
+      const response = await apiClient.post('/api/v1/payments/multiple/create', paymentData)
       logger.info('Payment processed successfully')
       return response.data
     } catch (error) {

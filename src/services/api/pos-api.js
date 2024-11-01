@@ -8,7 +8,7 @@ import { getApiEndpoint } from './config'
  */
 
 // User Management
-export const getEmployees = async () => {
+const getEmployees = async () => {
   logger.startGroup('POS API: Get Employees')
   try {
     const endpoint = getApiEndpoint('pos.employees')
@@ -34,7 +34,7 @@ export const getEmployees = async () => {
 }
 
 // Cash Register Management
-export const getCashiers = async () => {
+const getCashiers = async () => {
   logger.startGroup('POS API: Get Cashiers')
   try {
     const endpoint = getApiEndpoint('pos.cashiers')
@@ -60,7 +60,7 @@ export const getCashiers = async () => {
 }
 
 // Product Management
-export const getItems = async (params = {}) => {
+const getItems = async (params = {}) => {
   logger.startGroup('POS API: Get Items')
   try {
     const endpoint = getApiEndpoint('pos.items')
@@ -87,7 +87,7 @@ export const getItems = async (params = {}) => {
   }
 }
 
-export const getItemCategories = async () => {
+const getItemCategories = async () => {
   logger.startGroup('POS API: Get Item Categories')
   try {
     const endpoint = getApiEndpoint('pos.categories')
@@ -128,7 +128,7 @@ export const getItemCategories = async () => {
 }
 
 // Store Management
-export const getStores = async () => {
+const getStores = async () => {
   logger.startGroup('POS API: Get Stores')
   try {
     const endpoint = getApiEndpoint('pos.store')
@@ -163,32 +163,38 @@ export const getStores = async () => {
 }
 
 // Hold Invoice Operations
-export const holdInvoiceOperations = {
+const holdInvoiceOperations = {
   async create(invoiceData) {
     logger.startGroup('POS API: Create Hold Invoice')
     try {
-      const endpoint = getApiEndpoint('pos.holdInvoices')
-      logger.info('Creating hold invoice at endpoint:', endpoint)
+      logger.info('Creating hold invoice at endpoint: /v1/core-pos/hold-invoices')
       logger.debug('Hold invoice data:', invoiceData)
 
-      const response = await apiClient.post(endpoint, invoiceData)
+      const response = await apiClient.post('/v1/core-pos/hold-invoices', invoiceData)
       logger.debug('Hold invoice response:', response.data)
 
-      if (!response.data) {
-        throw new Error('Invalid response format: missing data')
+      // If we have a response with an ID, consider it successful
+      if (response.data?.id || response.data?.hold_invoice_id) {
+        logger.info('Hold invoice created successfully')
+        return {
+          success: true,
+          data: {
+            ...response.data,
+            id: response.data.id || response.data.hold_invoice_id
+          }
+        }
       }
 
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to create hold invoice')
+      // If success is explicitly true, return the response
+      if (response.data?.success === true) {
+        logger.info('Hold invoice created successfully')
+        return response.data
       }
 
-      logger.info('Hold invoice created successfully')
-      return response.data
+      // If we get here, something went wrong
+      throw new Error(response.data?.message || 'Failed to create hold invoice')
     } catch (error) {
-      logger.error('Failed to create hold invoice', {
-        error,
-        endpoint: getApiEndpoint('pos.holdInvoices')
-      })
+      logger.error('Failed to create hold invoice', error)
       throw error
     } finally {
       logger.endGroup()
@@ -198,10 +204,9 @@ export const holdInvoiceOperations = {
   async getAll() {
     logger.startGroup('POS API: Get All Hold Invoices')
     try {
-      const endpoint = getApiEndpoint('pos.holdInvoices')
-      logger.info('Fetching hold invoices from endpoint:', endpoint)
+      logger.info('Fetching hold invoices from endpoint: /v1/core-pos/hold-invoices')
 
-      const response = await apiClient.get(endpoint)
+      const response = await apiClient.get('/v1/core-pos/hold-invoices')
       logger.debug('Hold invoices response:', response.data)
 
       if (!response.data) {
@@ -211,10 +216,7 @@ export const holdInvoiceOperations = {
       logger.info('Hold invoices fetched successfully')
       return response
     } catch (error) {
-      logger.error('Failed to fetch hold invoices', {
-        error,
-        endpoint: getApiEndpoint('pos.holdInvoices')
-      })
+      logger.error('Failed to fetch hold invoices', error)
       throw error
     } finally {
       logger.endGroup()
@@ -224,7 +226,7 @@ export const holdInvoiceOperations = {
   async getById(id) {
     logger.startGroup('POS API: Get Hold Invoice')
     try {
-      const endpoint = `${getApiEndpoint('pos.holdInvoices')}/${id}`
+      const endpoint = `/v1/core-pos/hold-invoices/${id}`
       logger.info('Fetching hold invoice from endpoint:', endpoint)
 
       const response = await apiClient.get(endpoint)
@@ -239,8 +241,7 @@ export const holdInvoiceOperations = {
     } catch (error) {
       logger.error('Failed to fetch hold invoice', {
         error,
-        id,
-        endpoint: getApiEndpoint('pos.holdInvoices')
+        id
       })
       throw error
     } finally {
@@ -266,8 +267,7 @@ export const holdInvoiceOperations = {
     } catch (error) {
       logger.error('Failed to delete hold invoice', {
         error,
-        id,
-        endpoint: '/v1/core-pos/hold-invoice/delete'
+        id
       })
       throw error
     } finally {
@@ -276,13 +276,13 @@ export const holdInvoiceOperations = {
   }
 }
 
-export const posApi = {
-  getCashiers,
+const api = {
   getEmployees,
+  getCashiers,
   getItems,
   getItemCategories,
   getStores,
   holdInvoice: holdInvoiceOperations
 }
 
-export default posApi
+export default api

@@ -62,97 +62,16 @@
     />
 
     <!-- Reference Number Dialog -->
-    <v-dialog v-model="showReferenceDialog" max-width="400">
-      <v-card>
-        <v-card-title>Enter Reference Number</v-card-title>
-        <v-card-text>
-          <v-text-field
-            v-model="referenceNumber"
-            label="Reference Number"
-            :rules="[v => !!v || 'Reference number is required']"
-            required
-            density="compact"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="cancelHoldOrder"
-          >
-            Cancel
-          </v-btn>
-          <v-btn
-            color="primary"
-            :disabled="!referenceNumber"
-            @click="confirmHoldOrder"
-          >
-            Hold Order
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <reference-dialog
+      v-model="showReferenceDialog"
+      @confirm="confirmHoldOrder"
+    />
 
     <!-- Payment Dialog -->
-    <v-dialog v-model="showPaymentDialog" max-width="600">
-      <v-card>
-        <v-card-title>Process Payment</v-card-title>
-        <v-card-text>
-          <v-select
-            v-model="selectedPaymentMethod"
-            label="Payment Method"
-            :items="paymentMethods"
-            item-title="name"
-            item-value="id"
-            density="compact"
-            class="mb-4"
-          />
-
-          <div class="d-flex justify-space-between mb-4">
-            <span class="text-h6">Total Amount:</span>
-            <span class="text-h6">${{ formatPrice(cartStore.total) }}</span>
-          </div>
-
-          <template v-if="selectedPaymentMethod">
-            <v-text-field
-              v-model="paymentAmount"
-              label="Amount"
-              type="number"
-              :min="0"
-              :max="cartStore.total"
-              density="compact"
-              class="mb-4"
-            />
-
-            <v-textarea
-              v-model="paymentNotes"
-              label="Notes"
-              rows="2"
-              density="compact"
-            />
-          </template>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="showPaymentDialog = false"
-          >
-            Cancel
-          </v-btn>
-          <v-btn
-            color="success"
-            :loading="processingPayment"
-            :disabled="!canProcessPayment"
-            @click="confirmPayment"
-          >
-            Process Payment
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <payment-dialog
+      v-model="showPaymentDialog"
+      @confirm="handlePaymentComplete"
+    />
 
     <!-- Loading Overlay -->
     <v-overlay
@@ -169,12 +88,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useCompanyStore } from '../../stores/company'
 import { useCartStore } from '../../stores/cart-store'
 import PosCart from './components/PosCart.vue'
 import PosProducts from './components/PosProducts.vue'
 import PosFooter from './components/PosFooter.vue'
+import PaymentDialog from './components/dialogs/PaymentDialog.vue'
+import ReferenceDialog from './components/dialogs/ReferenceDialog.vue'
 import { posOperations } from '../../services/api/pos-operations'
 import { logger } from '../../utils/logger'
 
@@ -185,39 +106,14 @@ const cartStore = useCartStore()
 const loading = ref(false)
 const error = ref(null)
 
-// Hold Order Dialog State
+// Dialog state
 const showReferenceDialog = ref(false)
-const referenceNumber = ref('')
+const showPaymentDialog = ref(false)
 
 // Selected values - synced with store
 const selectedCustomer = ref(companyStore.selectedCustomer)
 const selectedStore = ref(companyStore.selectedStore)
 const selectedCashier = ref(companyStore.selectedCashier)
-
-// Payment Dialog State
-const showPaymentDialog = ref(false)
-const processingPayment = ref(false)
-const selectedPaymentMethod = ref(null)
-const paymentAmount = ref(0)
-const paymentNotes = ref('')
-const paymentMethods = ref([
-  { id: 'cash', name: 'Cash' },
-  { id: 'card', name: 'Credit Card' },
-  { id: 'other', name: 'Other' }
-])
-
-// Computed
-const canProcessPayment = computed(() => {
-  return selectedPaymentMethod.value && 
-         paymentAmount.value > 0 && 
-         paymentAmount.value <= cartStore.total
-})
-
-// Format price
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return Number(price).toFixed(2)
-}
 
 // Handle selection changes
 const handleCustomerChange = async (customerId) => {
@@ -257,30 +153,14 @@ const handleCashierChange = async (cashierId) => {
 }
 
 // Hold Order Management
-const cancelHoldOrder = () => {
-  showReferenceDialog.value = false
-  referenceNumber.value = ''
-}
-
-const confirmHoldOrder = async () => {
-  if (!referenceNumber.value) return
+const confirmHoldOrder = async (referenceNumber) => {
+  if (!referenceNumber) return
   
-  try {
-    await createHoldInvoice()
-    showReferenceDialog.value = false
-    referenceNumber.value = ''
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to create hold order:', err)
-  }
-}
-
-const createHoldInvoice = async () => {
   try {
     const holdInvoice = cartStore.prepareHoldInvoiceData(
       companyStore.selectedStore,
       companyStore.selectedCashier,
-      referenceNumber.value
+      referenceNumber
     )
     await posOperations.createHoldInvoice(holdInvoice)
     cartStore.clearCart()
@@ -293,39 +173,21 @@ const createHoldInvoice = async () => {
 
 // Payment Processing
 const processPayment = () => {
+  if (!cartStore.items.length) {
+    error.value = 'Cart is empty'
+    return
+  }
   showPaymentDialog.value = true
-  paymentAmount.value = cartStore.total
 }
 
-const confirmPayment = async () => {
-  if (!canProcessPayment.value) return
-  
-  processingPayment.value = true
+const handlePaymentComplete = async () => {
   try {
-    const orderData = {
-      items: cartStore.items,
-      total: cartStore.total,
-      subtotal: cartStore.subtotal,
-      tax: cartStore.taxAmount,
-      discount_type: cartStore.discountType,
-      discount: cartStore.discountValue,
-      discount_amount: cartStore.discountAmount,
-      payment: {
-        amount: paymentAmount.value,
-        payment_method_id: selectedPaymentMethod.value,
-        notes: paymentNotes.value
-      }
-    }
-    
-    await posOperations.submitOrder(orderData)
-    
-    showPaymentDialog.value = false
+    // Payment was successful, clear the cart
     cartStore.clearCart()
+    // Optionally show success message or trigger other actions
   } catch (err) {
     error.value = err.message
-    logger.error('Failed to process payment:', err)
-  } finally {
-    processingPayment.value = false
+    logger.error('Error handling payment completion:', err)
   }
 }
 

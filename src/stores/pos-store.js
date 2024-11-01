@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { posApi } from '../services/api/pos-api'
+import posApi from '../services/api/pos-api'
 import { useCompanyStore } from './company'
 import { logger } from '../utils/logger'
 import apiClient from '../services/api/client'
@@ -184,15 +184,21 @@ export const usePosStore = defineStore('pos', {
       
       try {
         const response = await posApi.holdInvoice.getAll()
-        if (response.data?.success && response.data.hold_invoices?.data) {
+        logger.debug('Hold invoices response:', response)
+
+        // Check if we have a valid response with hold invoices
+        if (response?.data?.hold_invoices?.data) {
           this.holdInvoices = response.data.hold_invoices.data
           logger.info(`Loaded ${this.holdInvoices.length} hold invoices`)
-        } else {
-          throw new Error(response.data?.message || 'Failed to load hold invoices')
+          return
         }
+
+        // If we get here, something went wrong with the response format
+        logger.warn('Invalid hold invoices response format:', response)
+        this.holdInvoices = []
       } catch (error) {
         logger.error('Failed to fetch hold invoices', error)
-        this.error = error.message
+        this.error = error.message || 'Failed to fetch hold invoices'
         this.holdInvoices = []
       } finally {
         this.loading.holdInvoices = false
