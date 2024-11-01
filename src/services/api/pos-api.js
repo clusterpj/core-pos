@@ -167,32 +167,26 @@ const holdInvoiceOperations = {
   async create(invoiceData) {
     logger.startGroup('POS API: Create Hold Invoice')
     try {
-      logger.info('Creating hold invoice at endpoint: /v1/core-pos/hold-invoices')
+      logger.info('Creating hold invoice')
       logger.debug('Hold invoice data:', invoiceData)
 
-      const response = await apiClient.post('/v1/core-pos/hold-invoices', invoiceData)
+      // Only format the items array to ensure prices are in cents
+      const formattedItems = invoiceData.items.map(item => ({
+        ...item,
+        price: Math.round(parseFloat(item.price) * 100),
+        total: Math.round(parseFloat(item.total) * 100),
+        unit_name: item.unit_name || 'N/A'
+      }))
+
+      const formattedData = {
+        ...invoiceData,
+        items: formattedItems
+      }
+
+      const response = await apiClient.post('/v1/core-pos/hold-invoices', formattedData)
       logger.debug('Hold invoice response:', response.data)
 
-      // If we have a response with an ID, consider it successful
-      if (response.data?.id || response.data?.hold_invoice_id) {
-        logger.info('Hold invoice created successfully')
-        return {
-          success: true,
-          data: {
-            ...response.data,
-            id: response.data.id || response.data.hold_invoice_id
-          }
-        }
-      }
-
-      // If success is explicitly true, return the response
-      if (response.data?.success === true) {
-        logger.info('Hold invoice created successfully')
-        return response.data
-      }
-
-      // If we get here, something went wrong
-      throw new Error(response.data?.message || 'Failed to create hold invoice')
+      return response.data
     } catch (error) {
       logger.error('Failed to create hold invoice', error)
       throw error
@@ -204,17 +198,16 @@ const holdInvoiceOperations = {
   async getAll() {
     logger.startGroup('POS API: Get All Hold Invoices')
     try {
-      logger.info('Fetching hold invoices from endpoint: /v1/core-pos/hold-invoices')
-
       const response = await apiClient.get('/v1/core-pos/hold-invoices')
       logger.debug('Hold invoices response:', response.data)
-
-      if (!response.data) {
-        throw new Error('Invalid response format: missing data')
+      
+      // Return the response in the expected format
+      return {
+        success: true,
+        data: {
+          hold_invoices: response.data.hold_invoices
+        }
       }
-
-      logger.info('Hold invoices fetched successfully')
-      return response
     } catch (error) {
       logger.error('Failed to fetch hold invoices', error)
       throw error
@@ -226,23 +219,11 @@ const holdInvoiceOperations = {
   async getById(id) {
     logger.startGroup('POS API: Get Hold Invoice')
     try {
-      const endpoint = `/v1/core-pos/hold-invoices/${id}`
-      logger.info('Fetching hold invoice from endpoint:', endpoint)
-
-      const response = await apiClient.get(endpoint)
+      const response = await apiClient.get(`/v1/core-pos/hold-invoices/${id}`)
       logger.debug('Hold invoice response:', response.data)
-
-      if (!response.data) {
-        throw new Error('Invalid response format: missing data')
-      }
-
-      logger.info('Hold invoice fetched successfully')
-      return response
+      return response.data
     } catch (error) {
-      logger.error('Failed to fetch hold invoice', {
-        error,
-        id
-      })
+      logger.error('Failed to fetch hold invoice', error)
       throw error
     } finally {
       logger.endGroup()
@@ -252,23 +233,11 @@ const holdInvoiceOperations = {
   async delete(id) {
     logger.startGroup('POS API: Delete Hold Invoice')
     try {
-      const endpoint = '/v1/core-pos/hold-invoice/delete'
-      logger.info('Deleting hold invoice at endpoint:', endpoint)
-
-      const response = await apiClient.post(endpoint, { id })
+      const response = await apiClient.delete(`/v1/core-pos/hold-invoices/${id}`)
       logger.debug('Delete response:', response.data)
-
-      if (!response.data) {
-        throw new Error('Invalid response format: missing data')
-      }
-
-      logger.info('Hold invoice deleted successfully')
-      return response
+      return response.data
     } catch (error) {
-      logger.error('Failed to delete hold invoice', {
-        error,
-        id
-      })
+      logger.error('Failed to delete hold invoice', error)
       throw error
     } finally {
       logger.endGroup()
