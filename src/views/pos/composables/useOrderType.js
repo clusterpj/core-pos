@@ -113,7 +113,14 @@ export function useOrderType() {
         `${orderType.value}_${customerInfo.value.name}`
       )
 
+      logger.debug('Processing order with data:', orderData)
+
       const result = await posStore.holdOrder(orderData)
+      
+      if (!result || result.success === false) {
+        throw new Error(result?.message || 'Failed to process order')
+      }
+
       logger.info('Order processed successfully:', result)
       return result
 

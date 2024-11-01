@@ -186,19 +186,26 @@ export const useCartStore = defineStore('cart', {
       this.selectedTables = []
     },
 
+    // Convert dollar amount to cents
+    toCents(amount) {
+      return Math.round(amount * 100)
+    },
+
     // New helper method to prepare items for API
     prepareItemsForApi() {
+      const companyStore = useCompanyStore()
       return this.items.map(item => ({
         item_id: item.id,
         name: item.name,
         description: item.description || null,
-        price: item.price,
+        price: this.toCents(item.price),
         quantity: item.quantity.toString(), // API expects string
         unit_name: item.unit_name || null,
         discount: item.discount || "0.00",
         discount_val: item.discount_val || 0,
         tax: 0, // Tax is calculated at invoice level
-        total: item.price * item.quantity,
+        total: this.toCents(item.price * item.quantity),
+        company_id: companyStore.company?.id || 1,
         modifications: item.modifications || []
       }))
     },
@@ -213,9 +220,22 @@ export const useCartStore = defineStore('cart', {
           throw new Error('Creator ID not found in current customer')
         }
 
+        if (!storeId || !cashRegisterId) {
+          logger.warn('Missing store or cashier ID:', { storeId, cashRegisterId })
+        }
+
         // Get current date and due date (7 days from now)
         const currentDate = new Date().toISOString().split('T')[0]
         const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+        // Parse notes to determine order type
+        let orderType = 'UNKNOWN'
+        try {
+          const notesObj = JSON.parse(this.notes)
+          orderType = notesObj.type || 'UNKNOWN'
+        } catch (e) {
+          logger.warn('Failed to parse notes for order type')
+        }
 
         const holdInvoice = {
           print_pdf: false,
@@ -230,31 +250,36 @@ export const useCartStore = defineStore('cart', {
           due_date: dueDate,
           invoice_number: "-",
           user_id: currentCustomer.creator_id,
-          total: Math.round(this.total),
-          due_amount: Math.round(this.total),
-          sub_total: Math.round(this.subtotal),
-          tax: Math.round(this.taxAmount),
+          total: this.toCents(this.total),
+          due_amount: this.toCents(this.total),
+          sub_total: this.toCents(this.subtotal),
+          tax: this.toCents(this.taxAmount),
           discount_type: this.discountType,
           discount: this.discountValue.toString(),
-          discount_val: Math.round(this.discountAmount),
+          discount_val: this.toCents(this.discountAmount),
           tip_type: this.tipType,
           tip: this.tipValue.toString(),
-          tip_val: Math.round(this.tipAmount),
+          tip_val: this.toCents(this.tipAmount),
           discount_per_item: "NO",
-          items: this.prepareItemsForApi(), // Use the new helper method
+          items: this.prepareItemsForApi(),
           invoice_template_id: 1,
           banType: true,
           invoice_pbx_modify: 0,
           packages: [],
-          cash_register_id: cashRegisterId,
+          cash_register_id: cashRegisterId || 1,
+          store_id: storeId || 1,
+          company_id: companyStore.company?.id || 1,
           taxes: {},
           notes: this.notes,
           contact: {},
           description: referenceNumber,
-          tables_selected: this.selectedTables,
           hold_invoice_id: null,
-          is_hold_invoice: true,
-          store_id: storeId
+          is_hold_invoice: true
+        }
+
+        // Only include tables_selected for DINE_IN orders
+        if (orderType === 'DINE_IN' && this.selectedTables.length > 0) {
+          holdInvoice.tables_selected = this.selectedTables
         }
 
         logger.info('Hold invoice data prepared:', holdInvoice)

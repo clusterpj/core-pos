@@ -30,7 +30,7 @@ export const usePosStore = defineStore('pos', {
   }),
 
   getters: {
-    categoriesForDisplay: (state) => {
+    categoriesForDisplay(state) {
       return (state.categories || []).map(category => ({
         id: category.item_category_id,
         name: category.name,
@@ -38,33 +38,33 @@ export const usePosStore = defineStore('pos', {
       }))
     },
 
-    storesForDisplay: (state) => {
+    storesForDisplay(state) {
       return (state.stores || []).map(store => ({
         title: store.name,
         value: store.id
       }))
     },
 
-    cashiersForDisplay: (state) => {
+    cashiersForDisplay(state) {
       return (state.cashiers || []).map(cashier => ({
         title: cashier.name,
         value: cashier.id
       }))
     },
 
-    employeesForDisplay: (state) => {
+    employeesForDisplay(state) {
       return (state.employees || []).map(employee => ({
         title: employee.name,
         value: employee.id
       }))
     },
 
-    systemReady: (state) => {
+    systemReady() {
       const companyStore = useCompanyStore()
       return companyStore.isConfigured
     },
 
-    setupMessage: () => {
+    setupMessage() {
       const companyStore = useCompanyStore()
       if (!companyStore.selectedCustomer) return 'Please select a customer'
       if (!companyStore.selectedStore) return 'Please select a store'
@@ -177,7 +177,6 @@ export const usePosStore = defineStore('pos', {
       }
     },
 
-    // Hold Invoice Operations
     async fetchHoldInvoices() {
       logger.startGroup('POS Store: Fetch Hold Invoices')
       this.loading.holdInvoices = true
@@ -207,16 +206,41 @@ export const usePosStore = defineStore('pos', {
       this.error = null
       
       try {
+        logger.debug('Hold order request data:', orderData)
+
         const response = await posApi.holdInvoice.create(orderData)
-        if (response.data?.success) {
+        logger.debug('Hold order API response:', response)
+
+        // Check if the order was created successfully
+        if (response.data?.success || response.data?.id) {
+          logger.info('Order created successfully:', response.data)
           await this.fetchHoldInvoices()
-          return response.data
-        } else {
-          throw new Error(response.data?.message || 'Failed to hold order')
+          return { success: true, data: response.data }
         }
+
+        // If we get here, something went wrong
+        const errorMessage = response.data?.message || 'Failed to hold order'
+        logger.error('Hold order failed:', {
+          message: errorMessage,
+          response: response.data
+        })
+        throw new Error(errorMessage)
+
       } catch (error) {
-        logger.error('Failed to hold order', error)
-        this.error = error.message || 'Failed to hold order'
+        logger.error('Hold order error:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        })
+
+        // Even if we got an error, check if the order was actually created
+        if (error.response?.data?.id) {
+          logger.info('Order created despite error:', error.response.data)
+          await this.fetchHoldInvoices()
+          return { success: true, data: error.response.data }
+        }
+
+        this.error = error.message
         throw error
       } finally {
         this.loading.holdInvoices = false
@@ -254,7 +278,6 @@ export const usePosStore = defineStore('pos', {
       try {
         const response = await apiClient.post('/v1/core-pos/hold-invoice/delete', { id })
         if (response.data?.success) {
-          // Remove the deleted invoice from the local state
           this.holdInvoices = this.holdInvoices.filter(invoice => invoice.id !== id)
           return { success: true }
         } else {
@@ -268,7 +291,6 @@ export const usePosStore = defineStore('pos', {
         this.loading.holdInvoices = false
         logger.endGroup()
       }
-  
     },
 
     setCategory(categoryId) {

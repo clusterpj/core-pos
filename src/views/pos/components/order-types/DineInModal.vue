@@ -48,11 +48,46 @@
 
           <!-- Table Selection -->
           <template v-else>
-            <v-row>
+            <!-- Selected Tables List -->
+            <v-row v-if="selectedTables.length > 0">
               <v-col cols="12">
+                <v-list>
+                  <v-list-item v-for="table in selectedTables" :key="table.table_id">
+                    <template v-slot:prepend>
+                      <v-icon>mdi-table-furniture</v-icon>
+                    </template>
+                    
+                    <v-list-item-title>{{ table.name }}</v-list-item-title>
+                    
+                    <template v-slot:append>
+                      <v-text-field
+                        v-model.number="table.quantity"
+                        type="number"
+                        min="1"
+                        label="Persons"
+                        density="compact"
+                        style="width: 100px"
+                        hide-details
+                        @update:model-value="updateQuantity(table.table_id, $event)"
+                      ></v-text-field>
+                      <v-btn
+                        icon="mdi-close"
+                        size="small"
+                        class="ml-2"
+                        @click="removeTable(table.table_id)"
+                      ></v-btn>
+                    </template>
+                  </v-list-item>
+                </v-list>
+              </v-col>
+            </v-row>
+
+            <!-- Add Table Section -->
+            <v-row>
+              <v-col cols="8">
                 <v-select
-                  v-model="selectedTable"
-                  :items="tables"
+                  v-model="selectedTableId"
+                  :items="availableTables"
                   label="Select Table"
                   item-title="name"
                   item-value="id"
@@ -61,8 +96,35 @@
                   :error-messages="tableError"
                 ></v-select>
               </v-col>
+              <v-col cols="4">
+                <v-text-field
+                  v-model.number="newTableQuantity"
+                  type="number"
+                  min="1"
+                  label="Persons"
+                  density="comfortable"
+                  hide-details
+                ></v-text-field>
+              </v-col>
             </v-row>
 
+            <v-row>
+              <v-col cols="12">
+                <v-btn
+                  color="primary"
+                  variant="outlined"
+                  block
+                  @click="addSelectedTable"
+                  :disabled="!selectedTableId"
+                >
+                  Add Table
+                </v-btn>
+              </v-col>
+            </v-row>
+
+            <v-divider class="my-4"></v-divider>
+
+            <!-- Confirm Button -->
             <v-row>
               <v-col cols="12" class="text-center">
                 <v-btn
@@ -71,9 +133,9 @@
                   block
                   @click="processOrder"
                   :loading="processing"
-                  :disabled="!selectedTable || processing"
+                  :disabled="!selectedTables.length || processing"
                 >
-                  Confirm Table
+                  Confirm Tables
                 </v-btn>
               </v-col>
             </v-row>
@@ -105,11 +167,22 @@ const posStore = usePosStore()
 const cartStore = useCartStore()
 
 // Composables
-const { tables, selectedTable, loading: tablesLoading, loadTables } = useTableAssignment()
-const { 
-  setOrderType, 
-  processOrder: processOrderType, 
-  ORDER_TYPES, 
+const {
+  tables,
+  selectedTables,
+  loading: tablesLoading,
+  loadTables,
+  addTable,
+  removeTable,
+  updateTableQuantity,
+  clearTableSelection,
+  getSelectedTablesForApi
+} = useTableAssignment()
+
+const {
+  setOrderType,
+  processOrder: processOrderType,
+  ORDER_TYPES,
   error: orderError,
   setCustomerInfo
 } = useOrderType()
@@ -120,6 +193,15 @@ const loading = computed(() => tablesLoading.value)
 const processing = ref(false)
 const error = computed(() => orderError.value)
 const tableError = ref('')
+const selectedTableId = ref(null)
+const newTableQuantity = ref(1)
+
+// Computed
+const availableTables = computed(() => {
+  return tables.value.filter(table => 
+    !selectedTables.value.some(selected => selected.table_id === table.id)
+  )
+})
 
 // Watch for dialog open to load tables and set order type
 watch(dialog, async (newValue) => {
@@ -133,15 +215,32 @@ watch(dialog, async (newValue) => {
     }
   } else {
     // Reset state when dialog closes
-    selectedTable.value = null
+    selectedTableId.value = null
+    newTableQuantity.value = 1
     tableError.value = ''
+    clearTableSelection()
   }
 })
 
+// Methods
+const addSelectedTable = () => {
+  if (selectedTableId.value) {
+    addTable(selectedTableId.value, newTableQuantity.value || 1)
+    selectedTableId.value = null
+    newTableQuantity.value = 1
+  }
+}
+
+const updateQuantity = (tableId, quantity) => {
+  if (quantity > 0) {
+    updateTableQuantity(tableId, quantity)
+  }
+}
+
 // Process the order
 const processOrder = async () => {
-  if (!selectedTable.value) {
-    tableError.value = 'Please select a table'
+  if (!selectedTables.value.length) {
+    tableError.value = 'Please select at least one table'
     return
   }
 
@@ -150,22 +249,21 @@ const processOrder = async () => {
 
   try {
     // Set table information in cart store
-    cartStore.setSelectedTables([selectedTable.value])
+    cartStore.setSelectedTables(getSelectedTablesForApi())
 
     // Set customer info with table details
-    const selectedTableInfo = tables.value.find(t => t.id === selectedTable.value)
+    const tableNames = selectedTables.value.map(t => t.name).join(', ')
     setCustomerInfo({
-      tableNumber: selectedTableInfo?.name || selectedTable.value,
-      tableId: selectedTable.value
+      tableNumbers: tableNames,
+      tables: getSelectedTablesForApi()
     })
 
     await processOrderType()
     dialog.value = false
-    // Show success message
-    window.toastr?.['success']('Table assigned successfully')
+    window.toastr?.['success']('Tables assigned successfully')
   } catch (err) {
     logger.error('Failed to process dine-in order:', err)
-    tableError.value = err.message || 'Failed to assign table'
+    tableError.value = err.message || 'Failed to assign tables'
   } finally {
     processing.value = false
   }

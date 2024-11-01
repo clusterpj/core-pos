@@ -1,29 +1,37 @@
-// src/views/pos/components/dialogs/TableDialog.vue
 <template>
-  <v-dialog v-model="show" max-width="500" @update:model-value="handleDialogUpdate">
+  <v-dialog v-model="showTableDialog" max-width="500px">
     <v-card>
-      <v-card-title>Assign Table</v-card-title>
+      <v-card-title>Select Tables</v-card-title>
       <v-card-text>
-        <v-select
-          v-model="selectedTable"
-          label="Select Table"
-          :items="tables"
-          item-title="name"
-          item-value="id"
-          :loading="loading"
-          density="compact"
-        />
+        <v-container>
+          <v-row>
+            <v-col
+              v-for="table in availableTables"
+              :key="table.id"
+              cols="4"
+              sm="3"
+              md="2"
+            >
+              <v-btn
+                block
+                :color="isTableSelected(table) ? 'primary' : ''"
+                @click="handleTableSelect(table)"
+                variant="outlined"
+                class="mb-2"
+              >
+                {{ table.name }}
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-container>
       </v-card-text>
       <v-card-actions>
-        <v-spacer />
-        <v-btn color="grey" variant="text" @click="close">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :loading="assigning"
-          :disabled="!selectedTable"
-          @click="confirm"
-        >
-          Assign
+        <v-spacer></v-spacer>
+        <v-btn color="primary" @click="confirmSelection">
+          Confirm
+        </v-btn>
+        <v-btn color="error" @click="closeDialog">
+          Cancel
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -31,49 +39,36 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useTableAssignment } from '../../composables/useTableAssignment'
-
-const props = defineProps({
-  modelValue: Boolean
-})
-
-const emit = defineEmits(['update:modelValue', 'assigned'])
+import { computed } from 'vue'
+import { useTableAssignment } from '@/views/pos/composables/useTableAssignment'
 
 const {
-  selectedTable,
-  tables,
-  loading,
-  assigning,
-  loadTables,
-  assignTable
+  showTableDialog,
+  availableTables,
+  selectedTables,
+  selectTable,
+  closeTableDialog
 } = useTableAssignment()
 
-const show = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
-})
-
-const handleDialogUpdate = async (value) => {
-  if (value) {
-    await loadTables()
-  } else {
-    selectedTable.value = null
-  }
+const isTableSelected = (table) => {
+  return selectedTables.value.some(t => t.id === table.id)
 }
 
-const close = () => {
-  show.value = false
+const handleTableSelect = (table) => {
+  selectTable(table)
 }
 
-const confirm = async () => {
-  try {
-    await assignTable()
-    emit('assigned')
-    close()
-  } catch (error) {
-    // Error will be handled by the parent component
-    close()
-  }
+const confirmSelection = () => {
+  closeTableDialog()
+}
+
+const closeDialog = () => {
+  closeTableDialog()
 }
 </script>
+
+<style scoped>
+.v-btn {
+  height: 60px;
+}
+</style>
