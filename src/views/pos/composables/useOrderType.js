@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue'
-import { useCartStore } from '@/stores/cart-store'
-import { usePosStore } from '@/stores/pos-store'
-import { logger } from '@/utils/logger'
+import { useCartStore } from '../../../stores/cart-store'
+import { usePosStore } from '../../../stores/pos-store'
+import { logger } from '../../../utils/logger'
+import { posOperations } from '../../../services/api/pos-operations'
 
 // Order type constants
 export const ORDER_TYPES = {
@@ -106,7 +107,53 @@ export function useOrderType() {
         return { success: true }
       }
 
-      // For other types, create hold invoice with customer info
+      // For TO_GO orders, create hold invoice and then convert to regular invoice
+      if (orderType.value === ORDER_TYPES.TO_GO) {
+        // First create hold invoice
+        const holdOrderData = cartStore.prepareHoldInvoiceData(
+          posStore.selectedStore,
+          posStore.selectedCashier,
+          `${orderType.value}_${customerInfo.value.name}`
+        )
+
+        logger.debug('Creating hold order with data:', holdOrderData)
+        const holdResult = await posStore.holdOrder(holdOrderData)
+        
+        if (!holdResult || holdResult.success === false) {
+          throw new Error(holdResult?.message || 'Failed to create hold order')
+        }
+
+        // Now create regular invoice from the hold order
+        const invoiceData = cartStore.prepareInvoiceData(
+          posStore.selectedStore,
+          posStore.selectedCashier,
+          `${orderType.value}_${customerInfo.value.name}`
+        )
+        
+        // Add hold invoice ID to the invoice data
+        invoiceData.hold_invoice_id = holdResult.data.id
+        invoiceData.is_hold_invoice = true
+
+        logger.debug('Creating invoice with data:', invoiceData)
+        const invoiceResult = await posOperations.createInvoice(invoiceData)
+
+        if (!invoiceResult || invoiceResult.success === false) {
+          throw new Error(invoiceResult?.message || 'Failed to create invoice')
+        }
+
+        logger.info('TO_GO order processed successfully:', {
+          holdOrder: holdResult,
+          invoice: invoiceResult
+        })
+
+        return {
+          success: true,
+          holdOrder: holdResult.data,
+          invoice: invoiceResult.invoice
+        }
+      }
+
+      // For other types, create hold invoice
       const orderData = cartStore.prepareHoldInvoiceData(
         posStore.selectedStore,
         posStore.selectedCashier,

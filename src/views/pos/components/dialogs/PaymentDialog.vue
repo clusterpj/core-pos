@@ -7,7 +7,7 @@
           :color="isFullyPaid ? 'success' : 'warning'"
           class="ml-4"
         >
-          {{ isFullyPaid ? 'Fully Paid' : 'Remaining: $' + formatPrice(remainingAmount) }}
+          {{ isFullyPaid ? 'Fully Paid' : `Remaining: $${formatPrice(remainingAmount)}` }}
         </v-chip>
       </v-card-title>
 
@@ -47,21 +47,23 @@
                 v-model="selectedMethod"
                 label="Payment Method"
                 :items="paymentMethods"
-                item-title="name"
+                item-title="formattedNameLabel"
                 item-value="id"
                 density="compact"
                 :disabled="loading"
                 :error-messages="methodError"
                 class="mb-4"
-                @update:model-value="clearMethodError"
+                @update:model-value="handleMethodChange"
               />
 
               <v-text-field
-                v-model="currentAmount"
+                v-model="displayAmount"
                 label="Amount"
+                prefix="$"
                 type="number"
                 :min="0"
                 :max="remainingAmount"
+                :step="0.01"
                 density="compact"
                 :disabled="loading || !selectedMethod"
                 :error-messages="amountError"
@@ -72,10 +74,12 @@
               <!-- Cash Payment Section -->
               <template v-if="isCashPayment">
                 <v-text-field
-                  v-model="cashReceived"
+                  v-model="displayCashReceived"
                   label="Cash Received"
+                  prefix="$"
                   type="number"
-                  :min="currentAmount"
+                  :min="displayAmount"
+                  :step="0.01"
                   density="compact"
                   :disabled="loading"
                   :error-messages="cashError"
@@ -105,7 +109,7 @@
                       variant="outlined"
                       @click="addDenomination(denom.amount)"
                     >
-                      {{ denom.name }}
+                      ${{ formatPrice(denom.amount) }}
                     </v-btn>
                   </v-col>
                 </v-row>
@@ -130,7 +134,7 @@
                   v-for="(payment, index) in selectedPayments"
                   :key="payment.id_raw"
                   :title="payment.name"
-                  :subtitle="'$' + formatPrice(payment.amount)"
+                  :subtitle="`$${formatPrice(payment.amount / 100)}`"
                 >
                   <template #append>
                     <v-btn
@@ -147,26 +151,26 @@
               <!-- Payment Summary -->
               <v-list class="mt-4">
                 <v-list-subheader>Payment Summary</v-list-subheader>
-                <v-list-item title="Subtotal" :subtitle="'$' + formatPrice(cartStore.subtotal * 100)" />
+                <v-list-item title="Subtotal" :subtitle="`$${formatPrice(cartStore.subtotal)}`" />
                 <v-list-item
                   v-if="cartStore.discountAmount > 0"
                   title="Discount"
-                  :subtitle="'-$' + formatPrice(cartStore.discountAmount * 100)"
+                  :subtitle="`-$${formatPrice(cartStore.discountAmount)}`"
                 />
-                <v-list-item title="Tax" :subtitle="'$' + formatPrice(cartStore.taxAmount * 100)" />
+                <v-list-item title="Tax" :subtitle="`$${formatPrice(cartStore.taxAmount)}`" />
                 <v-list-item
                   v-if="cartStore.tipAmount > 0"
                   title="Tip"
-                  :subtitle="'$' + formatPrice(cartStore.tipAmount * 100)"
+                  :subtitle="`$${formatPrice(cartStore.tipAmount)}`"
                 />
                 <v-list-item
                   title="Total"
-                  :subtitle="'$' + formatPrice(cartStore.total * 100)"
+                  :subtitle="`$${formatPrice(cartStore.total)}`"
                   class="font-weight-bold"
                 />
                 <v-list-item
                   title="Amount Paid"
-                  :subtitle="'$' + formatPrice(totalPaid * 100)"
+                  :subtitle="`$${formatPrice(totalPaid)}`"
                   class="font-weight-bold"
                 />
               </v-list>
@@ -241,6 +245,22 @@ const methodError = ref(null)
 const amountError = ref(null)
 const cashError = ref(null)
 
+// Display values for amount inputs
+const displayAmount = computed({
+  get: () => (currentAmount.value || 0).toFixed(2),
+  set: (val) => {
+    currentAmount.value = Number(val)
+    handleAmountChange(val)
+  }
+})
+
+const displayCashReceived = computed({
+  get: () => (cashReceived.value || 0).toFixed(2),
+  set: (val) => {
+    handleCashReceived(Number(val))
+  }
+})
+
 // Computed
 const show = computed({
   get: () => props.modelValue,
@@ -266,12 +286,24 @@ const clearMethodError = () => {
   cashError.value = null
 }
 
+const handleMethodChange = (value) => {
+  clearMethodError()
+  if (value) {
+    // Set initial amount to remaining amount when method is selected
+    currentAmount.value = remainingAmount.value
+    // Reset cash values when switching methods
+    cashReceived.value = 0
+    changeAmount.value = 0
+  }
+}
+
 const handleDialogUpdate = async (value) => {
   if (value) {
     // Dialog is opening
     try {
       await loadPaymentMethods()
-      currentAmount.value = cartStore.total
+      // Initialize with remaining amount
+      currentAmount.value = remainingAmount.value
     } catch (error) {
       logger.error('Failed to initialize payment dialog:', error)
       if (error.errors) {
@@ -296,28 +328,52 @@ const handleDialogUpdate = async (value) => {
     // Dialog is closing
     reset()
     clearMethodError()
+    selectedMethod.value = null
+    currentAmount.value = 0
   }
 }
 
 const handleAmountChange = (value) => {
   amountError.value = null
+  const numValue = Number(value)
+  
+  // Validate amount
+  if (isNaN(numValue) || numValue < 0) {
+    amountError.value = 'Invalid amount'
+    return
+  }
+
   // Ensure amount doesn't exceed remaining amount
-  if (value > remainingAmount.value) {
+  if (numValue > remainingAmount.value) {
     currentAmount.value = remainingAmount.value
-    amountError.value = `Maximum amount is $${formatPrice(remainingAmount.value * 100)}`
+    amountError.value = `Maximum amount is $${formatPrice(remainingAmount.value)}`
+  }
+
+  // Reset cash values when amount changes
+  if (isCashPayment.value) {
+    cashReceived.value = 0
+    changeAmount.value = 0
   }
 }
 
 const handleCashReceived = (value) => {
   cashError.value = null
-  if (value < currentAmount.value) {
+  const numValue = Number(value)
+  
+  // Validate cash amount
+  if (isNaN(numValue) || numValue < 0) {
+    cashError.value = 'Invalid amount'
+    return
+  }
+
+  if (numValue < currentAmount.value) {
     cashError.value = 'Cash received must be greater than or equal to payment amount'
   }
-  calculateChange(value)
+  calculateChange(numValue)
 }
 
 const addDenomination = (amount) => {
-  const newAmount = Number(cashReceived.value || 0) + (amount / 100)
+  const newAmount = Number(cashReceived.value || 0) + amount
   cashReceived.value = newAmount
   handleCashReceived(newAmount)
 }
@@ -327,7 +383,7 @@ const addCurrentPayment = () => {
     if (!canAddPayment.value) return
     addPayment(selectedMethod.value, currentAmount.value)
     selectedMethod.value = null
-    currentAmount.value = 0
+    currentAmount.value = remainingAmount.value
     cashReceived.value = 0
     clearMethodError()
   } catch (err) {
@@ -405,7 +461,7 @@ watch(() => remainingAmount.value, (newAmount) => {
 onMounted(async () => {
   if (show.value) {
     await loadPaymentMethods()
-    currentAmount.value = cartStore.total
+    currentAmount.value = remainingAmount.value
   }
 })
 </script>

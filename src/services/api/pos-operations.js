@@ -30,13 +30,22 @@ const validatePayment = (payment, invoice) => {
   if (!payment || !invoice) {
     throw new Error('Invalid payment or invoice data')
   }
+
   // Validate payment total matches invoice
   const paymentTotal = payment.payment_methods.reduce((sum, method) => {
     return sum + Number(method.amount)
   }, 0)
+
+  // Compare totals (both should be in cents)
   if (paymentTotal !== invoice.total) {
+    logger.error('Payment total mismatch:', {
+      paymentTotal,
+      invoiceTotal: invoice.total,
+      difference: Math.abs(paymentTotal - invoice.total)
+    })
     throw new Error('Payment total does not match invoice total')
   }
+
   // Validate payment methods
   payment.payment_methods.forEach(method => {
     if (!method.id || !method.amount) {
@@ -44,6 +53,15 @@ const validatePayment = (payment, invoice) => {
     }
     if (method.amount <= 0) {
       throw new Error('Invalid payment amount')
+    }
+    // For cash payments, validate received and returned amounts
+    if (method.received !== undefined) {
+      if (method.received < method.amount) {
+        throw new Error('Cash received must be greater than or equal to payment amount')
+      }
+      if (method.returned !== undefined && method.returned > method.received - method.amount) {
+        throw new Error('Invalid change amount')
+      }
     }
   })
 }
@@ -119,7 +137,10 @@ export const posOperations = {
 
       logger.debug('Company settings response:', response.data)
       logger.info('Company settings fetched successfully')
-      return response.data
+      return {
+        success: true,
+        data: response.data
+      }
     } catch (error) {
       return handleApiError(error)
     } finally {
@@ -183,7 +204,8 @@ export const posOperations = {
           name: method.name,
           type: method.account_accepted,
           only_cash: method.only_cash,
-          denominations: method.pos_money?.length || 0
+          denominations: method.pos_money?.length || 0,
+          isPaymentFeeActive: method.IsPaymentFeeActive
         })
       })
 
@@ -244,8 +266,7 @@ export const posOperations = {
           name: table.name || `Table ${table.id}`,
           is_occupied: !!table.is_occupied,
           quantity: table.quantity || 0,
-          items: table.items || 0,
-          // Add any additional fields needed
+          items: table.items || 0
         }))
       }
     } catch (error) {
@@ -286,7 +307,10 @@ export const posOperations = {
 
       logger.debug('Hold invoices response:', response.data)
       logger.info('Hold invoices fetched successfully')
-      return response.data
+      return {
+        success: true,
+        ...response.data
+      }
     } catch (error) {
       return handleApiError(error)
     } finally {
@@ -351,7 +375,10 @@ export const posOperations = {
         total: response.data.invoice?.total
       })
       
-      return response.data
+      return {
+        success: true,
+        ...response.data
+      }
     } catch (error) {
       return handleApiError(error)
     } finally {
@@ -411,7 +438,10 @@ export const posOperations = {
         idempotencyKey
       })
 
-      return response.data
+      return {
+        success: true,
+        ...response.data
+      }
     } catch (error) {
       return handleApiError(error)
     } finally {
@@ -431,7 +461,10 @@ export const posOperations = {
 
       logger.debug('Invoice response:', response.data)
       logger.info('Invoice fetched successfully')
-      return response.data.invoice
+      return {
+        success: true,
+        ...response.data.invoice
+      }
     } catch (error) {
       return handleApiError(error)
     } finally {
@@ -451,7 +484,10 @@ export const posOperations = {
 
       logger.debug('Payment response:', response.data)
       logger.info('Payment fetched successfully')
-      return response.data.payment
+      return {
+        success: true,
+        ...response.data.payment
+      }
     } catch (error) {
       return handleApiError(error)
     } finally {

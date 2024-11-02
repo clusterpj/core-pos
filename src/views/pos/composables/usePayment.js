@@ -46,6 +46,10 @@ export function usePayment() {
     if (method.status !== 'A' || method.deleted_at) {
       throw new Error('Payment method is not active')
     }
+    // Additional validation for POS payment methods
+    if (method.only_cash === 1 && !method.pos_money?.length) {
+      throw new Error('Cash payment method requires denominations')
+    }
     return true
   }
 
@@ -109,26 +113,51 @@ export function usePayment() {
         throw new Error(response.message || 'Failed to load payment methods')
       }
 
-      // Store all valid payment methods
-      paymentMethods.value = response.payment_methods
+      // Filter and validate payment methods for POS
+      const validMethods = response.payment_methods.filter(method => {
+        // Must be active
+        if (method.status !== 'A' || method.deleted_at) {
+          logger.debug(`Filtered out payment method ${method.id}: inactive or deleted`)
+          return false
+        }
+
+        // Cash methods must have denominations
+        if (method.only_cash === 1 && (!method.pos_money || !method.pos_money.length)) {
+          logger.debug(`Filtered out cash payment method ${method.id}: no denominations`)
+          return false
+        }
+
+        return true
+      })
+
+      if (!validMethods.length) {
+        throw new Error('No valid payment methods available')
+      }
+
+      // Store valid payment methods
+      paymentMethods.value = validMethods
       logger.info('Payment methods stored:', paymentMethods.value)
 
       // Set up denominations for cash payments
-      const cashMethod = paymentMethods.value.find(m => m.only_cash === 1)
+      const cashMethod = validMethods.find(m => m.only_cash === 1)
       logger.debug('Cash payment method:', cashMethod)
 
       if (cashMethod?.pos_money) {
-        denominations.value = cashMethod.pos_money.map(denom => ({
-          amount: Number(denom.amount),
-          name: denom.name,
-          is_coin: denom.is_coin === 1
-        }))
+        denominations.value = cashMethod.pos_money
+          .sort((a, b) => Number(b.amount) - Number(a.amount)) // Sort by amount descending
+          .map(denom => ({
+            amount: Number(denom.amount) / 100, // Convert cents to dollars
+            name: denom.name,
+            is_coin: denom.is_coin === 1
+          }))
         logger.info('Cash denominations set:', denominations.value)
       } else {
         logger.warn('No cash denominations found')
+        denominations.value = []
       }
 
       logger.info('Payment methods loaded successfully')
+      return validMethods
     } catch (err) {
       error.value = err.message || 'Failed to load payment methods'
       logger.error('Failed to load payment methods:', {
@@ -358,7 +387,7 @@ export function usePayment() {
 
   // Format helpers
   const formatPrice = (amount) => {
-    return (amount / 100).toFixed(2)
+    return Number(amount).toFixed(2)
   }
 
   return {
