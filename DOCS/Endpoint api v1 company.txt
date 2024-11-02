@@ -1,0 +1,97 @@
+Endpoint: /api/v1/company/settings
+Ruta:
+
+Route::get('/company/settings', GetCompanySettingsController::class);
+
+Descripción:
+
+Este endpoint proporciona todas las configuraciones esenciales que se requieren para la creación y gestión de documentos dentro del sistema. Estas configuraciones establecen los parámetros iniciales para cualquier transacción, asegurando que todos los documentos se generen de manera consistente y conforme a las reglas del sistema.
+
+ 
+
+•  Configuraciones Incluidas: Las configuraciones pueden abarcar una variedad de parámetros, tales como:
+
+•  Prefijos y secuencias de numeración: Para garantizar que cada documento tenga un identificador único.
+
+•  Formatos de fecha y moneda: Para asegurar la coherencia en la presentación de la información.
+
+•  Impuestos y descuentos: Configuraciones relacionadas con la aplicación de impuestos y descuentos en los documentos.
+
+•  Plantillas de documentos: Estructuras predefinidas para diferentes tipos de documentos, como facturas, órdenes de compra, recibos, etc.
+
+Parámetros de Entrada:
+
+Este endpoint recibe un parámetro settings de tipo array. Dentro del array se envían los nombres de las configuraciones básicas según lo necesario. Estas son las variables:
+
+Nota: A fecha 1/11/2024, los campos aquí indicados son para establecer las configuraciones básicas para el flujo de POS, facturas y pagos.
+
+•  allow_invoice_form_pos: Valores 0 y 1. Indica si permite generar la factura para POS (1 para sí, 0 para no).
+
+•  pdf_format_pos: Valores 0 y 1. Indica si el PDF de la factura está en formato POS (1 para sí, 0 para no).
+
+•  default_email: Retorna el correo principal o por defecto de la compañía.
+
+•  tax_per_item: Valores YES o NO. Indica si los impuestos son a nivel general (NO) o por artículo (YES).
+
+•  discount_per_item: Valores YES o NO. Indica si el descuento es general (NO) o por artículo (YES).
+
+•  retention_active: Valores YES o NO. Indica si la retención está activa (YES) o no (NO).
+
+•  invoice_auto_generate: Valores YES o NO. Indica si el número de la factura se genera automáticamente (YES) o si el usuario debe ingresar el número de factura de forma manual (NO).
+
+•  invoice_issuance_period: Retorna un valor entero que indica el número de días de diferencia entre la fecha de creación de una factura y su fecha de vencimiento.
+
+•  payment_auto_generate: Valores YES o NO. Indica si el número del pago se genera automáticamente (YES) o si el usuario debe ingresar el número del pago de forma manual (NO).
+
+•  allow_partial_pay: Valores 0 y 1. Para POS, este valor indica:
+
+•  0: No permite pago parcial, el pago debe ser por el total de la factura.
+
+•  1: Permite pago parcial, el pago puede ser para una parte de la factura.
+
+•  footer_text_value: Texto para el pie de página de la plataforma.
+
+•  footer_url_value: Dirección URL para el pie de página.
+
+•  footer_url_name: El nombre que tendrá el enlace de la URL para el pie de página.
+
+     autoprint_pdf_pos: Valores 0 y 1. Si el valor es 1, indica que se debe abrir automáticamente el cuadro de diálogo de impresión del PDF. Si el valor es 0, no se abrirá.
+
+•  current_year: Valores 0 y 1.
+
+•  0: No mostrar el año actual.
+
+•  1: Mostrar el año actual.
+
+    activate_pay_button: Valores 0 y 1.
+
+        0: Ocultar el boton de pago POS en la plataforma
+
+        1: Mostrar boton de pago POS en la plataforma
+
+ 
+
+ 
+
+Ejemplo de Solicitud:
+
+GET /api/v1/company/settings?settings[]=invoice_auto_generate&settings[]=invoice_issuance_period
+Host: yourapi.com
+Authorization: Bearer <token>
+
+Respuesta:
+{
+    "invoice_auto_generate": "YES",
+    "invoice_issuance_period": "2",
+    "default_email": "support@careonecomm.com",
+	"payment_auto_generate":"YES",
+	"footer_text_value": "Corebill a Care One Communications Solution",
+    "footer_url_value": "https:\/\/careonecomm.com",
+    "footer_url_name": "Corebill SA",
+    "current_year": "1",
+	"allow_invoice_form_pos":"1",
+	"allow_partial_pay":"1",
+	"tax_per_item": "NO",
+    "discount_per_item": "NO",
+    "retention_active": "NO",
+}

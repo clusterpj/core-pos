@@ -1,0 +1,96 @@
+Endpoint: api/v1/notes
+Ruta:
+
+Route::apiResource('notes', NotesController::class);
+
+Descripción:
+Este endpoint gestiona las notas en el sistema.
+
+Parámetros de Entrada:
+•  limit: Se puede ingresar un número entero o enviar la palabra "all" para retornar todos los registros (opcional).
+
+•  search: Se puede ingresar varios tokens o palabras y buscará todas las notas que contengan esas palabras (opcional).
+
+•  type: Recibe varios parámetros para traer notas asociadas según el documento. Se debe enviar uno de los siguientes valores: invoice, payment, estimates (opcional).
+
+•  orderByField: Recibe el campo por el cual se quiere ordenar los registros (opcional). Por defecto, ordena por la fecha de creación.
+
+•  orderBy: Indica si quiere ordenar de forma ascendente (asc) o descendente (desc). Por defecto es ascendente (opcional).
+
+Ejemplo de Solicitud:
+
+GET /api/v1/notes?limit=10&search=test&type=invoice&orderByField=name&orderBy=desc HTTP/1.1
+Host: yourapi.com
+Authorization: Bearer <token>
+
+Respuesta:
+{
+"notes": {
+"current_page": 1,
+"data": [
+{
+"id": 7,
+"type": "Invoice",
+"name": "test",
+"notes": "<p>test</p>",
+"created_at": "2023-08-01T21:16:13.000000Z",
+"updated_at": "2023-08-01T21:16:13.000000Z",
+"formattedCreatorName": "N/A"
+},
+{
+"id": 4,
+"type": "Invoice",
+"name": "dolorem doloremque quod",
+"notes": "<p>qwqwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww wwwwwwwwwwwwwwwwwwwwwww wwwwwwwwwwwwwwwwwwwwwwwwwwwwww</p>",
+"created_at": "2022-12-29T13:48:33.000000Z",
+"updated_at": "2022-12-29T13:48:33.000000Z",
+"formattedCreatorName": "N/A"
+},
+{
+"id": 3,
+"type": "Invoice",
+"name": "nueva nota",
+"notes": "<p>wqferg fdg rgr ew </p>",
+"created_at": "2022-12-29T13:23:16.000000Z",
+"updated_at": "2022-12-29T13:23:16.000000Z",
+"formattedCreatorName": "N/A"
+},
+{
+"id": 1,
+"type": "Invoice",
+"name": "Nota 1",
+"notes": "<p>Nota 1Nota 1Nota 1Nota 1Nota 1Nota 1</p>",
+"created_at": "2022-11-09T22:39:40.000000Z",
+"updated_at": "2022-11-09T22:39:40.000000Z",
+"formattedCreatorName": "N/A"
+}
+],
+"first_page_url": "https://cbdev.corebill.co/api/v1/notes?page=1 ",
+"from": 1,
+"last_page": 1,
+"last_page_url": "https://cbdev.corebill.co/api/v1/notes?page=1 ",
+"links": [
+{
+"url": null,
+"label": "« Previous",
+"active": false
+},
+{
+"url": "https://cbdev.corebill.co/api/v1/notes?page=1 ",
+"label": "1",
+"active": true
+},
+{
+"url": null,
+"label": "Next »",
+"active": false
+}
+],
+"next_page_url": null,
+"path": "https://cbdev.corebill.co/api/v1/notes ",
+"per_page": 10,
+"prev_page_url": null,
+"to": 4,
+"total": 4
+}
+}

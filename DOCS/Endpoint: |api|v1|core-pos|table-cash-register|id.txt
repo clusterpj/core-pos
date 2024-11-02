@@ -1,0 +1,87 @@
+Endpoint: /core-pos/table-cash-register/id
+Ruta:
+
+Route::get('/core-pos/table-cash-register/{id}', [TableController::class, 'getTablesCashRegister']);
+
+Descripción:
+Este endpoint obtiene las mesas asociadas a una caja específica en el sistema.
+
+Parámetros de Entrada:
+•  id: El identificador de la caja seleccionada. Este parámetro se pasa en la URL.
+
+Ejemplo de Solicitud:
+
+GET /core-pos/table-cash-register/1 HTTP/1.1
+Host: yourapi.com
+Authorization: Bearer <token>
+
+Respuesta:
+{
+"success": true,
+"data": [
+{
+"id": 1,
+"name": "Mesa A",
+"user_id": 1,
+"deleted_at": null,
+"created_at": null,
+"updated_at": null
+},
+{
+"id": 2,
+"name": "tabla 3",
+"user_id": 1,
+"deleted_at": null,
+"created_at": null,
+"updated_at": null
+},
+{
+"id": 3,
+"name": "Mesa 3",
+"user_id": 1,
+"deleted_at": null,
+"created_at": null,
+"updated_at": null
+},
+{
+"id": 4,
+"name": "mesa 4",
+"user_id": 1,
+"deleted_at": null,
+"created_at": null,
+"updated_at": null
+},
+{
+"id": 5,
+"name": "Super Store Table",
+"user_id": 1,
+"deleted_at": null,
+"created_at": null,
+"updated_at": null
+},
+{
+"id": 6,
+"name": "Mesa especial",
+"user_id": 1,
+"deleted_at": null,
+"created_at": null,
+"updated_at": null
+},
+{
+"id": 7,
+"name": "test sansy",
+"user_id": 1,
+"deleted_at": null,
+"created_at": null,
+"updated_at": null
+},
+{
+"id": 8,
+"name": "Paquete demo 2",
+"user_id": 1,
+"deleted_at": null,
+"created_at": null,
+"updated_at": null
+}
+]
+}

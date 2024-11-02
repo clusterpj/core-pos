@@ -13,7 +13,8 @@ export const useCartStore = defineStore('cart', {
     notes: '',
     selectedTables: [],
     tipType: 'fixed',
-    tipValue: 0
+    tipValue: 0,
+    holdInvoiceId: null // Added to track hold invoice ID
   }),
 
   getters: {
@@ -56,6 +57,10 @@ export const useCartStore = defineStore('cart', {
 
     isEmpty: (state) => {
       return state.items.length === 0
+    },
+
+    isHoldOrder: (state) => {
+      return state.holdInvoiceId !== null
     }
   },
 
@@ -175,6 +180,11 @@ export const useCartStore = defineStore('cart', {
       this.selectedTables = tables
     },
 
+    setHoldInvoiceId(id) {
+      logger.info('Setting hold invoice ID:', id)
+      this.holdInvoiceId = id
+    },
+
     clearCart() {
       logger.info('Clearing cart')
       this.items = []
@@ -184,6 +194,7 @@ export const useCartStore = defineStore('cart', {
       this.tipValue = 0
       this.notes = ''
       this.selectedTables = []
+      this.holdInvoiceId = null
     },
 
     // Convert dollar amount to cents
@@ -206,12 +217,15 @@ export const useCartStore = defineStore('cart', {
         tax: 0, // Tax is calculated at invoice level
         total: this.toCents(item.price * item.quantity),
         company_id: companyStore.company?.id || 1,
-        modifications: item.modifications || []
+        modifications: item.modifications || [],
+        retention_amount: 0,
+        retention_concept: 'NO_RETENTION',
+        retention_percentage: 0
       }))
     },
 
-    prepareHoldInvoiceData(storeId, cashRegisterId, referenceNumber) {
-      logger.startGroup('Cart Store: Prepare Hold Invoice Data')
+    prepareInvoiceData(storeId, cashRegisterId, referenceNumber) {
+      logger.startGroup('Cart Store: Prepare Invoice Data')
       try {
         const companyStore = useCompanyStore()
         const currentCustomer = companyStore.currentCustomer
@@ -237,7 +251,7 @@ export const useCartStore = defineStore('cart', {
           logger.warn('Failed to parse notes for order type')
         }
 
-        const holdInvoice = {
+        const invoice = {
           print_pdf: false,
           is_invoice_pos: 1,
           is_pdf_pos: true,
@@ -273,22 +287,45 @@ export const useCartStore = defineStore('cart', {
           notes: this.notes,
           contact: {},
           description: referenceNumber,
-          hold_invoice_id: null,
-          is_hold_invoice: true
+          retention_total: 0,
+          retention: "NO",
+          status: "SENT",
+          paid_status: "UNPAID",
+          tax_per_item: "NO",
+          late_fee_amount: 0,
+          late_fee_taxes: 0,
+          pbx_service_price: 0,
+          sent: 0,
+          viewed: 0
+        }
+
+        // If this is a hold order being converted to invoice
+        if (this.holdInvoiceId) {
+          invoice.hold_invoice_id = this.holdInvoiceId
+          invoice.is_hold_invoice = true
         }
 
         // Only include tables_selected for DINE_IN orders
         if (orderType === 'DINE_IN' && this.selectedTables.length > 0) {
-          holdInvoice.tables_selected = this.selectedTables
+          invoice.tables_selected = this.selectedTables
         }
 
-        logger.info('Hold invoice data prepared:', holdInvoice)
-        return holdInvoice
+        logger.info('Invoice data prepared:', invoice)
+        return invoice
       } catch (error) {
-        logger.error('Failed to prepare hold invoice data:', error)
+        logger.error('Failed to prepare invoice data:', error)
         throw error
       } finally {
         logger.endGroup()
+      }
+    },
+
+    prepareHoldInvoiceData(storeId, cashRegisterId, referenceNumber) {
+      const data = this.prepareInvoiceData(storeId, cashRegisterId, referenceNumber)
+      return {
+        ...data,
+        is_hold_invoice: true,
+        hold_invoice_id: null
       }
     }
   }

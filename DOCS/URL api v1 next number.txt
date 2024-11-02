@@ -1,0 +1,45 @@
+URL: api/v1/next-number
+
+Método: GET
+
+Descripción:
+
+Este endpoint retorna el prefijo y el número siguiente de los documentos del sistema.
+
+Ejemplo:
+Cuando se crea una factura, este endpoint obtiene el número disponible en secuencia junto con el prefijo correspondiente. Por ejemplo, si la última factura registrada en el sistema es inv-100, el endpoint devolverá el prefijo inv y el número 101. Esto asegura que cada nuevo documento tenga un identificador único y secuencial, facilitando la organización y el seguimiento de los documentos.
+
+Funcionamiento:
+
+    Consulta del último documento: El sistema verifica cuál fue el último documento creado y extrae su prefijo y número.
+
+    Generación del nuevo número: A partir del número del último documento, se incrementa en uno para obtener el siguiente número en la secuencia.
+
+    Devolución del prefijo y número: El endpoint retorna el prefijo original y el nuevo número generado, listo para ser utilizado en la creación del próximo documento
+
+Ruta:
+
+Route::get('/next-number', NextNumberController::class);
+
+Parámetros de la Solicitud:
+
+key: Indica el tipo de documento para el cual se desea obtener el siguiente número disponible. Acepta los siguientes valores: invoice, core_pos, customer, estimate, payment, expense, expense_template, TTW.
+
+Payload:
+
+key:invoice
+
+Ejemplo de Solicitud:
+
+GET /api/v1/next-number?key=invoice
+Host: yourapi.com
+Authorization: Bearer <token>
+
+Campos de la respuesta:
+
+•  nextNumber: El siguiente número disponible.
+
+•  prefix: El prefijo para el documento.
+
+Ejemplo de respuesta:
+{"nextNumber":"14043919","prefix":"INV"}

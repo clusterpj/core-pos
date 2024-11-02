@@ -1,0 +1,46 @@
+Endpoint: /api/v1/core-pos/cash-register/getCashRegistersUser
+Ruta: Route::get('/core-pos/cash-register/getCashRegistersUser', [CorePosController::class, 'getCashRegistersUser']);
+
+Descripción:
+Este endpoint obtiene la lista de cajas registradoras asociadas al usuario.
+
+Parámetros de Entrada:
+Ninguno.
+
+Respuesta:
+{
+"success": true,
+"data": [
+{
+"id": 6,
+"name": "Test Cash Register",
+"description": "Test Cash Register xxxxxxxxx.01",
+"created_at": "2023-09-07 09:53:55",
+"updated_at": "2024-10-04 18:36:14",
+"deleted_at": null,
+"customer_id": 23,
+"store_id": 6,
+"device": "xxxxxxxxx.01",
+"open_cash": 1,
+"store_name": "qwerty qwerty",
+"cash_history_id": 44
+},
+{
+"id": 7,
+"name": "Super Store Cash",
+"description": "Super Store Cash",
+"created_at": "2023-09-15 11:36:16",
+"updated_at": "2024-01-18 14:22:40",
+"deleted_at": null,
+"customer_id": 25,
+"store_id": 8,
+"device": "Casio",
+"open_cash": 1,
+"store_name": "Super Store",
+"cash_history_id": 46
+}
+]
+}
+
+Controlador/Método Relacionado:
+CorePosController::getCashRegistersUser

@@ -89,12 +89,12 @@
                       <td>
                         <v-btn
                           size="small"
-                          color="primary"
+                          color="success"
                           class="mr-2"
-                          @click="loadOrder(invoice)"
+                          @click="loadOrderForPayment(invoice)"
                           :loading="loadingOrder === invoice.id"
                         >
-                          Load
+                          Pay
                         </v-btn>
                         <v-btn
                           size="small"
@@ -230,11 +230,11 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
-// Load order
-const loadOrder = async (invoice) => {
+// Load order for payment
+const loadOrderForPayment = async (invoice) => {
   try {
     loadingOrder.value = invoice.id
-    logger.debug('Loading order:', invoice)
+    logger.debug('Loading order for payment:', invoice)
     
     // Clear current cart
     cartStore.clearCart()
@@ -270,10 +270,14 @@ const loadOrder = async (invoice) => {
       cartStore.setNotes(invoice.notes)
     }
 
+    // Set the hold invoice ID in the cart for payment processing
+    cartStore.setHoldInvoiceId(invoice.id)
+
     dialog.value = false
-    logger.info('Order loaded successfully:', invoice.id)
+    logger.info('Order loaded for payment successfully:', invoice.id)
   } catch (error) {
-    logger.error('Failed to load order:', error)
+    logger.error('Failed to load order for payment:', error)
+    window.toastr?.['error']('Failed to load order for payment')
   } finally {
     loadingOrder.value = null
   }

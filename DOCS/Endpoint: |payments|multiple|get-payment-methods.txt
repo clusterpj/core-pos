@@ -1,0 +1,385 @@
+Endpoint: /api/v1/payments/multiple/get-payment-methods
+Ruta:
+
+Route::post('/payments/multiple/get-payment-methods', [PaymentsController::class, 'getPaymentMethods']);
+
+Descripción:
+Este endpoint obtiene todos los métodos de pago asociados o configurados para el uso del POS.
+
+
+•  Funcionalidad: Este endpoint permite recuperar la lista completa de métodos de pago que están disponibles y configurados en el sistema para ser utilizados en el punto de venta (POS).
+
+•  Métodos de Pago Incluidos: La respuesta puede incluir métodos de pago como tarjetas de crédito, tarjetas de débito, efectivo, transferencias bancarias, pagos móviles, entre otros.
+
+Parámetros de Entrada:
+
+No recibe parametros de Entrada
+Ejemplo de Solicitud:
+
+GET /api/v1/payments/multiple/get-payment-methods
+Host: yourapi.com
+Authorization: Bearer <token>
+
+Respuesta:
+
+Cada registro representa un método de pago e incluye sus datos, como el nombre. Además, cada método de pago contiene un campo que trae un array de objetos llamado pos_money, que representa los billetes o denominaciones de moneda asociados al método de pago.
+
+Los registros dentro de pos_money tienen los siguientes campos:
+
+•  name: Nombre de la moneda.
+
+•  amount: El monto que representa la moneda.
+
+•  is_coin: Valor de 0 o 1. Indica si es una moneda (1) o no (0).
+
+•  currency_id: Identificador del cono monetario al cual pertenece.
+
+El response de respuesta tiene los siguientes campos y funciones:
+
+Estos campos representan cada uno de los gestores de pagos del sistema. Si el valor es 0, significa que no tiene perfiles de configuración activos. Si el valor es 1, indica que sí hay perfiles de configuración activos.
+
+•  exist_authorize_setting: 1 (indica que hay un perfil de configuración activo para 
+
+ ).
+
+•  exist_paypal_setting: 1 (indica que hay un perfil de configuración activo para PayPal).
+
+•  exist_aux_vault_setting: 1 (indica que hay un perfil de configuración activo para Aux Vault).
+
+Cada registro contiene los datos del método de pago e incluye estos campos importantes:
+
+•  IsPaymentFeeActive: Con valores YES o NO, indica si el método de pago tiene activo Payment Fees (cuotas o tarifas) para aplicar en los pagos.
+
+•  registrationdatafees: Un array que contiene los Payment Fees (cuotas), indicando su nombre, sus montos, si son fijos o por porcentaje, y si es para tarjeta de crédito o ACH.
+
+Campos adicionales en los registros:
+
+•  only_cash: Indica si el método de pago solo recibe dinero en efectivo (true) o acepta otros tipos de pago (false).
+
+•  add_payment_gateway: Con valores 0 y 1, indica si el método de pago acepta gestores de pago (1) o no (0).
+
+•  formattedNameLabel: Nombre formateado del método de pago, que incluye información sobre si el método de pago es para ACH, tarjeta de crédito, o si no acepta gestores de pago.
+{
+    "payment_methods": [
+        {
+            "id": 18,
+            "name": "Super Payment",
+            "status": "A",
+            "only_cash": 0,
+            "add_payment_gateway": 1,
+            "paypal_button": 0,
+            "stripe_button": 0,
+            "company_id": 1,
+            "account_accepted": "C",
+            "created_at": "2023-06-12T16:59:21.000000Z",
+            "updated_at": "2023-06-12T17:01:52.000000Z",
+            "deleted_at": null,
+            "payment_gateways_id": null,
+            "settings_id": null,
+            "for_customer_use": 0,
+            "generate_expense": 1,
+            "void_refund": 0,
+            "generate_expense_id": 13,
+            "void_refund_expense_id": null,
+            "expense_import": 1,
+            "is_multiple": 0,
+            "show_notes_table": 0,
+            "payment_method_id": 18,
+            "pos_money": [
+                {
+                    "id": 5,
+                    "name": "10 dolares",
+                    "amount": "10.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2023-07-20T18:17:25.000000Z",
+                    "updated_at": "2023-07-20T18:17:25.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 3,
+                    "name": "50",
+                    "amount": "50.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2023-07-17T16:18:36.000000Z",
+                    "updated_at": "2023-07-20T18:16:58.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 10,
+                    "name": "100 bolos",
+                    "amount": "99.99",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2024-01-17T20:50:02.000000Z",
+                    "updated_at": "2024-01-17T20:50:02.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 2,
+                    "name": "10 mil",
+                    "amount": "10000.00",
+                    "is_coin": 1,
+                    "currency_id": 1,
+                    "created_at": "2023-04-03T20:59:48.000000Z",
+                    "updated_at": "2023-08-16T21:55:43.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 4,
+                    "name": "50 mil",
+                    "amount": "50000.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2023-07-18T18:01:56.000000Z",
+                    "updated_at": "2023-07-20T18:16:42.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 6,
+                    "name": "90 mil",
+                    "amount": "90000.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2023-07-20T18:51:45.000000Z",
+                    "updated_at": "2023-08-04T13:41:58.000000Z",
+                    "deleted_at": null
+                }
+            ],
+            "formattedNameLabel": "Super Payment (CC)",
+            "registrationdatafees": null,
+            "IsPaymentFeeActive": "NO"
+        },
+        {
+            "id": 16,
+            "name": "Bank-chance 124",
+            "status": "A",
+            "only_cash": 0,
+            "add_payment_gateway": 0,
+            "paypal_button": 0,
+            "stripe_button": 0,
+            "company_id": 1,
+            "account_accepted": "N",
+            "created_at": "2023-05-25T17:56:07.000000Z",
+            "updated_at": "2023-05-25T17:56:07.000000Z",
+            "deleted_at": null,
+            "payment_gateways_id": null,
+            "settings_id": null,
+            "for_customer_use": 0,
+            "generate_expense": 0,
+            "void_refund": 0,
+            "generate_expense_id": null,
+            "void_refund_expense_id": null,
+            "expense_import": 0,
+            "is_multiple": 0,
+            "show_notes_table": 0,
+            "payment_method_id": 16,
+            "pos_money": [
+                {
+                    "id": 3,
+                    "name": "50",
+                    "amount": "50.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2023-07-17T16:18:36.000000Z",
+                    "updated_at": "2023-07-20T18:16:58.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 10,
+                    "name": "100 bolos",
+                    "amount": "99.99",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2024-01-17T20:50:02.000000Z",
+                    "updated_at": "2024-01-17T20:50:02.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 8,
+                    "name": "100 dolares",
+                    "amount": "1100.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2023-08-04T14:25:57.000000Z",
+                    "updated_at": "2023-08-04T14:25:57.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 2,
+                    "name": "10 mil",
+                    "amount": "10000.00",
+                    "is_coin": 1,
+                    "currency_id": 1,
+                    "created_at": "2023-04-03T20:59:48.000000Z",
+                    "updated_at": "2023-08-16T21:55:43.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 6,
+                    "name": "90 mil",
+                    "amount": "90000.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2023-07-20T18:51:45.000000Z",
+                    "updated_at": "2023-08-04T13:41:58.000000Z",
+                    "deleted_at": null
+                }
+            ],
+            "formattedNameLabel": "Bank-chance 124 (No Gateway)",
+            "registrationdatafees": null,
+            "IsPaymentFeeActive": "NO"
+        },
+        {
+            "id": 19,
+            "name": "Ach Test",
+            "status": "A",
+            "only_cash": 0,
+            "add_payment_gateway": 1,
+            "paypal_button": 0,
+            "stripe_button": 0,
+            "company_id": 1,
+            "account_accepted": "A",
+            "created_at": "2023-06-19T14:47:43.000000Z",
+            "updated_at": "2024-01-26T14:37:28.000000Z",
+            "deleted_at": null,
+            "payment_gateways_id": null,
+            "settings_id": null,
+            "for_customer_use": 1,
+            "generate_expense": 0,
+            "void_refund": 0,
+            "generate_expense_id": null,
+            "void_refund_expense_id": null,
+            "expense_import": 0,
+            "is_multiple": 0,
+            "show_notes_table": 0,
+            "payment_method_id": 19,
+            "pos_money": [
+                {
+                    "id": 3,
+                    "name": "50",
+                    "amount": "50.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2023-07-17T16:18:36.000000Z",
+                    "updated_at": "2023-07-20T18:16:58.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 9,
+                    "name": "1000 bolos",
+                    "amount": "1100.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2024-01-09T17:33:13.000000Z",
+                    "updated_at": "2024-01-09T17:33:13.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 2,
+                    "name": "10 mil",
+                    "amount": "10000.00",
+                    "is_coin": 1,
+                    "currency_id": 1,
+                    "created_at": "2023-04-03T20:59:48.000000Z",
+                    "updated_at": "2023-08-16T21:55:43.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 6,
+                    "name": "90 mil",
+                    "amount": "90000.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2023-07-20T18:51:45.000000Z",
+                    "updated_at": "2023-08-04T13:41:58.000000Z",
+                    "deleted_at": null
+                }
+            ],
+            "formattedNameLabel": "Ach Test (ACH)",
+            "registrationdatafees": null,
+            "IsPaymentFeeActive": "NO"
+        },
+        {
+            "id": 17,
+            "name": "CHASE0255",
+            "status": "A",
+            "only_cash": 1,
+            "add_payment_gateway": 0,
+            "paypal_button": 0,
+            "stripe_button": 0,
+            "company_id": 1,
+            "account_accepted": "N",
+            "created_at": "2023-05-25T18:24:09.000000Z",
+            "updated_at": "2023-07-14T18:34:39.000000Z",
+            "deleted_at": null,
+            "payment_gateways_id": null,
+            "settings_id": null,
+            "for_customer_use": 0,
+            "generate_expense": 0,
+            "void_refund": 0,
+            "generate_expense_id": null,
+            "void_refund_expense_id": null,
+            "expense_import": 0,
+            "is_multiple": 0,
+            "show_notes_table": 0,
+            "payment_method_id": 17,
+            "pos_money": [],
+            "formattedNameLabel": "CHASE0255 (No Gateway)",
+            "registrationdatafees": null,
+            "IsPaymentFeeActive": "NO"
+        },
+        {
+            "id": 23,
+            "name": "Credit card test status (sin gateway)",
+            "status": "A",
+            "only_cash": 0,
+            "add_payment_gateway": 0,
+            "paypal_button": 0,
+            "stripe_button": 0,
+            "company_id": 1,
+            "account_accepted": "N",
+            "created_at": "2023-08-29T11:45:04.000000Z",
+            "updated_at": "2023-08-29T11:45:04.000000Z",
+            "deleted_at": null,
+            "payment_gateways_id": null,
+            "settings_id": null,
+            "for_customer_use": 1,
+            "generate_expense": 0,
+            "void_refund": 0,
+            "generate_expense_id": null,
+            "void_refund_expense_id": null,
+            "expense_import": 0,
+            "is_multiple": 0,
+            "show_notes_table": 0,
+            "payment_method_id": 23,
+            "pos_money": [
+                {
+                    "id": 10,
+                    "name": "100 bolos",
+                    "amount": "99.99",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2024-01-17T20:50:02.000000Z",
+                    "updated_at": "2024-01-17T20:50:02.000000Z",
+                    "deleted_at": null
+                },
+                {
+                    "id": 9,
+                    "name": "1000 bolos",
+                    "amount": "1100.00",
+                    "is_coin": 0,
+                    "currency_id": 1,
+                    "created_at": "2024-01-09T17:33:13.000000Z",
+                    "updated_at": "2024-01-09T17:33:13.000000Z",
+                    "deleted_at": null
+                }
+            ],
+            "formattedNameLabel": "Credit card test status (sin gateway) (No Gateway)",
+            "registrationdatafees": null,
+            "IsPaymentFeeActive": "NO"
+        }
+    ],
+    "success": true
+}

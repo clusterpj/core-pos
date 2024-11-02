@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import posApi from '../services/api/pos-api'
+import posOperations from '../services/api/pos-operations'
 import { useCompanyStore } from './company'
 import { logger } from '../utils/logger'
 import apiClient from '../services/api/client'
@@ -13,7 +14,8 @@ export const usePosStore = defineStore('pos', {
       cashiers: false,
       employees: false,
       itemOperation: false,
-      holdInvoices: false
+      holdInvoices: false,
+      conversion: false
     },
     error: null,
     categories: [],
@@ -295,6 +297,33 @@ export const usePosStore = defineStore('pos', {
         throw error
       } finally {
         this.loading.holdInvoices = false
+        logger.endGroup()
+      }
+    },
+
+    async convertHoldOrderToInvoice(holdOrder) {
+      logger.startGroup('POS Store: Convert Hold Order to Invoice')
+      this.loading.conversion = true
+      this.error = null
+      
+      try {
+        // Convert the hold order to invoice
+        const response = await posOperations.convertHoldOrderToInvoice(holdOrder)
+        
+        if (response.success) {
+          // Remove the hold order from the list after successful conversion
+          this.holdInvoices = this.holdInvoices.filter(invoice => invoice.id !== holdOrder.id)
+          logger.info('Hold order converted successfully:', response)
+          return { success: true, invoice: response.data }
+        } else {
+          throw new Error(response.message || 'Failed to convert hold order')
+        }
+      } catch (error) {
+        logger.error('Failed to convert hold order', error)
+        this.error = error.message || 'Failed to convert hold order'
+        throw error
+      } finally {
+        this.loading.conversion = false
         logger.endGroup()
       }
     },
