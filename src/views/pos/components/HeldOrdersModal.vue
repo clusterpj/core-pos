@@ -1,3 +1,4 @@
+<!-- src/views/pos/components/HeldOrdersModal.vue -->
 <template>
   <v-dialog v-model="dialog" max-width="800">
     <template v-slot:activator="{ props }">
@@ -269,6 +270,9 @@ const loadOrder = async (invoice) => {
     if (invoice.notes) {
       cartStore.setNotes(invoice.notes)
     }
+
+    // Set the hold invoice ID in cart store
+    cartStore.setHoldInvoiceId(invoice.id)
 
     dialog.value = false
     logger.info('Order loaded successfully:', invoice.id)

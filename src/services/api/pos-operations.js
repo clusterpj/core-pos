@@ -243,42 +243,7 @@ const operations = {
         validateHoldOrder(holdOrder)
       }
 
-      const response = await apiClient.post('invoices', {
-        invoice_date: invoiceData.invoice_date,
-        due_date: invoiceData.due_date,
-        invoice_number: invoiceData.invoice_number,
-        invoice_template_id: 1,
-        is_invoice_pos: 1,
-        is_pdf_pos: true,
-        user_id: invoiceData.user_id,
-        hold_invoice_id: invoiceData.hold_invoice_id,
-        store_id: invoiceData.store_id,
-        cash_register_id: invoiceData.cash_register_id,
-        sub_total: invoiceData.sub_total,
-        total: invoiceData.total,
-        due_amount: invoiceData.due_amount,
-        tax: invoiceData.tax,
-        discount: invoiceData.discount,
-        discount_type: invoiceData.discount_type,
-        discount_val: invoiceData.discount_val,
-        items: invoiceData.items.map(item => ({
-          item_id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity.toString()
-        })),
-        status: "SENT",
-        paid_status: "UNPAID",
-        save_as_draft: 0,
-        not_charge_automatically: 0,
-        tax_per_item: "NO",
-        notes: invoiceData.notes || null,
-        late_fee_amount: 0,
-        late_fee_taxes: 0,
-        pbx_service_price: 0,
-        sent: 0,
-        viewed: 0
-      })
+      const response = await apiClient.post('invoices', invoiceData)
 
       logger.debug('Invoice creation response:', response.data)
       logger.info('Invoice created successfully:', {
@@ -312,6 +277,61 @@ const operations = {
       return {
         success: true,
         ...response.data.invoice
+      }
+    } catch (error) {
+      return handleApiError(error)
+    } finally {
+      logger.endGroup()
+    }
+  },
+
+  // Payment Operations
+  async getPaymentMethods() {
+    logger.startGroup('POS Operations: Get Payment Methods')
+    try {
+      logger.debug('Requesting payment methods')
+      const response = await apiClient.get('payments/multiple/get-payment-methods')
+      
+      if (!response.data?.payment_methods) {
+        throw new Error('Invalid payment methods response')
+      }
+
+      logger.debug('Payment methods response:', response.data)
+      logger.info('Payment methods fetched successfully')
+      return {
+        success: true,
+        data: response.data.payment_methods
+      }
+    } catch (error) {
+      return handleApiError(error)
+    } finally {
+      logger.endGroup()
+    }
+  },
+
+  async createPayment(paymentData) {
+    logger.startGroup('POS Operations: Create Payment')
+    try {
+      logger.debug('Creating payment with data:', paymentData)
+
+      const idempotencyKey = generateIdempotencyKey()
+      logger.debug('Generated idempotency key:', idempotencyKey)
+
+      const response = await apiClient.post('payments/multiple/create', paymentData, {
+        headers: {
+          'Idempotency-Key': idempotencyKey
+        }
+      })
+
+      logger.debug('Payment creation response:', response.data)
+      logger.info('Payment created successfully:', {
+        paymentId: response.data.payment?.id,
+        amount: response.data.payment?.amount
+      })
+      
+      return {
+        success: true,
+        ...response.data
       }
     } catch (error) {
       return handleApiError(error)
