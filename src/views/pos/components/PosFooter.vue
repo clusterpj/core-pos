@@ -4,7 +4,7 @@
     <div class="d-flex gap-2 justify-space-between w-100">
       <!-- Order Type Actions -->
       <div class="d-flex gap-2">
-        <held-orders-modal />
+        <held-orders-modal :disabled="isDisabled" />
         <dine-in-modal :disabled="isDisabled" />
         <to-go-modal :disabled="isDisabled" />
         <delivery-modal :disabled="isDisabled" />
