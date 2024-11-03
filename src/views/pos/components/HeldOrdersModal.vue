@@ -1,6 +1,6 @@
 <!-- src/views/pos/components/HeldOrdersModal.vue -->
 <template>
-  <v-dialog v-model="dialog" max-width="800">
+  <v-dialog v-model="dialog" max-width="1200">
     <template v-slot:activator="{ props }">
       <v-btn
         color="primary"
@@ -62,15 +62,15 @@
 
             <v-row>
               <v-col cols="12">
-                <v-table>
+                <v-table fixed-header height="500px">
                   <thead>
                     <tr>
-                      <th>Type</th>
-                      <th>Description</th>
-                      <th>Date</th>
-                      <th>Items</th>
-                      <th>Total</th>
-                      <th>Actions</th>
+                      <th class="text-left" style="min-width: 100px">Type</th>
+                      <th class="text-left" style="min-width: 200px">Description</th>
+                      <th class="text-left" style="min-width: 120px">Date</th>
+                      <th class="text-left" style="min-width: 100px">Items</th>
+                      <th class="text-left" style="min-width: 120px">Total</th>
+                      <th class="text-left" style="min-width: 300px">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -83,28 +83,48 @@
                           {{ getOrderType(invoice) }}
                         </v-chip>
                       </td>
-                      <td>{{ invoice.description }}</td>
+                      <td class="text-truncate" style="max-width: 200px">
+                        {{ invoice.description }}
+                      </td>
                       <td>{{ formatDate(invoice.created_at) }}</td>
                       <td>{{ invoice.hold_items?.length || 0 }} items</td>
                       <td>{{ formatCurrency(invoice.total / 100) }}</td>
                       <td>
-                        <v-btn
-                          size="small"
-                          color="info"
-                          class="mr-2"
-                          @click="loadOrder(invoice)"
-                          :loading="loadingOrder === invoice.id"
-                        >
-                          Load
-                        </v-btn>
-                        <v-btn
-                          size="small"
-                          color="error"
-                          @click="confirmDelete(invoice)"
-                          :loading="deletingOrder === invoice.id"
-                        >
-                          Delete
-                        </v-btn>
+                        <div class="d-flex gap-2">
+                          <v-btn
+                            size="small"
+                            color="info"
+                            variant="elevated"
+                            @click="loadOrder(invoice)"
+                            :loading="loadingOrder === invoice.id"
+                            :disabled="convertingOrder === invoice.id || deletingOrder === invoice.id"
+                          >
+                            <v-icon size="small" class="mr-1">mdi-cart-arrow-down</v-icon>
+                            Load
+                          </v-btn>
+                          <v-btn
+                            size="small"
+                            color="success"
+                            variant="elevated"
+                            @click="convertToInvoice(invoice)"
+                            :loading="convertingOrder === invoice.id"
+                            :disabled="loadingOrder === invoice.id || deletingOrder === invoice.id"
+                          >
+                            <v-icon size="small" class="mr-1">mdi-file-document-arrow-right</v-icon>
+                            Convert
+                          </v-btn>
+                          <v-btn
+                            size="small"
+                            color="error"
+                            variant="elevated"
+                            @click="confirmDelete(invoice)"
+                            :loading="deletingOrder === invoice.id"
+                            :disabled="loadingOrder === invoice.id || convertingOrder === invoice.id"
+                          >
+                            <v-icon size="small" class="mr-1">mdi-delete</v-icon>
+                            Delete
+                          </v-btn>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -162,6 +182,7 @@ const loadingOrder = ref(null)
 const deletingOrder = ref(null)
 const selectedInvoice = ref(null)
 const isDeleting = ref(false)
+const convertingOrder = ref(null)
 
 // Order type options for filter
 const orderTypes = [
@@ -231,6 +252,67 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
+// Convert to invoice
+const convertToInvoice = async (invoice) => {
+  try {
+    convertingOrder.value = invoice.id
+    logger.debug('Converting order to invoice:', invoice)
+    
+    // Clear current cart
+    cartStore.clearCart()
+    
+    // Add each hold item to cart
+    invoice.hold_items?.forEach(item => {
+      cartStore.addItem({
+        id: item.item_id,
+        name: item.name,
+        description: item.description,
+        price: item.price / 100, // Convert cents to dollars
+        unit_name: item.unit_name,
+        quantity: Number(item.quantity)
+      })
+    })
+
+    // Set other cart properties
+    if (invoice.discount_type && invoice.discount) {
+      cartStore.setDiscount(
+        invoice.discount_type,
+        Number(invoice.discount)
+      )
+    }
+    
+    if (invoice.tip_type && invoice.tip) {
+      cartStore.setTip(
+        invoice.tip_type,
+        Number(invoice.tip)
+      )
+    }
+
+    if (invoice.notes) {
+      cartStore.setNotes(invoice.notes)
+    }
+
+    // Create invoice
+    await cartStore.createInvoice()
+    
+    // Delete the held order after successful conversion
+    await posStore.deleteHoldInvoice(invoice.id)
+    
+    // Show success message
+    window.toastr?.['success']('Order converted to invoice successfully')
+    
+    // Close modal
+    dialog.value = false
+    
+    logger.info('Order converted to invoice successfully:', invoice.id)
+  } catch (error) {
+    logger.error('Failed to convert order to invoice:', error)
+    window.toastr?.['error']('Failed to convert order to invoice')
+  } finally {
+    convertingOrder.value = null
+  }
+}
+
 // Load order
 const loadOrder = async (invoice) => {
   try {
@@ -271,8 +353,9 @@ const loadOrder = async (invoice) => {
       cartStore.setNotes(invoice.notes)
     }
 
-    // Set the hold invoice ID in cart store
+    // Set the hold invoice ID and description in cart store
     cartStore.setHoldInvoiceId(invoice.id)
+    cartStore.setHoldOrderDescription(invoice.description || `Order #${invoice.id}`)
 
     dialog.value = false
     logger.info('Order loaded successfully:', invoice.id)
@@ -345,5 +428,15 @@ onMounted(async () => {
 <style scoped>
 .v-table {
   width: 100%;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

@@ -12,7 +12,8 @@ export const useCartStore = defineStore('cart', {
     error: null,
     notes: '',
     selectedTables: [],
-    holdInvoiceId: null
+    holdInvoiceId: null,
+    holdOrderDescription: null
   }),
 
   getters: {
@@ -168,6 +169,14 @@ export const useCartStore = defineStore('cart', {
     setHoldInvoiceId(id) {
       logger.info('Setting hold invoice ID:', id)
       this.holdInvoiceId = id
+      if (!id) {
+        this.holdOrderDescription = null
+      }
+    },
+
+    setHoldOrderDescription(description) {
+      logger.info('Setting hold order description:', description)
+      this.holdOrderDescription = description
     },
 
     clearCart() {
@@ -178,6 +187,7 @@ export const useCartStore = defineStore('cart', {
       this.notes = ''
       this.selectedTables = []
       this.holdInvoiceId = null
+      this.holdOrderDescription = null
     },
 
     // Convert dollar amount to cents
@@ -266,7 +276,7 @@ export const useCartStore = defineStore('cart', {
           taxes: {},
           notes: this.notes,
           contact: {},
-          description: referenceNumber,
+          description: this.holdOrderDescription || referenceNumber,
           retention_total: 0,
           retention: "NO",
           status: "SENT",

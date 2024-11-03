@@ -35,7 +35,7 @@
     </div>
 
     <!-- Payment Dialog -->
-    <v-dialog v-model="showPaymentDialog" max-width="500">
+    <v-dialog v-model="showPaymentDialog" max-width="600">
       <v-card>
         <v-card-title class="text-h5">
           Payment
@@ -47,11 +47,87 @@
 
         <v-card-text>
           <v-container>
+            <!-- Order Details Section -->
             <v-row>
               <v-col cols="12">
-                <h3 class="text-h6">Total: {{ formatCurrency(cartStore.total) }}</h3>
+                <v-card variant="outlined" class="mb-4">
+                  <v-card-title class="text-subtitle-1 py-2">
+                    Order Details
+                    <v-chip
+                      color="warning"
+                      size="small"
+                      class="ml-2"
+                      prepend-icon="mdi-clock-outline"
+                    >
+                      Held Order
+                    </v-chip>
+                  </v-card-title>
+                  
+                  <!-- Items List -->
+                  <v-list density="compact">
+                    <v-list-item
+                      v-for="item in cartStore.items"
+                      :key="item.id"
+                      :title="item.name"
+                      :subtitle="item.modifications?.length ? item.modifications.join(', ') : null"
+                    >
+                      <template v-slot:append>
+                        <div class="d-flex align-center">
+                          <span class="mr-2">x{{ item.quantity }}</span>
+                          <span>{{ formatCurrency(item.price * item.quantity) }}</span>
+                        </div>
+                      </template>
+                    </v-list-item>
+                  </v-list>
+
+                  <!-- Order Summary -->
+                  <v-divider></v-divider>
+                  <v-list density="compact">
+                    <v-list-item>
+                      <template v-slot:title>
+                        <div class="d-flex justify-space-between">
+                          <span>Subtotal</span>
+                          <span>{{ formatCurrency(cartStore.subtotal) }}</span>
+                        </div>
+                      </template>
+                    </v-list-item>
+
+                    <v-list-item v-if="cartStore.discountAmount > 0">
+                      <template v-slot:title>
+                        <div class="d-flex justify-space-between">
+                          <span>
+                            Discount 
+                            <span class="text-caption">
+                              ({{ cartStore.discountType === '%' ? cartStore.discountValue + '%' : formatCurrency(cartStore.discountValue) }})
+                            </span>
+                          </span>
+                          <span>-{{ formatCurrency(cartStore.discountAmount) }}</span>
+                        </div>
+                      </template>
+                    </v-list-item>
+
+                    <v-list-item>
+                      <template v-slot:title>
+                        <div class="d-flex justify-space-between">
+                          <span>Tax ({{ (cartStore.taxRate * 100).toFixed(1) }}%)</span>
+                          <span>{{ formatCurrency(cartStore.taxAmount) }}</span>
+                        </div>
+                      </template>
+                    </v-list-item>
+
+                    <v-list-item>
+                      <template v-slot:title>
+                        <div class="d-flex justify-space-between font-weight-bold">
+                          <span>Total</span>
+                          <span>{{ formatCurrency(cartStore.total) }}</span>
+                        </div>
+                      </template>
+                    </v-list-item>
+                  </v-list>
+                </v-card>
               </v-col>
 
+              <!-- Payment Method Selection -->
               <v-col cols="12">
                 <v-select
                   v-model="selectedPaymentMethod"

@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import BaseLayout from '../components/BaseLayout.vue'
 import posRoutes from '../views/pos/pos.routes'
+import kitchenRoutes from '../views/kitchen/kitchen.routes'
 
 const routes = [
   {
@@ -21,7 +22,7 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: '/pos'  // Changed from '/dashboard' to '/pos'
+        redirect: '/pos'
       },
       {
         path: 'items',
@@ -31,7 +32,8 @@ const routes = [
           title: 'Items Management'
         }
       },
-      posRoutes
+      posRoutes,
+      kitchenRoutes
     ]
   },
   {
@@ -89,9 +91,9 @@ router.beforeEach(async (to, from, next) => {
     // Redirect authenticated users away from login
     if (to.path === '/login' && authStore.isAuthenticated) {
       if (import.meta.env.DEV) {
-        console.log('Already authenticated, redirecting to pos')  // Changed from dashboard to pos
+        console.log('Already authenticated, redirecting to pos')
       }
-      return next('/pos')  // Changed from /dashboard to /pos
+      return next('/pos')
     }
 
     next()

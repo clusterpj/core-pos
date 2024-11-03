@@ -21,7 +21,8 @@ export const usePosStore = defineStore('pos', () => {
     employees: false,
     itemOperation: false,
     holdInvoices: false,
-    conversion: false
+    conversion: false,
+    updating: false
   })
   const error = ref(null)
   const categories = ref([])
@@ -265,6 +266,45 @@ export const usePosStore = defineStore('pos', () => {
     }
   }
 
+  const updateHoldInvoice = async (id, orderData) => {
+    logger.startGroup('POS Store: Update Hold Invoice')
+    loading.value.updating = true
+    error.value = null
+    
+    try {
+      logger.debug('Update hold invoice request data:', { id, orderData })
+
+      const response = await posOperations.updateHoldInvoice(id, orderData)
+      logger.debug('Update hold invoice API response:', response)
+
+      if (response.success) {
+        logger.info('Hold invoice updated successfully:', response)
+        await fetchHoldInvoices()
+        return { success: true, data: response.data }
+      }
+
+      const errorMessage = response.message || 'Failed to update hold invoice'
+      logger.error('Update hold invoice failed:', {
+        message: errorMessage,
+        response
+      })
+      throw new Error(errorMessage)
+
+    } catch (error) {
+      logger.error('Update hold invoice error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      })
+
+      error.value = error.message
+      throw error
+    } finally {
+      loading.value.updating = false
+      logger.endGroup()
+    }
+  }
+
   const deleteHoldInvoice = async (id) => {
     logger.startGroup('POS Store: Delete Hold Invoice')
     loading.value.holdInvoices = true
@@ -347,6 +387,7 @@ export const usePosStore = defineStore('pos', () => {
     fetchProducts,
     fetchHoldInvoices,
     holdOrder,
+    updateHoldInvoice,
     deleteHoldInvoice,
     resetOrder,
     resetState

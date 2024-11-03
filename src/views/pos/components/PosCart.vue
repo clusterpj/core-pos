@@ -3,7 +3,31 @@
   <div class="pos-cart-container">
     <div class="cart-header px-4 pt-4 pb-2">
       <div class="d-flex justify-space-between align-center">
-        <h2 class="text-h6">Current Order:</h2>
+        <div>
+          <h2 class="text-h6">Current Order:</h2>
+          <div class="d-flex align-center gap-2">
+            <template v-if="cartStore.isHoldOrder">
+              <v-chip
+                color="warning"
+                size="small"
+                class="mt-1"
+                prepend-icon="mdi-clock-outline"
+              >
+                Held Order: {{ cartStore.holdOrderDescription || 'No Description' }}
+              </v-chip>
+              <v-btn
+                color="warning"
+                size="small"
+                class="mt-1"
+                :loading="updating"
+                @click="updateOrder"
+                prepend-icon="mdi-content-save"
+              >
+                Update Order
+              </v-btn>
+            </template>
+          </div>
+        </div>
         <v-btn
           color="error"
           variant="text"
@@ -176,17 +200,21 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useCartStore } from '../../../stores/cart-store'
+import { usePosStore } from '../../../stores/pos-store'
 import { useCartModifications } from '../composables/useCartModifications'
+import { logger } from '../../../utils/logger'
 import CartItemList from './cart/CartItemList.vue'
 import CartSummary from './cart/CartSummary.vue'
 
 const cartStore = useCartStore()
+const posStore = usePosStore()
 
 // Local state
 const showEditDialog = ref(false)
 const editingItem = ref(null)
 const editingIndex = ref(null)
 const splitQuantity = ref(1)
+const updating = ref(false)
 
 // Composables
 const {
@@ -261,6 +289,42 @@ const closeEditDialog = () => {
   editingIndex.value = null
   resetModifications()
   splitQuantity.value = 1
+}
+
+// Update held order
+const updateOrder = async () => {
+  try {
+    const holdInvoiceId = cartStore.holdInvoiceId
+    if (!holdInvoiceId) {
+      throw new Error('No hold invoice ID found')
+    }
+
+    updating.value = true
+    logger.debug('Updating order:', holdInvoiceId)
+
+    // Prepare the order data from the current cart state
+    const orderData = cartStore.prepareHoldInvoiceData(
+      posStore.selectedStore,
+      posStore.selectedCashier,
+      ''
+    )
+
+    // Update the hold invoice
+    const response = await posStore.updateHoldInvoice(holdInvoiceId, orderData)
+
+    if (response.success) {
+      window.toastr?.['success']('Order updated successfully')
+      // Clear the hold invoice ID after successful update
+      cartStore.setHoldInvoiceId(null)
+    } else {
+      throw new Error(response.message || 'Failed to update order')
+    }
+  } catch (error) {
+    logger.error('Failed to update order:', error)
+    window.toastr?.['error'](error.message || 'Failed to update order')
+  } finally {
+    updating.value = false
+  }
 }
 </script>
 
