@@ -56,6 +56,58 @@ export function useOrderType() {
     return !cartStore.isEmpty && posStore.systemReady
   })
 
+  const currentOrderType = computed(() => {
+    try {
+      // First try to parse from notes
+      if (cartStore.notes) {
+        try {
+          const notesObj = JSON.parse(cartStore.notes)
+          if (notesObj.type && Object.values(ORDER_TYPES).includes(notesObj.type)) {
+            logger.debug('Order type found in notes:', notesObj.type)
+            return notesObj.type
+          }
+        } catch (e) {
+          logger.warn('Failed to parse order type from notes:', e)
+        }
+      }
+
+      // If we have a held invoice, try to determine type from the name
+      if (cartStore.holdInvoiceId) {
+        // Check if any order type prefix exists in the invoice name
+        const invoiceName = cartStore.holdInvoiceName || ''
+        for (const type of Object.values(ORDER_TYPES)) {
+          if (invoiceName.startsWith(type)) {
+            logger.debug('Order type determined from hold invoice name:', type)
+            // Update notes to preserve the type
+            const orderInfo = {
+              type,
+              customer: { ...customerInfo.value }
+            }
+            cartStore.setNotes(JSON.stringify(orderInfo))
+            return type
+          }
+        }
+      }
+
+      // If no type found, default to TO_GO for held orders
+      if (cartStore.holdInvoiceId) {
+        logger.debug('No order type found for held order, defaulting to TO_GO')
+        const orderInfo = {
+          type: ORDER_TYPES.TO_GO,
+          customer: { ...customerInfo.value }
+        }
+        cartStore.setNotes(JSON.stringify(orderInfo))
+        return ORDER_TYPES.TO_GO
+      }
+
+      logger.debug('No order type found')
+      return null
+    } catch (e) {
+      logger.error('Error determining current order type:', e)
+      return null
+    }
+  })
+
   // Methods
   const setOrderType = (type) => {
     if (!Object.values(ORDER_TYPES).includes(type)) {
@@ -73,6 +125,14 @@ export function useOrderType() {
       instructions: ''
     }
     error.value = null
+
+    // Update notes with new order type
+    const orderInfo = {
+      type,
+      customer: { ...customerInfo.value }
+    }
+    cartStore.setNotes(JSON.stringify(orderInfo))
+    logger.debug('Order type set:', type)
   }
 
   const setCustomerInfo = (info) => {
@@ -80,6 +140,13 @@ export function useOrderType() {
       ...customerInfo.value,
       ...info
     }
+    // Update notes with new customer info
+    const orderInfo = {
+      type: orderType.value,
+      customer: { ...customerInfo.value }
+    }
+    cartStore.setNotes(JSON.stringify(orderInfo))
+    logger.debug('Customer info updated:', customerInfo.value)
   }
 
   const processOrder = async () => {
@@ -203,6 +270,7 @@ export function useOrderType() {
     isValid,
     requiresCustomerInfo,
     canCreateOrder,
+    currentOrderType,
 
     // Methods
     setOrderType,

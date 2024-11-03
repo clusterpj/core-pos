@@ -26,46 +26,6 @@ const validateHoldOrder = (order) => {
   }
 }
 
-const validatePayment = (payment, invoice) => {
-  if (!payment || !invoice) {
-    throw new Error('Invalid payment or invoice data')
-  }
-
-  // Validate payment total matches invoice
-  const paymentTotal = payment.payment_methods.reduce((sum, method) => {
-    return sum + Number(method.amount)
-  }, 0)
-
-  // Compare totals (both should be in cents)
-  if (paymentTotal !== invoice.total) {
-    logger.error('Payment total mismatch:', {
-      paymentTotal,
-      invoiceTotal: invoice.total,
-      difference: Math.abs(paymentTotal - invoice.total)
-    })
-    throw new Error('Payment total does not match invoice total')
-  }
-
-  // Validate payment methods
-  payment.payment_methods.forEach(method => {
-    if (!method.id || !method.amount) {
-      throw new Error('Invalid payment method data')
-    }
-    if (method.amount <= 0) {
-      throw new Error('Invalid payment amount')
-    }
-    // For cash payments, validate received and returned amounts
-    if (method.received !== undefined) {
-      if (method.received < method.amount) {
-        throw new Error('Cash received must be greater than or equal to payment amount')
-      }
-      if (method.returned !== undefined && method.returned > method.received - method.amount) {
-        throw new Error('Invalid change amount')
-      }
-    }
-  })
-}
-
 const generateIdempotencyKey = () => {
   return `pos_${Date.now()}_${uuidv4()}`
 }
@@ -115,7 +75,7 @@ const handleApiError = (error) => {
  * POS Operations Service
  * Implements core POS operations from the API documentation
  */
-export const posOperations = {
+const operations = {
   // Configuration Operations
   async getCompanySettings() {
     logger.startGroup('POS Operations: Get Company Settings')
@@ -165,53 +125,7 @@ export const posOperations = {
       
       return {
         nextNumber: response.data.nextNumber,
-        prefix: response.data.prefix,
-        paymentPrefix: type === 'payment' ? response.data.prefix : undefined,
-        paymentNumAttribute: type === 'payment' ? response.data.nextNumber : undefined
-      }
-    } catch (error) {
-      return handleApiError(error)
-    } finally {
-      logger.endGroup()
-    }
-  },
-
-  async getPaymentMethods() {
-    logger.startGroup('POS Operations: Get Payment Methods')
-    try {
-      logger.debug('Requesting payment methods')
-      const response = await apiClient.get('payments/multiple/get-payment-methods')
-      
-      logger.debug('Raw payment methods response:', response.data)
-      
-      if (!response.data?.payment_methods) {
-        throw new Error('Invalid payment methods response structure')
-      }
-
-      // Validate and filter active payment methods
-      const validMethods = response.data.payment_methods.filter(method => {
-        const isValid = method.status === 'A' && !method.deleted_at
-        if (!isValid) {
-          logger.debug(`Filtered out payment method ${method.id}: inactive or deleted`)
-        }
-        return isValid
-      })
-
-      logger.debug('Valid payment methods found:', validMethods.length)
-      validMethods.forEach((method, index) => {
-        logger.debug(`Payment method ${index + 1}:`, {
-          id: method.id,
-          name: method.name,
-          type: method.account_accepted,
-          only_cash: method.only_cash,
-          denominations: method.pos_money?.length || 0,
-          isPaymentFeeActive: method.IsPaymentFeeActive
-        })
-      })
-
-      return {
-        success: true,
-        payment_methods: validMethods
+        prefix: response.data.prefix
       }
     } catch (error) {
       return handleApiError(error)
@@ -347,9 +261,6 @@ export const posOperations = {
         discount: invoiceData.discount,
         discount_type: invoiceData.discount_type,
         discount_val: invoiceData.discount_val,
-        tip: invoiceData.tip,
-        tip_type: invoiceData.tip_type,
-        tip_val: invoiceData.tip_val,
         items: invoiceData.items.map(item => ({
           item_id: item.id,
           name: item.name,
@@ -386,69 +297,6 @@ export const posOperations = {
     }
   },
 
-  async processPayment(paymentData) {
-    logger.startGroup('POS Operations: Process Payment')
-    try {
-      logger.debug('Processing payment with data:', paymentData)
-
-      // Generate idempotency key
-      const idempotencyKey = generateIdempotencyKey()
-      logger.debug('Generated idempotency key:', idempotencyKey)
-
-      // Validate payment against invoice
-      validatePayment(paymentData, await this.getInvoice(paymentData.invoice_id))
-
-      const response = await apiClient.post('payments/multiple/create', 
-        {
-          payment_date: paymentData.payment_date,
-          paymentPrefix: paymentData.paymentPrefix,
-          paymentNumAttribute: paymentData.paymentNumAttribute,
-          payment_number: paymentData.payment_number,
-          amount: paymentData.amount,
-          invoice_id: paymentData.invoice_id,
-          is_multiple: true,
-          notes: paymentData.notes || "POS payment",
-          payment_methods: paymentData.payment_methods.map(method => ({
-            id: method.id,
-            name: method.name,
-            amount: method.amount,
-            received: method.received,
-            returned: method.returned,
-            id_raw: method.id_raw,
-            valid: true
-          })),
-          status: {
-            value: "Approved",
-            text: "Approved"
-          },
-          user_id: paymentData.user_id
-        },
-        {
-          headers: {
-            'Idempotency-Key': idempotencyKey
-          }
-        }
-      )
-
-      logger.debug('Payment processing response:', response.data)
-      logger.info('Payment processed successfully:', {
-        paymentId: response.data.payment?.id,
-        amount: response.data.payment?.amount,
-        invoiceId: paymentData.invoice_id,
-        idempotencyKey
-      })
-
-      return {
-        success: true,
-        ...response.data
-      }
-    } catch (error) {
-      return handleApiError(error)
-    } finally {
-      logger.endGroup()
-    }
-  },
-
   async getInvoice(id) {
     logger.startGroup('POS Operations: Get Invoice')
     try {
@@ -470,30 +318,10 @@ export const posOperations = {
     } finally {
       logger.endGroup()
     }
-  },
-
-  async getPayment(id) {
-    logger.startGroup('POS Operations: Get Payment')
-    try {
-      logger.debug('Requesting payment:', id)
-      const response = await apiClient.get(`payments/${id}`)
-      
-      if (!response.data?.payment) {
-        throw new Error('Invalid payment response')
-      }
-
-      logger.debug('Payment response:', response.data)
-      logger.info('Payment fetched successfully')
-      return {
-        success: true,
-        ...response.data.payment
-      }
-    } catch (error) {
-      return handleApiError(error)
-    } finally {
-      logger.endGroup()
-    }
   }
 }
 
-export default posOperations
+// Export both the composable-style function and the direct operations object
+export const usePosOperations = () => operations
+export const posOperations = operations
+export default operations

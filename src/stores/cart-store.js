@@ -12,9 +12,7 @@ export const useCartStore = defineStore('cart', {
     error: null,
     notes: '',
     selectedTables: [],
-    tipType: 'fixed',
-    tipValue: 0,
-    holdInvoiceId: null // Added to track hold invoice ID
+    holdInvoiceId: null
   }),
 
   getters: {
@@ -40,15 +38,8 @@ export const useCartStore = defineStore('cart', {
       return Math.round(state.taxableAmount * state.taxRate)
     },
 
-    tipAmount: (state) => {
-      if (state.tipType === '%') {
-        return Math.round(state.taxableAmount * (state.tipValue / 100))
-      }
-      return Number(state.tipValue) || 0
-    },
-
     total: (state) => {
-      return Math.round(state.taxableAmount + state.taxAmount + state.tipAmount)
+      return Math.round(state.taxableAmount + state.taxAmount)
     },
 
     itemCount: (state) => {
@@ -166,12 +157,6 @@ export const useCartStore = defineStore('cart', {
       this.discountValue = value
     },
 
-    setTip(type, value) {
-      logger.info('Setting tip:', { type, value })
-      this.tipType = type
-      this.tipValue = value
-    },
-
     setNotes(notes) {
       this.notes = notes
     },
@@ -190,8 +175,6 @@ export const useCartStore = defineStore('cart', {
       this.items = []
       this.discountType = 'fixed'
       this.discountValue = 0
-      this.tipType = 'fixed'
-      this.tipValue = 0
       this.notes = ''
       this.selectedTables = []
       this.holdInvoiceId = null
@@ -271,9 +254,6 @@ export const useCartStore = defineStore('cart', {
           discount_type: this.discountType,
           discount: this.discountValue.toString(),
           discount_val: this.toCents(this.discountAmount),
-          tip_type: this.tipType,
-          tip: this.tipValue.toString(),
-          tip_val: this.toCents(this.tipAmount),
           discount_per_item: "NO",
           items: this.prepareItemsForApi(),
           invoice_template_id: 1,

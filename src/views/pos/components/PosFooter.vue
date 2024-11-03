@@ -14,14 +14,6 @@
       <!-- Order Actions -->
       <div class="d-flex gap-2">
         <v-btn
-          color="success"
-          prepend-icon="mdi-cash-register"
-          @click="$emit('process-payment')"
-          :disabled="isDisabled"
-        >
-          Payment
-        </v-btn>
-        <v-btn
           color="info"
           prepend-icon="mdi-printer"
           @click="$emit('print-order')"
@@ -60,9 +52,7 @@ const isDisabled = computed(() => {
   return isEmpty.value || !isConfigured.value
 })
 
-// Keep all emits defined even though submit button is removed
 defineEmits([
-  'process-payment',
   'print-order',
   'submit-order'
 ])

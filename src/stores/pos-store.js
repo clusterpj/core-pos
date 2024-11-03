@@ -1,359 +1,354 @@
 import { defineStore } from 'pinia'
-import posApi from '../services/api/pos-api'
-import posOperations from '../services/api/pos-operations'
+import { ref, computed } from 'vue'
+import { useCartStore } from './cart-store'
+import { usePosApi } from '../services/api/pos-api'
+import { usePosOperations } from '../services/api/pos-operations'
 import { useCompanyStore } from './company'
 import { logger } from '../utils/logger'
-import apiClient from '../services/api/client'
 
-export const usePosStore = defineStore('pos', {
-  state: () => ({
-    loading: {
-      categories: false,
-      products: false,
-      stores: false,
-      cashiers: false,
-      employees: false,
-      itemOperation: false,
-      holdInvoices: false,
-      conversion: false
-    },
-    error: null,
-    categories: [],
-    products: [],
-    selectedCategory: 'all',
-    searchQuery: '',
-    currentPage: 1,
-    itemsPerPage: 20,
-    totalItems: 0,
-    stores: [],
-    cashiers: [],
-    employees: [],
-    holdInvoices: []
-  }),
+export const usePosStore = defineStore('pos', () => {
+  const cartStore = useCartStore()
+  const companyStore = useCompanyStore()
+  const posApi = usePosApi()
+  const posOperations = usePosOperations()
 
-  getters: {
-    categoriesForDisplay(state) {
-      return (state.categories || []).map(category => ({
+  // State
+  const loading = ref({
+    categories: false,
+    products: false,
+    stores: false,
+    cashiers: false,
+    employees: false,
+    itemOperation: false,
+    holdInvoices: false,
+    conversion: false
+  })
+  const error = ref(null)
+  const categories = ref([])
+  const products = ref([])
+  const selectedCategory = ref('all')
+  const searchQuery = ref('')
+  const currentPage = ref(1)
+  const itemsPerPage = ref(20)
+  const totalItems = ref(0)
+  const stores = ref([])
+  const cashiers = ref([])
+  const employees = ref([])
+  const holdInvoices = ref([])
+  const activeOrderType = ref(null)
+  const selectedTable = ref(null)
+  const orderReference = ref('')
+  const customerInfo = ref(null)
+  const isTableMode = ref(false)
+
+  // Getters
+  const hasActiveOrder = computed(() => {
+    return cartStore.items.length > 0
+  })
+
+  const canPlaceOrder = computed(() => {
+    return hasActiveOrder.value && activeOrderType.value
+  })
+
+  const categoriesForDisplay = computed(() => {
+    return [
+      { id: 'all', name: 'All Categories', value: 'all' },
+      ...(categories.value || []).map(category => ({
         id: category.item_category_id,
         name: category.name,
         value: category.item_category_id
       }))
-    },
+    ]
+  })
 
-    storesForDisplay(state) {
-      return (state.stores || []).map(store => ({
-        title: store.name,
-        value: store.id
-      }))
-    },
+  const systemReady = computed(() => {
+    return companyStore.isConfigured
+  })
 
-    cashiersForDisplay(state) {
-      return (state.cashiers || []).map(cashier => ({
-        title: cashier.name,
-        value: cashier.id
-      }))
-    },
+  const setupMessage = computed(() => {
+    if (!companyStore.selectedCustomer) return 'Please select a customer'
+    if (!companyStore.selectedStore) return 'Please select a store'
+    if (!companyStore.selectedCashier) return 'Please select a cash register'
+    return ''
+  })
 
-    employeesForDisplay(state) {
-      return (state.employees || []).map(employee => ({
-        title: employee.name,
-        value: employee.id
-      }))
-    },
-
-    systemReady() {
-      const companyStore = useCompanyStore()
-      return companyStore.isConfigured
-    },
-
-    setupMessage() {
-      const companyStore = useCompanyStore()
-      if (!companyStore.selectedCustomer) return 'Please select a customer'
-      if (!companyStore.selectedStore) return 'Please select a store'
-      if (!companyStore.selectedCashier) return 'Please select a cash register'
-      return ''
+  // Actions
+  const initialize = async () => {
+    logger.startGroup('POS Store: Initialize')
+    try {
+      await companyStore.initializeStore()
+      await fetchCategories()
+      await fetchHoldInvoices()
+      logger.info('POS Store initialized successfully')
+    } catch (error) {
+      logger.error('Failed to initialize POS store', error)
+      throw error
+    } finally {
+      logger.endGroup()
     }
-  },
+  }
 
-  actions: {
-    async initialize() {
-      logger.startGroup('POS Store: Initialize')
-      try {
-        const companyStore = useCompanyStore()
-        await companyStore.initializeStore()
-        await this.fetchCategories()
-        await this.fetchHoldInvoices()
-        logger.info('POS Store initialized successfully')
-      } catch (error) {
-        logger.error('Failed to initialize POS store', error)
-        throw error
-      } finally {
-        logger.endGroup()
+  const setOrderType = (type) => {
+    activeOrderType.value = type
+  }
+
+  const setTableSelection = (table) => {
+    selectedTable.value = table
+  }
+
+  const setOrderReference = (reference) => {
+    orderReference.value = reference
+  }
+
+  const setCustomerInfo = (info) => {
+    customerInfo.value = info
+  }
+
+  const toggleTableMode = (value) => {
+    isTableMode.value = value
+  }
+
+  const setCategory = async (categoryId) => {
+    selectedCategory.value = categoryId
+    currentPage.value = 1
+    await fetchProducts()
+  }
+
+  const fetchCategories = async () => {
+    if (!companyStore.isConfigured) {
+      logger.warn('Company configuration incomplete, skipping categories fetch')
+      return
+    }
+
+    logger.startGroup('POS Store: Fetch Categories')
+    loading.value.categories = true
+    error.value = null
+    
+    try {
+      const response = await posApi.getItemCategories()
+      
+      if (response.success) {
+        categories.value = Array.isArray(response.data) ? response.data : []
+        logger.info(`Loaded ${categories.value.length} categories`)
+        
+        if (categories.value.length > 0) {
+          logger.info('Categories loaded, fetching products')
+          await fetchProducts()
+        } else {
+          logger.warn('No categories available')
+        }
+      } else {
+        logger.warn('Failed to load categories', response.error)
+        categories.value = []
       }
-    },
+    } catch (error) {
+      logger.error('Failed to fetch categories', error)
+      error.value = error.message || 'Failed to load categories'
+      categories.value = []
+    } finally {
+      loading.value.categories = false
+      logger.endGroup()
+    }
+  }
 
-    async fetchCategories() {
-      const companyStore = useCompanyStore()
-      if (!companyStore.isConfigured) {
-        logger.warn('Company configuration incomplete, skipping categories fetch')
+  const fetchProducts = async () => {
+    if (!companyStore.isConfigured) {
+      logger.warn('Company configuration incomplete, skipping products fetch')
+      return
+    }
+
+    logger.startGroup('POS Store: Fetch Products')
+    loading.value.products = true
+    error.value = null
+    
+    try {
+      const categoryIds = selectedCategory.value === 'all'
+        ? categories.value.map(c => c.item_category_id)
+        : [selectedCategory.value]
+
+      const params = {
+        search: searchQuery.value,
+        categories_id: categoryIds,
+        avalara_bool: false,
+        is_pos: 1,
+        id: companyStore.selectedStore,
+        limit: itemsPerPage.value,
+        page: currentPage.value
+      }
+
+      logger.debug('Fetch products params', params)
+      const response = await posApi.getItems(params)
+      
+      if (response.items?.data) {
+        products.value = Array.isArray(response.items.data) ? response.items.data : []
+        totalItems.value = response.itemTotalCount || 0
+        logger.info(`Loaded ${products.value.length} products`)
+      } else {
+        logger.warn('No products data in response', response)
+        products.value = []
+        totalItems.value = 0
+      }
+    } catch (error) {
+      logger.error('Failed to fetch products', error)
+      error.value = error.message || 'Failed to load products'
+      products.value = []
+      totalItems.value = 0
+    } finally {
+      loading.value.products = false
+      logger.endGroup()
+    }
+  }
+
+  const fetchHoldInvoices = async () => {
+    logger.startGroup('POS Store: Fetch Hold Invoices')
+    loading.value.holdInvoices = true
+    error.value = null
+    
+    try {
+      const response = await posApi.holdInvoice.getAll()
+      logger.debug('Hold invoices response:', response)
+
+      if (response?.data?.hold_invoices?.data) {
+        holdInvoices.value = response.data.hold_invoices.data
+        logger.info(`Loaded ${holdInvoices.value.length} hold invoices`)
         return
       }
 
-      logger.startGroup('POS Store: Fetch Categories')
-      this.loading.categories = true
-      this.error = null
-      
-      try {
-        const response = await posApi.getItemCategories()
-        
-        if (response.success) {
-          this.categories = Array.isArray(response.data) ? response.data : []
-          logger.info(`Loaded ${this.categories.length} categories`)
-          
-          if (this.categories.length > 0) {
-            logger.info('Categories loaded, fetching products')
-            await this.fetchProducts()
-          } else {
-            logger.warn('No categories available')
-          }
-        } else {
-          logger.warn('Failed to load categories', response.error)
-          this.categories = []
-        }
-      } catch (error) {
-        logger.error('Failed to fetch categories', error)
-        this.error = error.message || 'Failed to load categories'
-        this.categories = []
-      } finally {
-        this.loading.categories = false
-        logger.endGroup()
-      }
-    },
-
-    async fetchProducts() {
-      const companyStore = useCompanyStore()
-      if (!companyStore.isConfigured) {
-        logger.warn('Company configuration incomplete, skipping products fetch')
-        return
-      }
-
-      logger.startGroup('POS Store: Fetch Products')
-      this.loading.products = true
-      this.error = null
-      
-      try {
-        const categoryIds = this.selectedCategory === 'all'
-          ? this.categories.map(c => c.item_category_id)
-          : [this.selectedCategory]
-
-        const params = {
-          search: this.searchQuery,
-          categories_id: categoryIds,
-          avalara_bool: false,
-          is_pos: 1,
-          id: companyStore.selectedStore,
-          limit: this.itemsPerPage,
-          page: this.currentPage
-        }
-
-        logger.debug('Fetch products params', params)
-        const response = await posApi.getItems(params)
-        
-        if (response.items?.data) {
-          this.products = Array.isArray(response.items.data) ? response.items.data : []
-          this.totalItems = response.itemTotalCount || 0
-          logger.info(`Loaded ${this.products.length} products`)
-        } else {
-          logger.warn('No products data in response', response)
-          this.products = []
-          this.totalItems = 0
-        }
-      } catch (error) {
-        logger.error('Failed to fetch products', error)
-        this.error = error.message || 'Failed to load products'
-        this.products = []
-        this.totalItems = 0
-      } finally {
-        this.loading.products = false
-        logger.endGroup()
-      }
-    },
-
-    async fetchHoldInvoices() {
-      logger.startGroup('POS Store: Fetch Hold Invoices')
-      this.loading.holdInvoices = true
-      this.error = null
-      
-      try {
-        const response = await posApi.holdInvoice.getAll()
-        logger.debug('Hold invoices response:', response)
-
-        // Check if we have a valid response with hold invoices
-        if (response?.data?.hold_invoices?.data) {
-          this.holdInvoices = response.data.hold_invoices.data
-          logger.info(`Loaded ${this.holdInvoices.length} hold invoices`)
-          return
-        }
-
-        // If we get here, something went wrong with the response format
-        logger.warn('Invalid hold invoices response format:', response)
-        this.holdInvoices = []
-      } catch (error) {
-        logger.error('Failed to fetch hold invoices', error)
-        this.error = error.message || 'Failed to fetch hold invoices'
-        this.holdInvoices = []
-      } finally {
-        this.loading.holdInvoices = false
-        logger.endGroup()
-      }
-    },
-
-    async holdOrder(orderData) {
-      logger.startGroup('POS Store: Hold Order')
-      this.loading.holdInvoices = true
-      this.error = null
-      
-      try {
-        logger.debug('Hold order request data:', orderData)
-
-        const response = await posApi.holdInvoice.create(orderData)
-        logger.debug('Hold order API response:', response)
-
-        // Check if the order was created successfully
-        if (response.data?.success || response.data?.id) {
-          logger.info('Order created successfully:', response.data)
-          await this.fetchHoldInvoices()
-          return { success: true, data: response.data }
-        }
-
-        // If we get here, something went wrong
-        const errorMessage = response.data?.message || 'Failed to hold order'
-        logger.error('Hold order failed:', {
-          message: errorMessage,
-          response: response.data
-        })
-        throw new Error(errorMessage)
-
-      } catch (error) {
-        logger.error('Hold order error:', {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status
-        })
-
-        // Even if we got an error, check if the order was actually created
-        if (error.response?.data?.id) {
-          logger.info('Order created despite error:', error.response.data)
-          await this.fetchHoldInvoices()
-          return { success: true, data: error.response.data }
-        }
-
-        this.error = error.message
-        throw error
-      } finally {
-        this.loading.holdInvoices = false
-        logger.endGroup()
-      }
-    },
-
-    async loadHoldInvoice(id) {
-      logger.startGroup('POS Store: Load Hold Invoice')
-      this.loading.holdInvoices = true
-      this.error = null
-      
-      try {
-        const response = await posApi.holdInvoice.getById(id)
-        if (response.data?.success) {
-          return response.data
-        } else {
-          throw new Error(response.data?.message || 'Failed to load hold invoice')
-        }
-      } catch (error) {
-        logger.error('Failed to load hold invoice', error)
-        this.error = error.message || 'Failed to load hold invoice'
-        throw error
-      } finally {
-        this.loading.holdInvoices = false
-        logger.endGroup()
-      }
-    },
-
-    async deleteHoldInvoice(id) {
-      logger.startGroup('POS Store: Delete Hold Invoice')
-      this.loading.holdInvoices = true
-      this.error = null
-      
-      try {
-        const response = await apiClient.post('/v1/core-pos/hold-invoice/delete', { id })
-        if (response.data?.success) {
-          this.holdInvoices = this.holdInvoices.filter(invoice => invoice.id !== id)
-          return { success: true }
-        } else {
-          throw new Error(response.data?.message || 'Failed to delete hold invoice')
-        }
-      } catch (error) {
-        logger.error('Failed to delete hold invoice', error)
-        this.error = error.message
-        throw error
-      } finally {
-        this.loading.holdInvoices = false
-        logger.endGroup()
-      }
-    },
-
-    async convertHoldOrderToInvoice(holdOrder) {
-      logger.startGroup('POS Store: Convert Hold Order to Invoice')
-      this.loading.conversion = true
-      this.error = null
-      
-      try {
-        // Convert the hold order to invoice
-        const response = await posOperations.convertHoldOrderToInvoice(holdOrder)
-        
-        if (response.success) {
-          // Remove the hold order from the list after successful conversion
-          this.holdInvoices = this.holdInvoices.filter(invoice => invoice.id !== holdOrder.id)
-          logger.info('Hold order converted successfully:', response)
-          return { success: true, invoice: response.data }
-        } else {
-          throw new Error(response.message || 'Failed to convert hold order')
-        }
-      } catch (error) {
-        logger.error('Failed to convert hold order', error)
-        this.error = error.message || 'Failed to convert hold order'
-        throw error
-      } finally {
-        this.loading.conversion = false
-        logger.endGroup()
-      }
-    },
-
-    setCategory(categoryId) {
-      this.selectedCategory = categoryId
-      this.currentPage = 1
-      this.fetchProducts()
-    },
-
-    setSearchQuery(query) {
-      this.searchQuery = query
-      this.currentPage = 1
-      this.fetchProducts()
-    },
-
-    setPage(page) {
-      this.currentPage = page
-      this.fetchProducts()
-    },
-
-    resetState() {
-      this.categories = []
-      this.products = []
-      this.selectedCategory = 'all'
-      this.searchQuery = ''
-      this.currentPage = 1
-      this.totalItems = 0
-      this.error = null
-      this.holdInvoices = []
+      logger.warn('Invalid hold invoices response format:', response)
+      holdInvoices.value = []
+    } catch (error) {
+      logger.error('Failed to fetch hold invoices', error)
+      error.value = error.message || 'Failed to fetch hold invoices'
+      holdInvoices.value = []
+    } finally {
+      loading.value.holdInvoices = false
+      logger.endGroup()
     }
+  }
+
+  const holdOrder = async (orderData) => {
+    logger.startGroup('POS Store: Hold Order')
+    loading.value.holdInvoices = true
+    error.value = null
+    
+    try {
+      logger.debug('Hold order request data:', orderData)
+
+      const response = await posApi.holdInvoice.create(orderData)
+      logger.debug('Hold order API response:', response)
+
+      if (response.success || response.id) {
+        logger.info('Order created successfully:', response)
+        await fetchHoldInvoices()
+        return { success: true, data: response }
+      }
+
+      const errorMessage = response.message || 'Failed to hold order'
+      logger.error('Hold order failed:', {
+        message: errorMessage,
+        response
+      })
+      throw new Error(errorMessage)
+
+    } catch (error) {
+      logger.error('Hold order error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      })
+
+      error.value = error.message
+      throw error
+    } finally {
+      loading.value.holdInvoices = false
+      logger.endGroup()
+    }
+  }
+
+  const deleteHoldInvoice = async (id) => {
+    logger.startGroup('POS Store: Delete Hold Invoice')
+    loading.value.holdInvoices = true
+    error.value = null
+    
+    try {
+      const response = await posApi.holdInvoice.delete(id)
+      if (response.success) {
+        holdInvoices.value = holdInvoices.value.filter(invoice => invoice.id !== id)
+        return { success: true }
+      } else {
+        throw new Error(response.message || 'Failed to delete hold invoice')
+      }
+    } catch (error) {
+      logger.error('Failed to delete hold invoice', error)
+      error.value = error.message
+      throw error
+    } finally {
+      loading.value.holdInvoices = false
+      logger.endGroup()
+    }
+  }
+
+  const resetOrder = () => {
+    cartStore.clearCart()
+    activeOrderType.value = null
+    selectedTable.value = null
+    orderReference.value = ''
+    customerInfo.value = null
+  }
+
+  const resetState = () => {
+    categories.value = []
+    products.value = []
+    selectedCategory.value = 'all'
+    searchQuery.value = ''
+    currentPage.value = 1
+    totalItems.value = 0
+    error.value = null
+    holdInvoices.value = []
+  }
+
+  return {
+    // State
+    loading,
+    error,
+    categories,
+    products,
+    selectedCategory,
+    searchQuery,
+    currentPage,
+    itemsPerPage,
+    totalItems,
+    stores,
+    cashiers,
+    employees,
+    holdInvoices,
+    activeOrderType,
+    selectedTable,
+    orderReference,
+    customerInfo,
+    isTableMode,
+
+    // Getters
+    hasActiveOrder,
+    canPlaceOrder,
+    categoriesForDisplay,
+    systemReady,
+    setupMessage,
+
+    // Actions
+    initialize,
+    setOrderType,
+    setTableSelection,
+    setOrderReference,
+    setCustomerInfo,
+    toggleTableMode,
+    setCategory,
+    fetchCategories,
+    fetchProducts,
+    fetchHoldInvoices,
+    holdOrder,
+    deleteHoldInvoice,
+    resetOrder,
+    resetState
   }
 })

@@ -56,7 +56,6 @@
 
     <!-- Footer -->
     <pos-footer
-      @process-payment="processPayment"
       @print-order="printOrder"
       @submit-order="submitOrder"
     />
@@ -65,12 +64,6 @@
     <reference-dialog
       v-model="showReferenceDialog"
       @confirm="confirmHoldOrder"
-    />
-
-    <!-- Payment Dialog -->
-    <payment-dialog
-      v-model="showPaymentDialog"
-      @confirm="handlePaymentComplete"
     />
 
     <!-- Loading Overlay -->
@@ -94,7 +87,6 @@ import { useCartStore } from '../../stores/cart-store'
 import PosCart from './components/PosCart.vue'
 import PosProducts from './components/PosProducts.vue'
 import PosFooter from './components/PosFooter.vue'
-import PaymentDialog from './components/dialogs/PaymentDialog.vue'
 import ReferenceDialog from './components/dialogs/ReferenceDialog.vue'
 import { posOperations } from '../../services/api/pos-operations'
 import { logger } from '../../utils/logger'
@@ -108,7 +100,6 @@ const error = ref(null)
 
 // Dialog state
 const showReferenceDialog = ref(false)
-const showPaymentDialog = ref(false)
 
 // Selected values - synced with store
 const selectedCustomer = ref(companyStore.selectedCustomer)
@@ -168,26 +159,6 @@ const confirmHoldOrder = async (referenceNumber) => {
     error.value = err.message
     logger.error('Failed to create hold invoice:', err)
     throw err
-  }
-}
-
-// Payment Processing
-const processPayment = () => {
-  if (!cartStore.items.length) {
-    error.value = 'Cart is empty'
-    return
-  }
-  showPaymentDialog.value = true
-}
-
-const handlePaymentComplete = async () => {
-  try {
-    // Payment was successful, clear the cart
-    cartStore.clearCart()
-    // Optionally show success message or trigger other actions
-  } catch (err) {
-    error.value = err.message
-    logger.error('Error handling payment completion:', err)
   }
 }
 

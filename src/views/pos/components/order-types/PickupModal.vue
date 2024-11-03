@@ -102,18 +102,6 @@
               </v-col>
             </v-row>
 
-            <!-- SMS Payment Link Option -->
-            <v-row>
-              <v-col cols="12">
-                <v-switch
-                  v-model="sendPaymentLink"
-                  label="Send payment link via SMS"
-                  color="primary"
-                  hide-details
-                ></v-switch>
-              </v-col>
-            </v-row>
-
             <!-- Submit Button -->
             <v-row class="mt-4">
               <v-col cols="12" class="text-center">
@@ -139,9 +127,9 @@
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
 import { useOrderType } from '../../composables/useOrderType'
-import { usePosStore } from '@/stores/pos-store'
-import { useCartStore } from '@/stores/cart-store'
-import { logger } from '@/utils/logger'
+import { usePosStore } from '../../../../stores/pos-store'
+import { useCartStore } from '../../../../stores/cart-store'
+import { logger } from '../../../../utils/logger'
 
 // Props
 const props = defineProps({
@@ -169,7 +157,6 @@ const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
 const error = computed(() => orderError.value)
-const sendPaymentLink = ref(true)
 
 // Form state
 const customerInfo = reactive({
@@ -231,7 +218,6 @@ watch(dialog, (newValue) => {
     Object.keys(customerInfo).forEach(key => {
       customerInfo[key] = ''
     })
-    sendPaymentLink.value = true
     clearAllErrors()
   }
 })
@@ -282,8 +268,7 @@ const processOrder = async () => {
       name: customerInfo.name.trim(),
       phone: customerInfo.phone.trim(),
       pickupTime: customerInfo.pickupTime,
-      instructions: customerInfo.instructions.trim(),
-      sendPaymentLink: sendPaymentLink.value
+      instructions: customerInfo.instructions.trim()
     })
 
     await processOrderType()
