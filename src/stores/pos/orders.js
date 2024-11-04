@@ -51,7 +51,7 @@ export const createOrdersModule = (state, posApi, posOperations) => {
         total: Math.round(parseFloat(item.total) * 100),
         unit_name: item.unit_name || 'N/A',
         discount_type: 'fixed',
-        discount: 0,
+        discount: '0.00',
         discount_val: 0,
         sub_total: Math.round(parseFloat(item.total) * 100)
       }))
@@ -79,6 +79,55 @@ export const createOrdersModule = (state, posApi, posOperations) => {
       throw new Error(response.message || 'Failed to hold order')
     } catch (error) {
       logger.error('Failed to hold order:', error)
+      state.error.value = error.message
+      return { success: false, error: error.message }
+    } finally {
+      state.loading.value.holdInvoices = false
+      logger.endGroup()
+    }
+  }
+
+  const updateHoldInvoice = async (description, orderData) => {
+    logger.startGroup('Orders Module: Update Hold Invoice')
+    state.loading.value.holdInvoices = true
+    state.error.value = null
+
+    try {
+      if (!description) {
+        throw new Error('Order description is required for update')
+      }
+
+      validateHoldInvoiceData(orderData)
+      const formattedData = prepareHoldInvoiceData(orderData)
+      
+      logger.debug('Updating hold invoice with data:', formattedData)
+      const response = await posApi.holdInvoice.update(description, {
+        ...formattedData,
+        print_pdf: false,
+        is_invoice_pos: 1,
+        is_pdf_pos: true,
+        send_email: false,
+        save_as_draft: false,
+        not_charge_automatically: false,
+        package_bool: false,
+        invoice_number: "-",
+        discount_per_item: "NO",
+        tip_type: null,
+        tip: 0,
+        tip_val: 0,
+        tables_selected: [],
+        is_hold_invoice: true
+      })
+      
+      if (response.success) {
+        await fetchHoldInvoices() // Refresh the list
+        logger.info('Hold invoice updated successfully:', response.data)
+        return { success: true, data: response.data }
+      }
+      
+      throw new Error(response.message || 'Failed to update hold invoice')
+    } catch (error) {
+      logger.error('Failed to update hold invoice:', error)
       state.error.value = error.message
       return { success: false, error: error.message }
     } finally {
@@ -135,6 +184,7 @@ export const createOrdersModule = (state, posApi, posOperations) => {
 
   return {
     holdOrder,
+    updateHoldInvoice,
     fetchHoldInvoices,
     deleteHoldInvoice
   }

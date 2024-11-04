@@ -183,6 +183,36 @@ const operations = {
       }
     },
 
+    async update(description, invoiceData) {
+      logger.startGroup('POS API: Update Hold Invoice')
+      try {
+        logger.info(`Updating hold invoice with description: ${description}`)
+        logger.debug('Hold invoice update data:', invoiceData)
+
+        // Send complete payload to the endpoint
+        const response = await apiClient.post('/v1/core-pos/hold-invoices', {
+          ...invoiceData,
+          description, // This is the key identifier for updates
+          is_hold_invoice: true
+        })
+        logger.debug('Hold invoice update response:', response.data)
+
+        return {
+          success: true,
+          data: response.data
+        }
+      } catch (error) {
+        logger.error('Failed to update hold invoice', error)
+        return {
+          success: false,
+          error: error.message,
+          message: 'Failed to update hold invoice'
+        }
+      } finally {
+        logger.endGroup()
+      }
+    },
+
     async getAll() {
       logger.startGroup('POS API: Get All Hold Invoices')
       try {

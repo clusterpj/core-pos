@@ -294,23 +294,23 @@ const closeEditDialog = () => {
 // Update held order
 const updateOrder = async () => {
   try {
-    const holdInvoiceId = cartStore.holdInvoiceId
-    if (!holdInvoiceId) {
-      throw new Error('No hold invoice ID found')
+    const description = cartStore.holdOrderDescription
+    if (!description) {
+      throw new Error('No order description found')
     }
 
     updating.value = true
-    logger.debug('Updating order:', holdInvoiceId)
+    logger.debug('Updating order with description:', description)
 
     // Prepare the order data from the current cart state
     const orderData = cartStore.prepareHoldInvoiceData(
       posStore.selectedStore,
       posStore.selectedCashier,
-      ''
+      description
     )
 
-    // Update the hold invoice
-    const response = await posStore.updateHoldInvoice(holdInvoiceId, orderData)
+    // Update the hold invoice using description as identifier
+    const response = await posStore.updateHoldInvoice(description, orderData)
 
     if (response.success) {
       window.toastr?.['success']('Order updated successfully')
