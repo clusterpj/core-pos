@@ -1,128 +1,131 @@
 import { logger } from '../../utils/logger'
 
 export const createOrdersModule = (state, posApi, posOperations) => {
-  const fetchHoldInvoices = async () => {
-    logger.startGroup('POS Store: Fetch Hold Invoices')
-    state.loading.value.holdInvoices = true
-    state.error.value = null
+  const validateHoldInvoiceData = (data) => {
+    const required = [
+      'items',
+      'total',
+      'sub_total',
+      'due_amount',
+      'user_id',
+      'store_id',
+      'cash_register_id'
+    ]
     
-    try {
-      const response = await posApi.holdInvoice.getAll()
-      logger.debug('Hold invoices response:', response)
-
-      if (response?.data?.hold_invoices?.data) {
-        state.holdInvoices.value = response.data.hold_invoices.data
-        logger.info(`Loaded ${state.holdInvoices.value.length} hold invoices`)
-        return
+    const missing = required.filter(field => !data[field])
+    if (missing.length) {
+      throw new Error(`Missing required fields: ${missing.join(', ')}`)
+    }
+    
+    if (!Array.isArray(data.items) || !data.items.length) {
+      throw new Error('Items array is required and must not be empty')
+    }
+    
+    data.items.forEach((item, index) => {
+      if (!item.price || !item.quantity) {
+        throw new Error(`Invalid item at index ${index}: missing price or quantity`)
       }
+    })
+  }
 
-      logger.warn('Invalid hold invoices response format:', response)
-      state.holdInvoices.value = []
-    } catch (error) {
-      logger.error('Failed to fetch hold invoices', error)
-      state.error.value = error.message || 'Failed to fetch hold invoices'
-      state.holdInvoices.value = []
-    } finally {
-      state.loading.value.holdInvoices = false
-      logger.endGroup()
+  const prepareHoldInvoiceData = (orderData) => {
+    const { holdInvoiceSettings } = state
+    const currentDate = new Date()
+    const dueDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+    return {
+      ...orderData,
+      ...holdInvoiceSettings.value.print_settings,
+      avalara_bool: holdInvoiceSettings.value.avalara_bool,
+      invoice_template_id: holdInvoiceSettings.value.template_id,
+      banType: holdInvoiceSettings.value.banType,
+      invoice_pbx_modify: holdInvoiceSettings.value.invoice_pbx_modify,
+      taxes: holdInvoiceSettings.value.taxes,
+      packages: holdInvoiceSettings.value.packages,
+      invoice_date: currentDate.toISOString().split('T')[0],
+      due_date: dueDate.toISOString().split('T')[0],
+      items: orderData.items.map(item => ({
+        ...item,
+        price: Math.round(parseFloat(item.price) * 100),
+        total: Math.round(parseFloat(item.total) * 100),
+        unit_name: item.unit_name || 'N/A',
+        discount_type: 'fixed',
+        discount: 0,
+        discount_val: 0,
+        sub_total: Math.round(parseFloat(item.total) * 100)
+      }))
     }
   }
 
   const holdOrder = async (orderData) => {
-    logger.startGroup('POS Store: Hold Order')
+    logger.startGroup('Orders Module: Hold Order')
     state.loading.value.holdInvoices = true
     state.error.value = null
-    
+
     try {
-      logger.debug('Hold order request data:', orderData)
-
-      const response = await posApi.holdInvoice.create(orderData)
-      logger.debug('Hold order API response:', response)
-
-      if (response.success || response.id) {
-        logger.info('Order created successfully:', response)
-        await fetchHoldInvoices()
-        return { success: true, data: response }
+      validateHoldInvoiceData(orderData)
+      const formattedData = prepareHoldInvoiceData(orderData)
+      
+      logger.debug('Holding order with data:', formattedData)
+      const response = await posApi.holdInvoice.create(formattedData)
+      
+      if (response.success) {
+        await fetchHoldInvoices() // Refresh the list
+        logger.info('Order held successfully:', response.data)
+        return { success: true, data: response.data }
       }
-
-      const errorMessage = response.message || 'Failed to hold order'
-      logger.error('Hold order failed:', {
-        message: errorMessage,
-        response
-      })
-      throw new Error(errorMessage)
-
+      
+      throw new Error(response.message || 'Failed to hold order')
     } catch (error) {
-      logger.error('Hold order error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      })
-
+      logger.error('Failed to hold order:', error)
       state.error.value = error.message
-      throw error
+      return { success: false, error: error.message }
     } finally {
       state.loading.value.holdInvoices = false
       logger.endGroup()
     }
   }
 
-  const updateHoldInvoice = async (id, orderData) => {
-    logger.startGroup('POS Store: Update Hold Invoice')
-    state.loading.value.updating = true
+  const fetchHoldInvoices = async () => {
+    logger.startGroup('Orders Module: Fetch Hold Invoices')
+    state.loading.value.holdInvoices = true
     state.error.value = null
-    
+
     try {
-      logger.debug('Update hold invoice request data:', { id, orderData })
-
-      const response = await posOperations.updateHoldInvoice(id, orderData)
-      logger.debug('Update hold invoice API response:', response)
-
-      if (response.success) {
-        logger.info('Hold invoice updated successfully:', response)
-        await fetchHoldInvoices()
-        return { success: true, data: response.data }
+      const response = await posApi.holdInvoice.getAll()
+      if (response.success && response.data?.hold_invoices) {
+        state.holdInvoices.value = response.data.hold_invoices.data || []
+        logger.info('Hold invoices fetched successfully:', state.holdInvoices.value.length)
+        return { success: true, data: state.holdInvoices.value }
       }
-
-      const errorMessage = response.message || 'Failed to update hold invoice'
-      logger.error('Update hold invoice failed:', {
-        message: errorMessage,
-        response
-      })
-      throw new Error(errorMessage)
-
+      throw new Error(response.message || 'Failed to fetch hold invoices')
     } catch (error) {
-      logger.error('Update hold invoice error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      })
-
+      logger.error('Failed to fetch hold invoices:', error)
       state.error.value = error.message
-      throw error
+      return { success: false, error: error.message }
     } finally {
-      state.loading.value.updating = false
+      state.loading.value.holdInvoices = false
       logger.endGroup()
     }
   }
 
   const deleteHoldInvoice = async (id) => {
-    logger.startGroup('POS Store: Delete Hold Invoice')
+    logger.startGroup('Orders Module: Delete Hold Invoice')
     state.loading.value.holdInvoices = true
     state.error.value = null
-    
+
     try {
       const response = await posApi.holdInvoice.delete(id)
       if (response.success) {
-        state.holdInvoices.value = state.holdInvoices.value.filter(invoice => invoice.id !== id)
+        await fetchHoldInvoices() // Refresh the list
+        logger.info('Hold invoice deleted successfully:', id)
         return { success: true }
-      } else {
-        throw new Error(response.message || 'Failed to delete hold invoice')
       }
+      throw new Error(response.message || 'Failed to delete hold invoice')
     } catch (error) {
-      logger.error('Failed to delete hold invoice', error)
+      logger.error('Failed to delete hold invoice:', error)
       state.error.value = error.message
-      throw error
+      return { success: false, error: error.message }
     } finally {
       state.loading.value.holdInvoices = false
       logger.endGroup()
@@ -130,9 +133,8 @@ export const createOrdersModule = (state, posApi, posOperations) => {
   }
 
   return {
-    fetchHoldInvoices,
     holdOrder,
-    updateHoldInvoice,
+    fetchHoldInvoices,
     deleteHoldInvoice
   }
 }

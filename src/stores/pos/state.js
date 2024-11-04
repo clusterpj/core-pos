@@ -29,6 +29,21 @@ export const createPosState = () => {
   const orderReference = ref('')
   const customerInfo = ref(null)
   const isTableMode = ref(false)
+  
+  // New hold invoice specific state
+  const holdInvoiceSettings = ref({
+    template_id: 1,
+    print_settings: {
+      print_pdf: false,
+      is_invoice_pos: 1,
+      is_pdf_pos: true
+    },
+    avalara_bool: false,
+    banType: true,
+    invoice_pbx_modify: 0,
+    taxes: {},
+    packages: []
+  })
 
   return {
     loading,
@@ -48,6 +63,7 @@ export const createPosState = () => {
     selectedTable,
     orderReference,
     customerInfo,
-    isTableMode
+    isTableMode,
+    holdInvoiceSettings
   }
 }
