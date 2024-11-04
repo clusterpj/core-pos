@@ -130,10 +130,14 @@ export function useTableAssignment() {
 
   const getSelectedTablesForApi = () => {
     try {
-      const apiTables = selectedTables.value.map(table => ({
-        table_id: table.table_id,
-        quantity: table.quantity
-      }))
+      const apiTables = selectedTables.value.map(table => {
+        const tableInfo = tables.value.find(t => t.id === table.table_id)
+        return {
+          table_id: table.table_id,
+          quantity: table.quantity,
+          name: tableInfo?.name || `Table ${table.table_id}` // Added name to API payload
+        }
+      })
       logger.debug('Prepared tables for API:', apiTables)
       return apiTables
     } catch (err) {

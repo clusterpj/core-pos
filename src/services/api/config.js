@@ -30,7 +30,11 @@ export const apiConfig = {
       tables: 'core-pos/table-cash-register',
       store: 'store',
       employees: 'users',
-      cashiers: 'core-pos/cash-register/getCashRegistersUser'
+      cashiers: 'core-pos/cash-register/getCashRegistersUser',
+      invoice: {
+        nextNumber: 'next-number',
+        create: 'invoices'
+      }
     }
   }
 }

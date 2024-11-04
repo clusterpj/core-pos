@@ -162,16 +162,56 @@ const operations = {
     }
   },
 
+  // Invoice Operations
+  invoice: {
+    async getNextNumber() {
+      logger.startGroup('POS API: Get Next Invoice Number')
+      try {
+        const endpoint = getApiEndpoint('pos.invoice.nextNumber')
+        logger.info('Fetching next invoice number from endpoint:', endpoint)
+        
+        const response = await apiClient.get(endpoint)
+        logger.debug('Next invoice number response:', response.data)
+        
+        return response.data
+      } catch (error) {
+        logger.error('Failed to get next invoice number', error)
+        throw error
+      } finally {
+        logger.endGroup()
+      }
+    },
+
+    async create(invoiceData) {
+      logger.startGroup('POS API: Create Invoice')
+      try {
+        const endpoint = getApiEndpoint('pos.invoice.create')
+        logger.info('Creating invoice at endpoint:', endpoint)
+        logger.debug('Invoice data:', invoiceData)
+
+        const response = await apiClient.post(endpoint, invoiceData)
+        logger.debug('Invoice creation response:', response.data)
+
+        return response.data
+      } catch (error) {
+        logger.error('Failed to create invoice', error)
+        throw error
+      } finally {
+        logger.endGroup()
+      }
+    }
+  },
+
   // Hold Invoice Operations
   holdInvoice: {
     async create(invoiceData) {
       logger.startGroup('POS API: Create Hold Invoice')
       try {
-        logger.info('Creating hold invoice')
+        const endpoint = getApiEndpoint('pos.holdInvoices')
+        logger.info('Creating hold invoice at endpoint:', endpoint)
         logger.debug('Hold invoice data:', invoiceData)
 
-        // Prices should already be in cents from orders.js
-        const response = await apiClient.post('/v1/core-pos/hold-invoices', invoiceData)
+        const response = await apiClient.post(endpoint, invoiceData)
         logger.debug('Hold invoice response:', response.data)
 
         return response.data
@@ -186,13 +226,13 @@ const operations = {
     async update(description, invoiceData) {
       logger.startGroup('POS API: Update Hold Invoice')
       try {
+        const endpoint = getApiEndpoint('pos.holdInvoices')
         logger.info(`Updating hold invoice with description: ${description}`)
         logger.debug('Hold invoice update data:', invoiceData)
 
-        // Send complete payload to the endpoint
-        const response = await apiClient.post('/v1/core-pos/hold-invoices', {
+        const response = await apiClient.post(endpoint, {
           ...invoiceData,
-          description, // This is the key identifier for updates
+          description,
           is_hold_invoice: true
         })
         logger.debug('Hold invoice update response:', response.data)
@@ -216,10 +256,10 @@ const operations = {
     async getAll() {
       logger.startGroup('POS API: Get All Hold Invoices')
       try {
-        const response = await apiClient.get('/v1/core-pos/hold-invoices')
+        const endpoint = getApiEndpoint('pos.holdInvoices')
+        const response = await apiClient.get(endpoint)
         logger.debug('Hold invoices response:', response.data)
         
-        // Return the response in the expected format
         return {
           success: true,
           data: {
@@ -237,7 +277,8 @@ const operations = {
     async getById(id) {
       logger.startGroup('POS API: Get Hold Invoice')
       try {
-        const response = await apiClient.get(`/v1/core-pos/hold-invoices/${id}`)
+        const endpoint = `${getApiEndpoint('pos.holdInvoices')}/${id}`
+        const response = await apiClient.get(endpoint)
         logger.debug('Hold invoice response:', response.data)
         return response.data
       } catch (error) {
