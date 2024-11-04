@@ -37,6 +37,23 @@
       <!-- Corebill Button -->
       <template v-slot:append>
         <v-divider></v-divider>
+        <!-- Logout Button -->
+        <div class="nav-item-container pa-2">
+          <v-btn
+            block
+            :icon="rail"
+            color="error"
+            variant="tonal"
+            prepend-icon="mdi-logout"
+            @click="handleLogout"
+          >
+            <template v-if="!rail">
+              Logout
+            </template>
+          </v-btn>
+          <div v-if="rail" class="icon-reference text-caption text-center">Logout</div>
+        </div>
+        <!-- Corebill Button -->
         <div class="nav-item-container pa-2">
           <v-btn
             block
@@ -123,7 +140,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useCompanyStore } from '../stores/company'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const drawer = ref(true)
@@ -162,6 +181,14 @@ const handleStoreChange = async (value) => {
 const handleCashierChange = (value) => {
   if (!value) return
   companyStore.setSelectedCashier(value)
+}
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+  } catch (error) {
+    console.error('Logout failed:', error)
+  }
 }
 
 const goToCorebill = () => {
