@@ -71,6 +71,7 @@
       <DeleteConfirmationDialog
         v-model="deleteDialog"
         :loading="isDeleting"
+        :order-description="selectedInvoice?.description"
         @confirm="confirmDelete"
       />
 
@@ -142,12 +143,19 @@ const handleConvertOrder = async (invoice) => {
 }
 
 const handleDeleteOrder = (invoice) => {
+  if (!invoice?.id) {
+    window.toastr?.['error']('Invalid order selected')
+    return
+  }
   selectedInvoice.value = invoice
   deleteDialog.value = true
 }
 
 const confirmDelete = async () => {
-  if (!selectedInvoice.value) return
+  if (!selectedInvoice.value?.id) {
+    window.toastr?.['error']('Invalid order selected')
+    return
+  }
 
   try {
     isDeleting.value = true
@@ -156,7 +164,10 @@ const confirmDelete = async () => {
     if (success) {
       deleteDialog.value = false
       await fetchHoldInvoices()
+      window.toastr?.['success']('Order deleted successfully')
     }
+  } catch (error) {
+    window.toastr?.['error'](error.message || 'Failed to delete order')
   } finally {
     isDeleting.value = false
     selectedInvoice.value = null

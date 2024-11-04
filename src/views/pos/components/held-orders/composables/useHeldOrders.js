@@ -77,7 +77,12 @@ export function useHeldOrders() {
     return filtered
   })
 
-  // Format date
+  // Format date for API (YYYY-MM-DD)
+  const formatApiDate = (date) => {
+    return date.toISOString().split('T')[0]
+  }
+
+  // Format date for display
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString()
   }
@@ -90,13 +95,57 @@ export function useHeldOrders() {
     }).format(amount)
   }
 
+  // Convert decimal to cents (biginteger)
+  const toCents = (amount) => {
+    if (!amount) return 0
+    return Math.round(parseFloat(amount) * 100)
+  }
+
+  // Validate invoice data before API call
+  const validateInvoiceData = (data) => {
+    const requiredFields = [
+      'invoice_number',
+      'invoice_date',
+      'due_date',
+      'total',
+      'sub_total',
+      'items'
+    ]
+
+    const missingFields = requiredFields.filter(field => !data[field])
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
+    }
+
+    if (!Array.isArray(data.items) || data.items.length === 0) {
+      throw new Error('Invoice must have at least one item')
+    }
+
+    // Validate items
+    data.items.forEach((item, index) => {
+      if (!item.id || !item.name || !item.price || !item.quantity) {
+        throw new Error(`Invalid item data at index ${index}`)
+      }
+    })
+
+    return true
+  }
+
   // Handle payment completion
   const handlePaymentComplete = async (paymentResult) => {
     try {
       logger.info('Payment completed successfully:', paymentResult)
       
+      if (!currentInvoice.value?.hold_invoice_id) {
+        throw new Error('Missing hold invoice ID')
+      }
+      
       // Delete the held order
-      await posStore.deleteHoldInvoice(currentInvoice.value.hold_invoice_id)
+      const deleteResponse = await posStore.deleteHoldInvoice(currentInvoice.value.hold_invoice_id)
+      
+      if (!deleteResponse.success) {
+        throw new Error(deleteResponse.message || 'Failed to delete hold invoice')
+      }
       
       // Show success message
       window.toastr?.['success']('Payment processed successfully')
@@ -116,6 +165,10 @@ export function useHeldOrders() {
   // Convert to invoice
   const convertToInvoice = async (invoice) => {
     try {
+      if (!invoice?.id) {
+        throw new Error('Invalid invoice: missing ID')
+      }
+
       convertingOrder.value = invoice.id
       logger.debug('Converting order to invoice:', invoice)
       
@@ -132,81 +185,121 @@ export function useHeldOrders() {
       let invoiceNumber
       if (settings.invoice_auto_generate === 'YES') {
         const nextNumberResponse = await posApi.invoice.getNextNumber()
+        logger.debug('Next number response:', nextNumberResponse)
+
         if (!nextNumberResponse?.invoice_number) {
           throw new Error('Failed to get next invoice number')
         }
         invoiceNumber = nextNumberResponse.invoice_number
       } else {
-        // For manual number entry, we should handle this case
-        // For now, we'll throw an error as we don't have UI for manual entry
         throw new Error('Manual invoice number entry is not supported')
       }
 
-      // Calculate due date based on company settings
+      // Calculate dates
       const currentDate = new Date()
       const dueDate = new Date(currentDate)
       dueDate.setDate(dueDate.getDate() + parseInt(settings.invoice_issuance_period || 7))
 
-      // 3. Prepare invoice data according to API requirements
-      const invoiceData = {
-        ...holdInvoiceSettings.value.print_settings,
-        avalara_bool: holdInvoiceSettings.value.avalara_bool,
-        invoice_template_id: holdInvoiceSettings.value.template_id,
-        banType: holdInvoiceSettings.value.banType,
-        invoice_pbx_modify: holdInvoiceSettings.value.invoice_pbx_modify,
-        taxes: holdInvoiceSettings.value.taxes,
-        packages: holdInvoiceSettings.value.packages,
-        invoice_number: invoiceNumber,
-        invoice_date: currentDate.toISOString().split('T')[0],
-        due_date: dueDate.toISOString().split('T')[0],
-        user_id: invoice.user_id,
-        is_invoice_pos: 1,
-        is_pdf_pos: settings.pdf_format_pos === '1',
-        print_pdf: false,
-        send_email: false,
-        save_as_draft: false,
-        not_charge_automatically: false,
-        package_bool: false,
-        sub_total: invoice.sub_total,
-        total: invoice.total,
-        due_amount: invoice.total,
-        discount: invoice.discount || "0",
-        discount_type: invoice.discount_type || "fixed",
-        discount_val: invoice.discount_val || 0,
-        tax_per_item: settings.tax_per_item || "NO",
-        discount_per_item: settings.discount_per_item || "NO",
-        items: invoice.hold_items.map(item => ({
+      // Validate items exist
+      if (!Array.isArray(invoice.hold_items) || invoice.hold_items.length === 0) {
+        throw new Error('No items found in hold invoice')
+      }
+
+      // Format items according to API requirements
+      const formattedItems = invoice.hold_items.map(item => {
+        if (!item.item_id || !item.name) {
+          throw new Error('Invalid item data: missing required fields')
+        }
+        return {
           id: item.item_id,
           name: item.name,
-          description: item.description,
-          price: item.price,
-          quantity: item.quantity,
+          description: item.description || null,
+          price: toCents(item.price),
+          quantity: parseInt(item.quantity),
           unit_name: item.unit_name || 'units',
           discount: item.discount || "0",
-          discount_val: item.discount_val || 0,
-          tax: item.tax || 0,
-          total: item.total,
-          sub_total: item.total
-        })),
-        taxes: invoice.taxes || [],
-        notes: invoice.notes,
-        description: invoice.description || `Order #${invoice.id}`,
+          discount_val: toCents(item.discount_val || 0),
+          tax: toCents(item.tax || 0),
+          total: toCents(item.total),
+          sub_total: toCents(item.total),
+          allow_taxes: item.allow_taxes || 0,
+          no_taxable: item.no_taxable || 0
+        }
+      })
+
+      // 3. Prepare invoice data according to API requirements
+      const invoiceData = {
+        // Required boolean flags
+        avalara_bool: false,
+        banType: true,
+        package_bool: false,
+        print_pdf: false,
+        save_as_draft: false,
+        send_email: false,
+        not_charge_automatically: false,
+        is_hold_invoice: true,
+        is_invoice_pos: 1,
+        is_pdf_pos: settings.pdf_format_pos === '1',
+
+        // IDs and references
+        invoice_number: invoiceNumber,
+        invoice_template_id: 1,
+        invoice_pbx_modify: 0,
         hold_invoice_id: invoice.id,
         store_id: invoice.store_id,
         cash_register_id: invoice.cash_register_id,
-        company_id: invoice.company_id,
-        allow_partial_pay: settings.allow_partial_pay === '1'
+        user_id: invoice.user_id,
+
+        // Dates
+        invoice_date: formatApiDate(currentDate),
+        due_date: formatApiDate(dueDate),
+
+        // Amounts (in cents)
+        sub_total: toCents(invoice.sub_total),
+        total: toCents(invoice.total),
+        due_amount: toCents(invoice.total),
+        tax: toCents(invoice.tax || 0),
+        
+        // Discount
+        discount: invoice.discount || "0",
+        discount_type: invoice.discount_type || "fixed",
+        discount_val: toCents(invoice.discount_val || 0),
+        discount_per_item: settings.discount_per_item || "NO",
+
+        // Tip
+        tip: invoice.tip || "0",
+        tip_type: invoice.tip_type || "fixed",
+        tip_val: toCents(invoice.tip_val || 0),
+
+        // Arrays
+        items: formattedItems,
+        taxes: invoice.taxes || [],
+        packages: [],
+        tables_selected: [],
+
+        // Optional fields
+        notes: invoice.notes || null,
+        description: invoice.description || `Order #${invoice.id}`,
+        contact: null // Optional contact information
       }
+
+      // Validate invoice data before sending
+      validateInvoiceData(invoiceData)
+
+      logger.debug('Prepared invoice data:', invoiceData)
 
       // 4. Create the invoice
       const invoiceResponse = await posApi.invoice.create(invoiceData)
       
       if (!invoiceResponse?.invoice?.id) {
-        throw new Error('Failed to create invoice')
+        throw new Error('Failed to create invoice: Invalid response')
       }
 
       // 5. Get created invoice details
       const createdInvoice = await posApi.invoice.getById(invoiceResponse.invoice.id)
+      if (!createdInvoice) {
+        throw new Error('Failed to fetch created invoice details')
+      }
 
       // 6. Get payment methods
       await fetchPaymentMethods()
@@ -222,7 +315,7 @@ export function useHeldOrders() {
       }
     } catch (error) {
       logger.error('Failed to convert order to invoice:', error)
-      window.toastr?.['error']('Failed to convert order to invoice')
+      window.toastr?.['error'](error.message || 'Failed to convert order to invoice')
       return {
         success: false,
         error: error.message
@@ -235,6 +328,10 @@ export function useHeldOrders() {
   // Load order
   const loadOrder = async (invoice) => {
     try {
+      if (!invoice?.id) {
+        throw new Error('Invalid invoice: missing ID')
+      }
+
       loadingOrder.value = invoice.id
       logger.debug('Loading order:', invoice)
       
@@ -242,7 +339,15 @@ export function useHeldOrders() {
       cartStore.clearCart()
       
       // Add each hold item to cart
-      invoice.hold_items?.forEach(item => {
+      if (!Array.isArray(invoice.hold_items)) {
+        throw new Error('Invalid invoice: missing items')
+      }
+
+      invoice.hold_items.forEach(item => {
+        if (!item.item_id || !item.name) {
+          throw new Error('Invalid item data: missing required fields')
+        }
+
         cartStore.addItem({
           id: item.item_id,
           name: item.name,
@@ -280,7 +385,7 @@ export function useHeldOrders() {
       return true
     } catch (error) {
       logger.error('Failed to load order:', error)
-      window.toastr?.['error']('Failed to load order')
+      window.toastr?.['error'](error.message || 'Failed to load order')
       return false
     } finally {
       loadingOrder.value = null
@@ -290,17 +395,21 @@ export function useHeldOrders() {
   // Delete order
   const deleteOrder = async (invoiceId) => {
     try {
+      if (!invoiceId) {
+        throw new Error('Invalid invoice ID')
+      }
+
       deletingOrder.value = invoiceId
+      logger.debug('Deleting hold invoice:', invoiceId)
       
       const response = await posStore.deleteHoldInvoice(invoiceId)
       
-      if (response.success) {
-        // Show success message
-        window.toastr?.['success']('Order deleted successfully')
-        return true
-      } else {
+      if (!response.success) {
         throw new Error(response.message || 'Failed to delete order')
       }
+
+      window.toastr?.['success']('Order deleted successfully')
+      return true
     } catch (error) {
       logger.error('Failed to delete order:', error)
       window.toastr?.['error'](error.message || 'Failed to delete order')
@@ -317,6 +426,7 @@ export function useHeldOrders() {
       await posStore.fetchHoldInvoices()
     } catch (error) {
       logger.error('Failed to fetch hold invoices:', error)
+      window.toastr?.['error']('Failed to fetch hold invoices')
     } finally {
       loading.value = false
     }

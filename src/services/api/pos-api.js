@@ -25,6 +25,38 @@ const REQUIRED_SETTINGS = [
 ]
 
 /**
+ * Get next number from API
+ * @param {string} key - Type of number to generate (invoice, payment, etc.)
+ * @returns {Promise<Object>} Next number response
+ */
+async function getNextNumber(key) {
+  logger.startGroup(`POS API: Get Next ${key} Number`)
+  try {
+    const endpoint = getApiEndpoint('nextNumber')
+    logger.info(`Fetching next ${key} number from endpoint:`, endpoint)
+    
+    const response = await apiClient.get(endpoint, { params: { key } })
+    logger.debug(`Next ${key} number response:`, response.data)
+    
+    // Validate response format
+    if (!response.data?.nextNumber || !response.data?.prefix) {
+      throw new Error(`Invalid next ${key} number response format`)
+    }
+    
+    return {
+      number: `${response.data.prefix}${response.data.nextNumber}`,
+      nextNumber: response.data.nextNumber,
+      prefix: response.data.prefix
+    }
+  } catch (error) {
+    logger.error(`Failed to get next ${key} number`, error)
+    throw new Error(`Failed to get next ${key} number: ${error.message}`)
+  } finally {
+    logger.endGroup()
+  }
+}
+
+/**
  * POS API Service
  * Implements endpoints from CorePOS API Implementation Guide
  */
@@ -211,20 +243,11 @@ const operations = {
   // Invoice Operations
   invoice: {
     async getNextNumber() {
-      logger.startGroup('POS API: Get Next Invoice Number')
-      try {
-        const endpoint = getApiEndpoint('pos.invoice.nextNumber')
-        logger.info('Fetching next invoice number from endpoint:', endpoint)
-        
-        const response = await apiClient.get(endpoint)
-        logger.debug('Next invoice number response:', response.data)
-        
-        return response.data
-      } catch (error) {
-        logger.error('Failed to get next invoice number', error)
-        throw error
-      } finally {
-        logger.endGroup()
+      const response = await getNextNumber('invoice')
+      return {
+        invoice_number: response.number,
+        nextNumber: response.nextNumber,
+        prefix: response.prefix
       }
     },
 
@@ -287,20 +310,11 @@ const operations = {
     },
 
     async getNextNumber() {
-      logger.startGroup('POS API: Get Next Payment Number')
-      try {
-        const endpoint = getApiEndpoint('pos.payment.nextNumber')
-        logger.info('Fetching next payment number from endpoint:', endpoint)
-        
-        const response = await apiClient.get(endpoint)
-        logger.debug('Next payment number response:', response.data)
-        
-        return response.data
-      } catch (error) {
-        logger.error('Failed to get next payment number', error)
-        throw error
-      } finally {
-        logger.endGroup()
+      const response = await getNextNumber('payment')
+      return {
+        payment_number: response.number,
+        nextNumber: response.nextNumber,
+        prefix: response.prefix
       }
     },
 
@@ -432,11 +446,21 @@ const operations = {
     async delete(id) {
       logger.startGroup('POS API: Delete Hold Invoice')
       try {
-        const endpoint = '/v1/core-pos/hold-invoice/delete'
+        if (!id) {
+          throw new Error('Hold invoice ID is required')
+        }
+
+        const endpoint = getApiEndpoint('pos.holdInvoiceDelete')
         logger.info('Deleting hold invoice at endpoint:', endpoint)
+        logger.debug('Delete hold invoice ID:', id)
         
         const response = await apiClient.post(endpoint, { id })
         logger.debug('Delete response:', response.data)
+
+        if (!response.data?.success) {
+          throw new Error(response.data?.message || 'Failed to delete hold invoice')
+        }
+
         return {
           success: true,
           data: response.data

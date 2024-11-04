@@ -63,6 +63,7 @@
                     v-model="payment.denomination"
                     :items="getDenominations(payment.method_id)"
                     label="Denomination"
+                    :rules="[v => !getDenominations(payment.method_id)?.length || !!v || 'Denomination is required']"
                     @update:model-value="handleDenominationChange(index)"
                   ></v-select>
 
@@ -75,7 +76,7 @@
                       v => !!v || 'Amount is required',
                       v => v > 0 || 'Amount must be greater than 0',
                       v => allowPartialPay || v <= remainingAmount / 100 || 'Amount exceeds remaining balance',
-                      v => !allowPartialPay || Number(v) === invoice.total / 100 || 'Full payment is required'
+                      v => allowPartialPay || Number(v) === invoice.total / 100 || 'Full payment is required'
                     ]"
                     :prefix="'$'"
                     @input="validateAmount(index)"
@@ -83,7 +84,13 @@
 
                   <!-- Fees Display (if applicable) -->
                   <div v-if="payment.fees > 0" class="text-caption mb-2">
-                    Service Fee: {{ formatCurrency(payment.fees / 100) }}
+                    <div class="d-flex justify-space-between">
+                      <span>Service Fee:</span>
+                      <strong>{{ formatCurrency(payment.fees / 100) }}</strong>
+                    </div>
+                    <div v-if="getPaymentMethod(payment.method_id)?.fees" class="text-caption text-grey">
+                      {{ getFeeDescription(payment.method_id, payment.amount * 100) }}
+                    </div>
                   </div>
 
                   <!-- Reference Number (if required) -->
@@ -91,7 +98,7 @@
                     v-if="requiresReference(payment.method_id)"
                     v-model="payment.reference"
                     label="Reference"
-                    :rules="[v => !!v || 'Reference is required']"
+                    :rules="[v => !!v || 'Reference number is required']"
                   ></v-text-field>
 
                   <!-- Remove Payment Button -->
@@ -105,6 +112,8 @@
                   >
                     Remove Payment Method
                   </v-btn>
+
+                  <v-divider v-if="index < payments.length - 1" class="my-4"></v-divider>
                 </div>
 
                 <!-- Add Payment Method Button -->
@@ -246,6 +255,27 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
+const getPaymentMethod = (methodId) => {
+  return paymentMethods.value.find(m => m.id === methodId)
+}
+
+const getFeeDescription = (methodId, amount) => {
+  const method = getPaymentMethod(methodId)
+  if (!method?.fees) return ''
+
+  const { type, value } = method.fees
+  switch (type) {
+    case 'FIXED':
+      return `Fixed fee: ${formatCurrency(value)}`
+    case 'PERCENTAGE':
+      return `${value}% of transaction amount`
+    case 'FIXED_PLUS_PERCENTAGE':
+      return `${formatCurrency(value.fixed)} + ${value.percentage}% of transaction amount`
+    default:
+      return ''
+  }
+}
+
 const handleMethodChange = (index) => {
   const payment = payments.value[index]
   payment.denomination = null
@@ -282,6 +312,8 @@ const addPayment = () => {
 
 const removePayment = (index) => {
   payments.value.splice(index, 1)
+  // Recalculate amounts for remaining payments
+  payments.value.forEach((payment, idx) => validateAmount(idx))
 }
 
 const closeDialog = () => {
@@ -314,7 +346,7 @@ const processPayment = async () => {
     dialog.value = false
   } catch (err) {
     console.error('Payment failed:', err)
-    window.toastr?.['error']('Failed to process payment')
+    window.toastr?.['error'](err.message || 'Failed to process payment')
   } finally {
     processing.value = false
   }

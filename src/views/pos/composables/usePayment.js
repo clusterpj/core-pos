@@ -72,8 +72,26 @@ export function usePayment() {
         throw new Error('Manual payment number entry is not supported')
       }
 
-      // Calculate total payment amount
+      // Validate payments
+      for (const payment of payments) {
+        // Validate denomination if method has denominations
+        const method = paymentMethods.value.find(m => m.id === payment.method_id)
+        if (method?.denominations?.length && !payment.denomination) {
+          throw new Error(`Denomination is required for ${method.name}`)
+        }
+
+        // Validate reference if required
+        if (method?.requires_reference && !payment.reference) {
+          throw new Error(`Reference number is required for ${method.name}`)
+        }
+
+        // Calculate and validate fees
+        payment.fees = calculateFees(payment.method_id, payment.amount)
+      }
+
+      // Calculate total payment amount including fees
       const totalPayment = payments.reduce((sum, payment) => sum + payment.amount, 0)
+      const totalFees = payments.reduce((sum, payment) => sum + (payment.fees || 0), 0)
 
       // Validate payment amount based on partial payment setting
       if (settings.value.allow_partial_pay !== '1' && totalPayment !== invoice.total) {
@@ -86,10 +104,13 @@ export function usePayment() {
         payment_date: new Date().toISOString().split('T')[0],
         invoice_id: invoice.id,
         total: totalPayment,
+        total_fees: totalFees,
         payments: payments.map(payment => ({
           payment_method_id: payment.method_id,
           amount: payment.amount,
-          reference: payment.reference || null
+          reference: payment.reference || null,
+          denomination: payment.denomination || null,
+          fees: payment.fees || 0
         })),
         is_pos: true,
         status: 'COMPLETED',
@@ -108,7 +129,6 @@ export function usePayment() {
       
       // Update invoice if needed (e.g., mark as paid if full payment)
       if (totalPayment === invoice.total) {
-        // You might want to add an API call here to update invoice status
         logger.info('Invoice fully paid:', invoice.id)
       }
 
@@ -145,16 +165,34 @@ export function usePayment() {
   /**
    * Calculate fees for a payment method
    * @param {number} methodId - Payment method ID
-   * @param {number} amount - Payment amount
-   * @returns {number}
+   * @param {number} amount - Payment amount in cents
+   * @returns {number} Fee amount in cents
    */
   const calculateFees = (methodId, amount) => {
     const method = paymentMethods.value.find(m => m.id === methodId)
     if (!method?.fees) return 0
 
-    // Implement fee calculation based on method.fees configuration
-    // This is a placeholder - implement actual fee calculation logic
-    return 0
+    const { type, value } = method.fees
+    
+    switch (type) {
+      case 'FIXED':
+        // Fixed fee amount in cents
+        return Math.round(value * 100)
+      
+      case 'PERCENTAGE':
+        // Calculate percentage of the amount
+        return Math.round((amount * value) / 100)
+      
+      case 'FIXED_PLUS_PERCENTAGE':
+        // Both fixed fee and percentage
+        const fixedFee = Math.round(value.fixed * 100)
+        const percentageFee = Math.round((amount * value.percentage) / 100)
+        return fixedFee + percentageFee
+      
+      default:
+        logger.warn(`Unknown fee type: ${type}`)
+        return 0
+    }
   }
 
   return {
