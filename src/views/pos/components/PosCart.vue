@@ -316,6 +316,8 @@ const updateOrder = async () => {
       window.toastr?.['success']('Order updated successfully')
       // Clear the hold invoice ID after successful update
       cartStore.setHoldInvoiceId(null)
+      // Clear the cart after successful update
+      cartStore.clearCart()
     } else {
       throw new Error(response.message || 'Failed to update order')
     }

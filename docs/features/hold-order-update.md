@@ -133,6 +133,7 @@ const updateOrder = async () => {
     if (response.success) {
       window.toastr?.['success']('Order updated successfully')
       cartStore.setHoldInvoiceId(null)
+      cartStore.clearCart() // Clear cart after successful update
     } else {
       throw new Error(response.message || 'Failed to update order')
     }
@@ -150,6 +151,7 @@ Key Points:
 - Provides visual feedback during update process
 - Handles errors with user notifications
 - Clears hold invoice ID after successful update
+- Clears cart after successful update to reset the state
 
 ## Required Payload Structure
 
@@ -225,4 +227,9 @@ The update endpoint expects a payload in this format:
 4. Error Handling:
    - Validation occurs at multiple levels (UI, Store, API)
    - User is notified of any failures via toastr notifications
-   - Failed updates do not clear the hold invoice ID
+   - Failed updates do not clear the hold invoice ID or cart state
+
+5. Cart State:
+   - Cart is automatically cleared after a successful update
+   - Cart remains unchanged if the update fails
+   - This ensures a clean state for new orders after updates
