@@ -135,10 +135,20 @@ const handleLoadOrder = async (invoice) => {
 }
 
 const handleConvertOrder = async (invoice) => {
+  console.log('HeldOrdersModal: handleConvertOrder called with invoice:', {
+    id: invoice.id,
+    description: invoice.description,
+    total: invoice.total,
+    items: invoice.hold_items?.length
+  })
+  
   const result = await convertToInvoice(invoice)
+  console.log('HeldOrdersModal: convertToInvoice result:', result)
+  
   if (result.success) {
-    // Payment dialog will be shown automatically
-    // Dialog will be closed after successful payment
+    console.log('HeldOrdersModal: Conversion successful, payment dialog should show automatically')
+  } else {
+    console.error('HeldOrdersModal: Conversion failed:', result.error)
   }
 }
 
@@ -183,9 +193,15 @@ watch(dialog, async (newValue) => {
 
 // Watch for payment completion
 watch(showPaymentDialog, async (newValue) => {
+  console.log('HeldOrdersModal: Payment dialog state changed:', {
+    showPaymentDialog: newValue,
+    hasCurrentInvoice: !!currentInvoice.value
+  })
+  
   if (!newValue) {
     // Payment dialog was closed
     if (currentInvoice.value) {
+      console.log('HeldOrdersModal: Payment dialog closed with current invoice, refreshing list')
       // Refresh the list
       await fetchHoldInvoices()
       // Close the main dialog

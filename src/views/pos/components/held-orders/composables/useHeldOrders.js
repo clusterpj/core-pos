@@ -103,6 +103,8 @@ export function useHeldOrders() {
 
   // Validate invoice data before API call
   const validateInvoiceData = (data) => {
+    console.log('useHeldOrders: Validating invoice data:', data)
+    
     const requiredFields = [
       'invoice_number',
       'invoice_date',
@@ -128,11 +130,14 @@ export function useHeldOrders() {
       }
     })
 
+    console.log('useHeldOrders: Invoice data validation passed')
     return true
   }
 
   // Handle payment completion
   const handlePaymentComplete = async (paymentResult) => {
+    console.log('useHeldOrders: Payment completion handler called with result:', paymentResult)
+    
     try {
       logger.info('Payment completed successfully:', paymentResult)
       
@@ -142,6 +147,7 @@ export function useHeldOrders() {
       
       // Delete the held order
       const deleteResponse = await posStore.deleteHoldInvoice(currentInvoice.value.hold_invoice_id)
+      console.log('useHeldOrders: Delete held order response:', deleteResponse)
       
       if (!deleteResponse.success) {
         throw new Error(deleteResponse.message || 'Failed to delete hold invoice')
@@ -156,6 +162,7 @@ export function useHeldOrders() {
       
       return true
     } catch (error) {
+      console.error('useHeldOrders: Failed to complete payment process:', error)
       logger.error('Failed to complete payment process:', error)
       window.toastr?.['error']('Failed to complete payment process')
       return false
@@ -164,6 +171,13 @@ export function useHeldOrders() {
 
   // Convert to invoice
   const convertToInvoice = async (invoice) => {
+    console.log('useHeldOrders: Starting conversion process for invoice:', {
+      id: invoice?.id,
+      description: invoice?.description,
+      total: invoice?.total,
+      items: invoice?.hold_items?.length
+    })
+    
     try {
       if (!invoice?.id) {
         throw new Error('Invalid invoice: missing ID')
@@ -173,19 +187,24 @@ export function useHeldOrders() {
       logger.debug('Converting order to invoice:', invoice)
       
       // 1. Get company settings
+      console.log('useHeldOrders: Fetching company settings')
       const settings = await posApi.getCompanySettings()
-      logger.debug('Company settings:', settings)
+      console.log('useHeldOrders: Company settings received:', settings)
 
       // Validate required settings
-      if (!settings.invoice_auto_generate || !settings.invoice_issuance_period) {
-        throw new Error('Required company settings are missing')
+      if (!settings.invoice_auto_generate) {
+        throw new Error('Invoice auto-generate setting is required but missing')
       }
+
+      // Use default issuance period if not set
+      const issuancePeriod = settings.invoice_issuance_period || '7'
 
       // 2. Get next invoice number if auto-generate is enabled
       let invoiceNumber
       if (settings.invoice_auto_generate === 'YES') {
+        console.log('useHeldOrders: Getting next invoice number')
         const nextNumberResponse = await posApi.invoice.getNextNumber()
-        logger.debug('Next number response:', nextNumberResponse)
+        console.log('useHeldOrders: Next number response:', nextNumberResponse)
 
         if (!nextNumberResponse?.invoice_number) {
           throw new Error('Failed to get next invoice number')
@@ -198,7 +217,7 @@ export function useHeldOrders() {
       // Calculate dates
       const currentDate = new Date()
       const dueDate = new Date(currentDate)
-      dueDate.setDate(dueDate.getDate() + parseInt(settings.invoice_issuance_period || 7))
+      dueDate.setDate(dueDate.getDate() + parseInt(issuancePeriod))
 
       // Validate items exist
       if (!Array.isArray(invoice.hold_items) || invoice.hold_items.length === 0) {
@@ -206,6 +225,7 @@ export function useHeldOrders() {
       }
 
       // Format items according to API requirements
+      console.log('useHeldOrders: Formatting items data')
       const formattedItems = invoice.hold_items.map(item => {
         if (!item.item_id || !item.name) {
           throw new Error('Invalid item data: missing required fields')
@@ -228,6 +248,7 @@ export function useHeldOrders() {
       })
 
       // 3. Prepare invoice data according to API requirements
+      console.log('useHeldOrders: Preparing invoice data')
       const invoiceData = {
         // Required boolean flags
         avalara_bool: false,
@@ -286,25 +307,30 @@ export function useHeldOrders() {
       // Validate invoice data before sending
       validateInvoiceData(invoiceData)
 
-      logger.debug('Prepared invoice data:', invoiceData)
+      console.log('useHeldOrders: Creating invoice with data:', invoiceData)
 
       // 4. Create the invoice
       const invoiceResponse = await posApi.invoice.create(invoiceData)
+      console.log('useHeldOrders: Invoice creation response:', invoiceResponse)
       
       if (!invoiceResponse?.invoice?.id) {
         throw new Error('Failed to create invoice: Invalid response')
       }
 
       // 5. Get created invoice details
+      console.log('useHeldOrders: Fetching created invoice details')
       const createdInvoice = await posApi.invoice.getById(invoiceResponse.invoice.id)
       if (!createdInvoice) {
         throw new Error('Failed to fetch created invoice details')
       }
+      console.log('useHeldOrders: Created invoice details:', createdInvoice)
 
       // 6. Get payment methods
+      console.log('useHeldOrders: Fetching payment methods')
       await fetchPaymentMethods()
 
       // 7. Show payment dialog
+      console.log('useHeldOrders: Setting up payment dialog')
       currentInvoice.value = createdInvoice
       showPaymentDialog.value = true
       
@@ -314,6 +340,7 @@ export function useHeldOrders() {
         invoice: createdInvoice
       }
     } catch (error) {
+      console.error('useHeldOrders: Failed to convert order to invoice:', error)
       logger.error('Failed to convert order to invoice:', error)
       window.toastr?.['error'](error.message || 'Failed to convert order to invoice')
       return {

@@ -44,7 +44,7 @@
               size="small"
               color="success"
               variant="elevated"
-              @click="$emit('convert', invoice)"
+              @click="handleConvert(invoice)"
               :loading="convertingOrder === invoice.id"
               :disabled="loadingOrder === invoice.id || deletingOrder === invoice.id"
             >
@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   invoices: {
     type: Array,
     required: true
@@ -105,7 +105,18 @@ defineProps({
   }
 })
 
-defineEmits(['load', 'convert', 'delete'])
+const emit = defineEmits(['load', 'convert', 'delete'])
+
+const handleConvert = (invoice) => {
+  console.log('HeldOrdersTable: Convert button clicked for invoice:', invoice)
+  console.log('HeldOrdersTable: Emitting convert event with invoice data:', {
+    id: invoice.id,
+    description: invoice.description,
+    total: invoice.total,
+    items: invoice.hold_items?.length
+  })
+  emit('convert', invoice)
+}
 </script>
 
 <style scoped>
