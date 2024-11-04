@@ -3,10 +3,56 @@ import { logger } from '../../utils/logger'
 import { getApiEndpoint } from './config'
 
 /**
+ * Required settings for POS operations
+ */
+const REQUIRED_SETTINGS = [
+  'allow_invoice_form_pos',
+  'pdf_format_pos',
+  'default_email',
+  'tax_per_item',
+  'discount_per_item',
+  'retention_active',
+  'invoice_auto_generate',
+  'invoice_issuance_period',
+  'payment_auto_generate',
+  'allow_partial_pay',
+  'footer_text_value',
+  'footer_url_value',
+  'footer_url_name',
+  'autoprint_pdf_pos',
+  'current_year',
+  'activate_pay_button'
+]
+
+/**
  * POS API Service
  * Implements endpoints from CorePOS API Implementation Guide
  */
 const operations = {
+  // Settings Management
+  async getCompanySettings() {
+    logger.startGroup('POS API: Get Company Settings')
+    try {
+      const endpoint = getApiEndpoint('pos.settings')
+      logger.info('Fetching company settings from endpoint:', endpoint)
+      
+      // Prepare settings parameter
+      const params = {
+        settings: REQUIRED_SETTINGS
+      }
+      
+      const response = await apiClient.get(endpoint, { params })
+      logger.debug('Company settings response:', response.data)
+      
+      return response.data
+    } catch (error) {
+      logger.error('Failed to fetch company settings', error)
+      throw error
+    } finally {
+      logger.endGroup()
+    }
+  },
+
   // User Management
   async getEmployees() {
     logger.startGroup('POS API: Get Employees')
@@ -195,6 +241,100 @@ const operations = {
         return response.data
       } catch (error) {
         logger.error('Failed to create invoice', error)
+        throw error
+      } finally {
+        logger.endGroup()
+      }
+    },
+
+    async getById(id) {
+      logger.startGroup('POS API: Get Invoice')
+      try {
+        const endpoint = `${getApiEndpoint('pos.invoice.get')}/${id}`
+        logger.info('Fetching invoice from endpoint:', endpoint)
+        
+        const response = await apiClient.get(endpoint)
+        logger.debug('Invoice response:', response.data)
+        
+        return response.data
+      } catch (error) {
+        logger.error('Failed to get invoice', error)
+        throw error
+      } finally {
+        logger.endGroup()
+      }
+    }
+  },
+
+  // Payment Operations
+  payment: {
+    async getMethods() {
+      logger.startGroup('POS API: Get Payment Methods')
+      try {
+        const endpoint = getApiEndpoint('pos.payment.methods')
+        logger.info('Fetching payment methods from endpoint:', endpoint)
+        
+        const response = await apiClient.get(endpoint)
+        logger.debug('Payment methods response:', response.data)
+        
+        return response.data
+      } catch (error) {
+        logger.error('Failed to get payment methods', error)
+        throw error
+      } finally {
+        logger.endGroup()
+      }
+    },
+
+    async getNextNumber() {
+      logger.startGroup('POS API: Get Next Payment Number')
+      try {
+        const endpoint = getApiEndpoint('pos.payment.nextNumber')
+        logger.info('Fetching next payment number from endpoint:', endpoint)
+        
+        const response = await apiClient.get(endpoint)
+        logger.debug('Next payment number response:', response.data)
+        
+        return response.data
+      } catch (error) {
+        logger.error('Failed to get next payment number', error)
+        throw error
+      } finally {
+        logger.endGroup()
+      }
+    },
+
+    async create(paymentData) {
+      logger.startGroup('POS API: Create Payment')
+      try {
+        const endpoint = getApiEndpoint('pos.payment.create')
+        logger.info('Creating payment at endpoint:', endpoint)
+        logger.debug('Payment data:', paymentData)
+
+        const response = await apiClient.post(endpoint, paymentData)
+        logger.debug('Payment creation response:', response.data)
+
+        return response.data
+      } catch (error) {
+        logger.error('Failed to create payment', error)
+        throw error
+      } finally {
+        logger.endGroup()
+      }
+    },
+
+    async getById(id) {
+      logger.startGroup('POS API: Get Payment')
+      try {
+        const endpoint = `${getApiEndpoint('pos.payment.get')}/${id}`
+        logger.info('Fetching payment from endpoint:', endpoint)
+        
+        const response = await apiClient.get(endpoint)
+        logger.debug('Payment response:', response.data)
+        
+        return response.data
+      } catch (error) {
+        logger.error('Failed to get payment', error)
         throw error
       } finally {
         logger.endGroup()

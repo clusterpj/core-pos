@@ -31,9 +31,17 @@ export const apiConfig = {
       store: 'store',
       employees: 'users',
       cashiers: 'core-pos/cash-register/getCashRegistersUser',
+      settings: 'company/settings',
       invoice: {
         nextNumber: 'next-number',
-        create: 'invoices'
+        create: 'invoices',
+        get: 'invoices'
+      },
+      payment: {
+        methods: 'payments/multiple/get-payment-methods',
+        nextNumber: 'next-number',
+        create: 'payments/multiple/create',
+        get: 'payments'
       }
     }
   }

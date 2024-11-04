@@ -5,11 +5,13 @@ import { storeToRefs } from 'pinia'
 import { logger } from '../../../../../utils/logger'
 import { ORDER_TYPES } from '../../../composables/useOrderType'
 import { posApi } from '../../../../../services/api/pos-api'
+import { usePayment } from '../../../composables/usePayment'
 
 export function useHeldOrders() {
   const posStore = usePosStore()
   const cartStore = useCartStore()
   const { holdInvoices, holdInvoiceSettings } = storeToRefs(posStore)
+  const { fetchPaymentMethods } = usePayment()
 
   const loading = ref(false)
   const loadingOrder = ref(null)
@@ -17,6 +19,8 @@ export function useHeldOrders() {
   const convertingOrder = ref(null)
   const search = ref('')
   const selectedType = ref('ALL')
+  const showPaymentDialog = ref(false)
+  const currentInvoice = ref(null)
 
   // Order type options for filter
   const orderTypes = [
@@ -86,23 +90,64 @@ export function useHeldOrders() {
     }).format(amount)
   }
 
+  // Handle payment completion
+  const handlePaymentComplete = async (paymentResult) => {
+    try {
+      logger.info('Payment completed successfully:', paymentResult)
+      
+      // Delete the held order
+      await posStore.deleteHoldInvoice(currentInvoice.value.hold_invoice_id)
+      
+      // Show success message
+      window.toastr?.['success']('Payment processed successfully')
+      
+      // Reset state
+      currentInvoice.value = null
+      showPaymentDialog.value = false
+      
+      return true
+    } catch (error) {
+      logger.error('Failed to complete payment process:', error)
+      window.toastr?.['error']('Failed to complete payment process')
+      return false
+    }
+  }
+
   // Convert to invoice
   const convertToInvoice = async (invoice) => {
     try {
       convertingOrder.value = invoice.id
       logger.debug('Converting order to invoice:', invoice)
       
-      // Get next invoice number
-      const nextNumberResponse = await posApi.invoice.getNextNumber()
-      if (!nextNumberResponse?.invoice_number) {
-        throw new Error('Failed to get next invoice number')
+      // 1. Get company settings
+      const settings = await posApi.getCompanySettings()
+      logger.debug('Company settings:', settings)
+
+      // Validate required settings
+      if (!settings.invoice_auto_generate || !settings.invoice_issuance_period) {
+        throw new Error('Required company settings are missing')
       }
 
-      // Get current date and due date (7 days from now)
-      const currentDate = new Date().toISOString().split('T')[0]
-      const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      // 2. Get next invoice number if auto-generate is enabled
+      let invoiceNumber
+      if (settings.invoice_auto_generate === 'YES') {
+        const nextNumberResponse = await posApi.invoice.getNextNumber()
+        if (!nextNumberResponse?.invoice_number) {
+          throw new Error('Failed to get next invoice number')
+        }
+        invoiceNumber = nextNumberResponse.invoice_number
+      } else {
+        // For manual number entry, we should handle this case
+        // For now, we'll throw an error as we don't have UI for manual entry
+        throw new Error('Manual invoice number entry is not supported')
+      }
 
-      // Prepare invoice data according to API requirements
+      // Calculate due date based on company settings
+      const currentDate = new Date()
+      const dueDate = new Date(currentDate)
+      dueDate.setDate(dueDate.getDate() + parseInt(settings.invoice_issuance_period || 7))
+
+      // 3. Prepare invoice data according to API requirements
       const invoiceData = {
         ...holdInvoiceSettings.value.print_settings,
         avalara_bool: holdInvoiceSettings.value.avalara_bool,
@@ -111,12 +156,12 @@ export function useHeldOrders() {
         invoice_pbx_modify: holdInvoiceSettings.value.invoice_pbx_modify,
         taxes: holdInvoiceSettings.value.taxes,
         packages: holdInvoiceSettings.value.packages,
-        invoice_number: nextNumberResponse.invoice_number,
-        invoice_date: currentDate,
-        due_date: dueDate,
+        invoice_number: invoiceNumber,
+        invoice_date: currentDate.toISOString().split('T')[0],
+        due_date: dueDate.toISOString().split('T')[0],
         user_id: invoice.user_id,
         is_invoice_pos: 1,
-        is_pdf_pos: true,
+        is_pdf_pos: settings.pdf_format_pos === '1',
         print_pdf: false,
         send_email: false,
         save_as_draft: false,
@@ -128,8 +173,8 @@ export function useHeldOrders() {
         discount: invoice.discount || "0",
         discount_type: invoice.discount_type || "fixed",
         discount_val: invoice.discount_val || 0,
-        tax_per_item: "NO",
-        discount_per_item: "NO",
+        tax_per_item: settings.tax_per_item || "NO",
+        discount_per_item: settings.discount_per_item || "NO",
         items: invoice.hold_items.map(item => ({
           id: item.item_id,
           name: item.name,
@@ -146,31 +191,42 @@ export function useHeldOrders() {
         taxes: invoice.taxes || [],
         notes: invoice.notes,
         description: invoice.description || `Order #${invoice.id}`,
-        hold_invoice_id: invoice.id, // Reference to original hold order
+        hold_invoice_id: invoice.id,
         store_id: invoice.store_id,
         cash_register_id: invoice.cash_register_id,
-        company_id: invoice.company_id
+        company_id: invoice.company_id,
+        allow_partial_pay: settings.allow_partial_pay === '1'
       }
 
-      // Create the invoice
-      const response = await posApi.invoice.create(invoiceData)
+      // 4. Create the invoice
+      const invoiceResponse = await posApi.invoice.create(invoiceData)
       
-      if (!response?.invoice?.id) {
+      if (!invoiceResponse?.invoice?.id) {
         throw new Error('Failed to create invoice')
       }
 
-      // Delete the held order after successful conversion
-      await posStore.deleteHoldInvoice(invoice.id)
+      // 5. Get created invoice details
+      const createdInvoice = await posApi.invoice.getById(invoiceResponse.invoice.id)
+
+      // 6. Get payment methods
+      await fetchPaymentMethods()
+
+      // 7. Show payment dialog
+      currentInvoice.value = createdInvoice
+      showPaymentDialog.value = true
       
-      // Show success message
-      window.toastr?.['success']('Order converted to invoice successfully')
-      
-      logger.info('Order converted to invoice successfully:', response.invoice.id)
-      return true
+      logger.info('Order converted to invoice successfully:', createdInvoice.id)
+      return {
+        success: true,
+        invoice: createdInvoice
+      }
     } catch (error) {
       logger.error('Failed to convert order to invoice:', error)
       window.toastr?.['error']('Failed to convert order to invoice')
-      return false
+      return {
+        success: false,
+        error: error.message
+      }
     } finally {
       convertingOrder.value = null
     }
@@ -283,6 +339,9 @@ export function useHeldOrders() {
     convertToInvoice,
     loadOrder,
     deleteOrder,
-    fetchHoldInvoices
+    fetchHoldInvoices,
+    showPaymentDialog,
+    currentInvoice,
+    handlePaymentComplete
   }
 }

@@ -73,6 +73,12 @@
         :loading="isDeleting"
         @confirm="confirmDelete"
       />
+
+      <PaymentDialog
+        v-model="showPaymentDialog"
+        :invoice="currentInvoice"
+        @payment-complete="handlePaymentComplete"
+      />
     </v-dialog>
   </div>
 </template>
@@ -83,6 +89,7 @@ import { useHeldOrders } from './composables/useHeldOrders'
 import HeldOrdersFilters from './components/HeldOrdersFilters.vue'
 import HeldOrdersTable from './components/HeldOrdersTable.vue'
 import DeleteConfirmationDialog from './components/DeleteConfirmationDialog.vue'
+import PaymentDialog from '../dialogs/PaymentDialog.vue'
 
 const props = defineProps({
   disabled: {
@@ -113,7 +120,10 @@ const {
   convertToInvoice,
   loadOrder,
   deleteOrder,
-  fetchHoldInvoices
+  fetchHoldInvoices,
+  showPaymentDialog,
+  currentInvoice,
+  handlePaymentComplete
 } = useHeldOrders()
 
 const handleLoadOrder = async (invoice) => {
@@ -124,9 +134,10 @@ const handleLoadOrder = async (invoice) => {
 }
 
 const handleConvertOrder = async (invoice) => {
-  const success = await convertToInvoice(invoice)
-  if (success) {
-    dialog.value = false
+  const result = await convertToInvoice(invoice)
+  if (result.success) {
+    // Payment dialog will be shown automatically
+    // Dialog will be closed after successful payment
   }
 }
 
@@ -156,6 +167,19 @@ const confirmDelete = async () => {
 watch(dialog, async (newValue) => {
   if (newValue) {
     await fetchHoldInvoices()
+  }
+})
+
+// Watch for payment completion
+watch(showPaymentDialog, async (newValue) => {
+  if (!newValue) {
+    // Payment dialog was closed
+    if (currentInvoice.value) {
+      // Refresh the list
+      await fetchHoldInvoices()
+      // Close the main dialog
+      dialog.value = false
+    }
   }
 })
 
