@@ -46,6 +46,7 @@ export const createOrdersModule = (state, posApi, posOperations) => {
       due_date: dueDate.toISOString().split('T')[0],
       items: orderData.items.map(item => ({
         ...item,
+        // Prices are already in dollars, convert to cents for API
         price: Math.round(parseFloat(item.price) * 100),
         total: Math.round(parseFloat(item.total) * 100),
         unit_name: item.unit_name || 'N/A',

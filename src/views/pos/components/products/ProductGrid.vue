@@ -107,10 +107,12 @@ const handlePageChange = (page) => {
   currentPage.value = page
 }
 
+// Format price for display, converting from cents to dollars if needed
 const formatPrice = (price) => {
   if (!price) return '0.00'
-  const priceInDollars = Number(price) / 100
-  return priceInDollars.toFixed(2)
+  // If price is in cents (> 100), convert to dollars
+  const dollars = price > 100 ? price / 100 : price
+  return Number(dollars).toFixed(2)
 }
 
 const getImageUrl = (item) => {

@@ -19,7 +19,9 @@ export const useCartStore = defineStore('cart', {
   getters: {
     subtotal: (state) => {
       return state.items.reduce((sum, item) => {
-        const itemTotal = item.price * item.quantity
+        // Convert price to dollars if it's in cents
+        const price = item.price > 100 ? item.price / 100 : item.price
+        const itemTotal = price * item.quantity
         return sum + itemTotal
       }, 0)
     },
@@ -36,11 +38,11 @@ export const useCartStore = defineStore('cart', {
     },
 
     taxAmount: (state) => {
-      return Math.round(state.taxableAmount * state.taxRate)
+      return Math.round(state.taxableAmount * state.taxRate * 100) / 100
     },
 
     total: (state) => {
-      return Math.round(state.taxableAmount + state.taxAmount)
+      return Math.round((state.taxableAmount + state.taxAmount) * 100) / 100
     },
 
     itemCount: (state) => {
@@ -60,20 +62,14 @@ export const useCartStore = defineStore('cart', {
     addItem(product, quantity = 1, modifications = []) {
       logger.info('Adding item to cart:', { product, quantity, modifications })
       
-      // Convert price from cents to dollars if it's a new product (not from hold orders)
-      // We can detect if it's from a hold order by checking if the price is already in dollars
+      // Convert price to dollars if it's in cents
       const price = product.price > 100 ? product.price / 100 : product.price
-      
-      logger.debug('Price conversion:', {
-        originalPrice: product.price,
-        convertedPrice: price
-      })
       
       // When adding a new item with modifications, always create a new entry
       if (modifications && modifications.length > 0) {
         this.items.push({
           ...product,
-          price, // Use converted price
+          price,
           quantity,
           modifications,
           total: price * quantity,
@@ -101,7 +97,7 @@ export const useCartStore = defineStore('cart', {
       } else {
         this.items.push({
           ...product,
-          price, // Use converted price
+          price,
           quantity,
           modifications: [],
           total: price * quantity,
@@ -195,26 +191,35 @@ export const useCartStore = defineStore('cart', {
       return Math.round(amount * 100)
     },
 
+    // Convert cents to dollars
+    toDollars(amount) {
+      return amount / 100
+    },
+
     // New helper method to prepare items for API
     prepareItemsForApi() {
       const companyStore = useCompanyStore()
-      return this.items.map(item => ({
-        item_id: item.id,
-        name: item.name,
-        description: item.description || null,
-        price: this.toCents(item.price),
-        quantity: item.quantity.toString(), // API expects string
-        unit_name: item.unit_name || null,
-        discount: item.discount || "0.00",
-        discount_val: item.discount_val || 0,
-        tax: 0, // Tax is calculated at invoice level
-        total: this.toCents(item.price * item.quantity),
-        company_id: companyStore.company?.id || 1,
-        modifications: item.modifications || [],
-        retention_amount: 0,
-        retention_concept: 'NO_RETENTION',
-        retention_percentage: 0
-      }))
+      return this.items.map(item => {
+        // Convert price to dollars if it's in cents
+        const price = item.price > 100 ? item.price / 100 : item.price
+        return {
+          item_id: item.id,
+          name: item.name,
+          description: item.description || null,
+          price: this.toCents(price), // Convert to cents for API
+          quantity: item.quantity.toString(), // API expects string
+          unit_name: item.unit_name || null,
+          discount: item.discount || "0.00",
+          discount_val: item.discount_val || 0,
+          tax: 0, // Tax is calculated at invoice level
+          total: this.toCents(price * item.quantity), // Convert to cents for API
+          company_id: companyStore.company?.id || 1,
+          modifications: item.modifications || [],
+          retention_amount: 0,
+          retention_concept: 'NO_RETENTION',
+          retention_percentage: 0
+        }
+      })
     },
 
     prepareInvoiceData(storeId, cashRegisterId, referenceNumber) {
@@ -257,13 +262,13 @@ export const useCartStore = defineStore('cart', {
           due_date: dueDate,
           invoice_number: "-",
           user_id: currentCustomer.creator_id,
-          total: this.toCents(this.total),
-          due_amount: this.toCents(this.total),
-          sub_total: this.toCents(this.subtotal),
-          tax: this.toCents(this.taxAmount),
+          total: this.toCents(this.total), // Convert to cents for API
+          due_amount: this.toCents(this.total), // Convert to cents for API
+          sub_total: this.toCents(this.subtotal), // Convert to cents for API
+          tax: this.toCents(this.taxAmount), // Convert to cents for API
           discount_type: this.discountType,
           discount: this.discountValue.toString(),
-          discount_val: this.toCents(this.discountAmount),
+          discount_val: this.toCents(this.discountAmount), // Convert to cents for API
           discount_per_item: "NO",
           items: this.prepareItemsForApi(),
           invoice_template_id: 1,

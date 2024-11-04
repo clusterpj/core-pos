@@ -170,20 +170,8 @@ const operations = {
         logger.info('Creating hold invoice')
         logger.debug('Hold invoice data:', invoiceData)
 
-        // Only format the items array to ensure prices are in cents
-        const formattedItems = invoiceData.items.map(item => ({
-          ...item,
-          price: Math.round(parseFloat(item.price) * 100),
-          total: Math.round(parseFloat(item.total) * 100),
-          unit_name: item.unit_name || 'N/A'
-        }))
-
-        const formattedData = {
-          ...invoiceData,
-          items: formattedItems
-        }
-
-        const response = await apiClient.post('/v1/core-pos/hold-invoices', formattedData)
+        // Prices should already be in cents from orders.js
+        const response = await apiClient.post('/v1/core-pos/hold-invoices', invoiceData)
         logger.debug('Hold invoice response:', response.data)
 
         return response.data

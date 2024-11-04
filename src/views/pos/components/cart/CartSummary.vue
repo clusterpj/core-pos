@@ -67,10 +67,12 @@ const props = defineProps({
 
 const { discountType, discountValue, updateDiscount } = useCartDiscount()
 
-// Format price for display only, keeping raw values in the store
+// Format price for display, converting from cents to dollars if needed
 const formatPrice = (price) => {
   if (!price) return '0.00'
-  return Number(price).toFixed(2)
+  // If price is in cents (> 100), convert to dollars
+  const dollars = price > 100 ? price / 100 : price
+  return Number(dollars).toFixed(2)
 }
 </script>
 

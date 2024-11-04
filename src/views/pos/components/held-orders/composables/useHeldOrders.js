@@ -100,7 +100,7 @@ export function useHeldOrders() {
           id: item.item_id,
           name: item.name,
           description: item.description,
-          price: item.price / 100,
+          price: item.price, // Price is already in cents from API
           unit_name: item.unit_name,
           quantity: Number(item.quantity)
         })
@@ -160,7 +160,7 @@ export function useHeldOrders() {
           id: item.item_id,
           name: item.name,
           description: item.description,
-          price: item.price / 100,
+          price: item.price, // Price is already in cents from API
           unit_name: item.unit_name,
           quantity: Number(item.quantity)
         })
