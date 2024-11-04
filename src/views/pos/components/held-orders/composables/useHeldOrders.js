@@ -111,7 +111,8 @@ export function useHeldOrders() {
       'due_date',
       'total',
       'sub_total',
-      'items'
+      'items',
+      'user_id'
     ]
 
     const missingFields = requiredFields.filter(field => !data[field])
@@ -125,7 +126,7 @@ export function useHeldOrders() {
 
     // Validate items
     data.items.forEach((item, index) => {
-      if (!item.id || !item.name || !item.price || !item.quantity) {
+      if (!item.item_id || !item.name || !item.price || !item.quantity) {
         throw new Error(`Invalid item data at index ${index}`)
       }
     })
@@ -209,7 +210,8 @@ export function useHeldOrders() {
         if (!nextNumberResponse?.invoice_number) {
           throw new Error('Failed to get next invoice number')
         }
-        invoiceNumber = nextNumberResponse.invoice_number
+        // Add hyphen between prefix and number
+        invoiceNumber = `${nextNumberResponse.prefix}-${nextNumberResponse.nextNumber}`
       } else {
         throw new Error('Manual invoice number entry is not supported')
       }
@@ -218,6 +220,20 @@ export function useHeldOrders() {
       const currentDate = new Date()
       const dueDate = new Date(currentDate)
       dueDate.setDate(dueDate.getDate() + parseInt(issuancePeriod))
+
+      // Parse table data from notes
+      let tableData = {}
+      let tables = []
+      try {
+        if (invoice.notes) {
+          tableData = JSON.parse(invoice.notes)
+          if (tableData.tables) {
+            tables = tableData.tables
+          }
+        }
+      } catch (err) {
+        console.error('Failed to parse table data from notes:', err)
+      }
 
       // Validate items exist
       if (!Array.isArray(invoice.hold_items) || invoice.hold_items.length === 0) {
@@ -230,20 +246,28 @@ export function useHeldOrders() {
         if (!item.item_id || !item.name) {
           throw new Error('Invalid item data: missing required fields')
         }
+
+        const itemPrice = toCents(item.price)
+        const itemQuantity = parseInt(item.quantity)
+        const itemTotal = itemPrice * itemQuantity
+
         return {
-          id: item.item_id,
+          item_id: item.item_id,  // Critical - must be the item's database ID
           name: item.name,
-          description: item.description || null,
-          price: toCents(item.price),
-          quantity: parseInt(item.quantity),
+          description: item.description || '',
+          price: itemPrice,
+          quantity: itemQuantity,
           unit_name: item.unit_name || 'units',
-          discount: item.discount || "0",
-          discount_val: toCents(item.discount_val || 0),
+          sub_total: itemTotal,
+          total: itemTotal,
+          discount: "0",
+          discount_val: 0,
+          discount_type: "fixed",
           tax: toCents(item.tax || 0),
-          total: toCents(item.total),
-          sub_total: toCents(item.total),
-          allow_taxes: item.allow_taxes || 0,
-          no_taxable: item.no_taxable || 0
+          retention_amount: 0,
+          retention_concept: null,
+          retention_percentage: null,
+          retentions_id: null
         }
       })
 
@@ -269,13 +293,13 @@ export function useHeldOrders() {
         hold_invoice_id: invoice.id,
         store_id: invoice.store_id,
         cash_register_id: invoice.cash_register_id,
-        user_id: invoice.user_id,
+        user_id: invoice.user_id, // Keep original user_id
 
         // Dates
         invoice_date: formatApiDate(currentDate),
         due_date: formatApiDate(dueDate),
 
-        // Amounts (in cents)
+        // Amounts
         sub_total: toCents(invoice.sub_total),
         total: toCents(invoice.total),
         due_amount: toCents(invoice.total),
@@ -296,12 +320,11 @@ export function useHeldOrders() {
         items: formattedItems,
         taxes: invoice.taxes || [],
         packages: [],
-        tables_selected: [],
+        tables_selected: tableData.tables || [], // Use parsed table data
 
         // Optional fields
-        notes: invoice.notes || null,
-        description: invoice.description || `Order #${invoice.id}`,
-        contact: null // Optional contact information
+        notes: '', // Clear notes field as it should be rich text only
+        description: invoice.description || `Order #${invoice.id}`
       }
 
       // Validate invoice data before sending
