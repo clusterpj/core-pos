@@ -398,14 +398,16 @@ export function useHeldOrders() {
           throw new Error('Invalid item data: missing required fields')
         }
 
-        cartStore.addItem({
-          id: item.item_id,
-          name: item.name,
-          description: item.description,
-          price: item.price, // Price is already in cents from API
-          unit_name: item.unit_name,
-          quantity: Number(item.quantity)
-        })
+        cartStore.addItem(
+          {
+            id: item.item_id,
+            name: item.name,
+            description: item.description,
+            price: item.price, // Price is already in cents from API
+            unit_name: item.unit_name
+          },
+          Number(item.quantity)
+        )
       })
 
       // Set other cart properties

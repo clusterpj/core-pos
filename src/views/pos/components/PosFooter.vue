@@ -69,7 +69,6 @@
                       v-for="item in cartStore.items"
                       :key="item.id"
                       :title="item.name"
-                      :subtitle="item.modifications?.length ? item.modifications.join(', ') : null"
                     >
                       <template v-slot:append>
                         <div class="d-flex align-center">

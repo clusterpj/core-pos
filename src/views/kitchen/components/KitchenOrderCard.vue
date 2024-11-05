@@ -1,3 +1,4 @@
+<!-- src/views/kitchen/components/KitchenOrderCard.vue -->
 <template>
   <v-card
     :class="[
@@ -37,12 +38,6 @@
               </span>
             </h3>
             
-            <ul v-if="item.modifiers?.length" class="list-disc list-inside text-sm text-gray-600 mt-1">
-              <li v-for="mod in item.modifiers" :key="mod.id">
-                {{ mod.name }}: <span class="font-medium">{{ mod.value }}</span>
-              </li>
-            </ul>
-
             <div v-if="item.notes" class="text-sm text-gray-600 mt-1 italic">
               Note: {{ item.notes }}
             </div>

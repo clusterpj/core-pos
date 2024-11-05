@@ -81,64 +81,7 @@
         </v-card-title>
 
         <v-card-text>
-          <!-- Quick Modifications -->
-          <div class="mb-4">
-            <div class="text-subtitle-2 mb-2">Quick Modifications</div>
-            <v-chip-group v-model="selectedQuickMods" multiple @update:modelValue="handleQuickModsChange">
-              <v-chip
-                v-for="mod in commonModifications"
-                :key="mod"
-                filter
-                variant="outlined"
-              >
-                {{ mod }}
-              </v-chip>
-            </v-chip-group>
-          </div>
-
-          <!-- Custom Modifications -->
-          <div class="mb-4">
-            <div class="text-subtitle-2 mb-2">Custom Modifications</div>
-            <div class="d-flex gap-2 mb-2">
-              <v-text-field
-                v-model="newModification"
-                placeholder="Add modification"
-                density="compact"
-                hide-details
-                @keyup.enter="addModification"
-              />
-              <v-btn
-                color="primary"
-                @click="addModification"
-                :disabled="!newModification"
-              >
-                Add
-              </v-btn>
-            </div>
-          </div>
-
-          <!-- Current Modifications -->
-          <v-list v-if="currentModifications.length > 0" density="compact" class="bg-grey-lighten-4">
-            <v-list-item
-              v-for="(mod, index) in currentModifications"
-              :key="index"
-              :title="mod"
-            >
-              <template v-slot:append>
-                <v-btn
-                  icon="mdi-delete"
-                  size="x-small"
-                  variant="text"
-                  color="error"
-                  @click="removeModification(index)"
-                />
-              </template>
-            </v-list-item>
-          </v-list>
-
           <!-- Split Item Option -->
-          <v-divider class="my-4" />
-          
           <div class="mb-4">
             <div class="text-subtitle-2 mb-2">Split Item</div>
             <div class="d-flex align-center gap-2">
@@ -175,7 +118,7 @@
           </v-btn>
           <v-btn
             color="primary"
-            @click="saveModifications"
+            @click="closeEditDialog"
           >
             Save
           </v-btn>
@@ -201,7 +144,6 @@
 import { ref, computed } from 'vue'
 import { useCartStore } from '../../../stores/cart-store'
 import { usePosStore } from '../../../stores/pos-store'
-import { useCartModifications } from '../composables/useCartModifications'
 import { logger } from '../../../utils/logger'
 import CartItemList from './cart/CartItemList.vue'
 import CartSummary from './cart/CartSummary.vue'
@@ -216,18 +158,6 @@ const editingIndex = ref(null)
 const splitQuantity = ref(1)
 const updating = ref(false)
 
-// Composables
-const {
-  currentModifications,
-  selectedQuickMods,
-  newModification,
-  commonModifications,
-  addModification,
-  removeModification,
-  resetModifications,
-  initializeModifications
-} = useCartModifications()
-
 // Computed
 const canSplit = computed(() => {
   return editingItem.value &&
@@ -236,18 +166,6 @@ const canSplit = computed(() => {
 })
 
 // Methods
-const handleQuickModsChange = (selectedIndices) => {
-  // Clear current modifications
-  currentModifications.value = []
-  
-  // Add selected quick modifications
-  selectedIndices.forEach(index => {
-    if (index >= 0 && index < commonModifications.length) {
-      currentModifications.value.push(commonModifications[index])
-    }
-  })
-}
-
 const clearOrder = () => {
   cartStore.clearCart()
 }
@@ -263,7 +181,6 @@ const removeItem = (itemId, index) => {
 const editItem = (item, index) => {
   editingItem.value = { ...item }
   editingIndex.value = index
-  initializeModifications(item.modifications)
   showEditDialog.value = true
 }
 
@@ -271,23 +188,16 @@ const splitItem = () => {
   if (canSplit.value) {
     cartStore.splitItem(
       editingIndex.value,
-      Number(splitQuantity.value),
-      currentModifications.value
+      Number(splitQuantity.value)
     )
     closeEditDialog()
   }
-}
-
-const saveModifications = () => {
-  cartStore.updateItemModifications(editingIndex.value, currentModifications.value)
-  closeEditDialog()
 }
 
 const closeEditDialog = () => {
   showEditDialog.value = false
   editingItem.value = null
   editingIndex.value = null
-  resetModifications()
   splitQuantity.value = 1
 }
 

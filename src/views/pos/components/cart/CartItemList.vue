@@ -15,11 +15,6 @@
         <tr v-for="(item, index) in items" :key="index">
           <td>
             {{ item.name }}
-            <div v-if="item.modifications?.length > 0" class="text-caption text-grey">
-              <div v-for="(mod, i) in item.modifications" :key="i">
-                - {{ mod }}
-              </div>
-            </div>
           </td>
           <td class="text-center">
             <div class="d-flex align-center justify-center">
