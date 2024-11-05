@@ -59,13 +59,13 @@
 
                   <!-- Amount Input -->
                   <v-text-field
-                    v-model="payment.amount"
+                    v-model="payment.displayAmount"
                     label="Amount"
                     type="number"
                     :rules="[
                       v => !!v || 'Amount is required',
                       v => v > 0 || 'Amount must be greater than 0',
-                      v => allowPartialPay || v <= remainingAmount / 100 || 'Amount exceeds remaining balance',
+                      v => allowPartialPay || v <= invoiceTotal / 100 || 'Amount exceeds remaining balance',
                       v => allowPartialPay || Number(v) === invoiceTotal / 100 || 'Full payment is required'
                     ]"
                     :prefix="'$'"
@@ -94,12 +94,12 @@
 
                     <!-- Received Amount -->
                     <v-text-field
-                      v-model="payment.received"
+                      v-model="payment.displayReceived"
                       label="Amount Received"
                       type="number"
                       :rules="[
                         v => !!v || 'Received amount is required',
-                        v => Number(v) >= Number(payment.amount) || 'Received amount must be greater than or equal to payment amount'
+                        v => Number(v) >= Number(payment.displayAmount) || 'Received amount must be greater than or equal to payment amount'
                       ]"
                       :prefix="'$'"
                       @input="calculateChange(index)"
@@ -109,7 +109,7 @@
                     <div v-if="payment.returned > 0" class="text-caption mb-2">
                       <div class="d-flex justify-space-between">
                         <span>Change:</span>
-                        <strong>{{ formatCurrency(payment.returned) }}</strong>
+                        <strong>{{ formatCurrency(payment.returned / 100) }}</strong>
                       </div>
                     </div>
                   </template>
@@ -121,7 +121,7 @@
                       <strong>{{ formatCurrency(payment.fees / 100) }}</strong>
                     </div>
                     <div class="text-grey">
-                      {{ getFeeDescription(payment.method_id, payment.amount * 100) }}
+                      {{ getFeeDescription(payment.method_id, payment.amount) }}
                     </div>
                   </div>
 
@@ -230,8 +230,10 @@ const {
 const processing = ref(false)
 const payments = ref([{ 
   method_id: null, 
-  amount: 0, 
+  amount: 0,
+  displayAmount: '0',
   received: 0,
+  displayReceived: '0',
   returned: 0,
   fees: 0 
 }])
@@ -244,6 +246,7 @@ const invoiceNumber = computed(() => {
 })
 
 const invoiceTotal = computed(() => {
+  // Invoice total is already in cents (431 for $4.31)
   return props.invoice?.invoice?.total || 0
 })
 
@@ -257,14 +260,14 @@ const dialog = computed({
 
 const remainingAmount = computed(() => {
   const totalPaid = payments.value.reduce((sum, payment) => {
-    return sum + (Number(payment.amount) || 0) * 100
+    return sum + payment.amount
   }, 0)
   return invoiceTotal.value - totalPaid
 })
 
 const totalPayments = computed(() => {
   return payments.value.reduce((sum, payment) => {
-    return sum + (Number(payment.amount) || 0) * 100
+    return sum + payment.amount
   }, 0)
 })
 
@@ -319,6 +322,7 @@ const getFeeDescription = (methodId, amount) => {
 
 const handleMethodChange = (index) => {
   const payment = payments.value[index]
+  payment.displayReceived = payment.displayAmount
   payment.received = payment.amount
   payment.returned = 0
   payment.fees = 0
@@ -327,16 +331,20 @@ const handleMethodChange = (index) => {
 
 const handleDenominationClick = (money, index) => {
   const payment = payments.value[index]
-  payment.received = Number(payment.received || 0) + Number(money.amount)
+  const currentReceived = Number(payment.displayReceived || 0)
+  payment.displayReceived = (currentReceived + Number(money.amount)).toString()
+  payment.received = Math.round(Number(payment.displayReceived) * 100)
   calculateChange(index)
 }
 
 const calculateChange = (index) => {
   const payment = payments.value[index]
-  if (!payment.received || !payment.amount) return
+  if (!payment.displayReceived || !payment.displayAmount) return
 
-  const received = Number(payment.received)
-  const amount = Number(payment.amount)
+  const received = Math.round(Number(payment.displayReceived) * 100)
+  const amount = payment.amount
+  
+  payment.received = received
   
   if (received >= amount) {
     payment.returned = received - amount
@@ -347,26 +355,30 @@ const calculateChange = (index) => {
 
 const validateAmount = (index) => {
   const payment = payments.value[index]
-  if (!payment.amount) return
+  if (!payment.displayAmount) return
 
   if (!allowPartialPay.value) {
     // If partial pay is not allowed, force full payment
-    payment.amount = invoiceTotal.value / 100
+    payment.displayAmount = (invoiceTotal.value / 100).toString()
   } else {
     // Otherwise, limit to remaining amount
-    payment.amount = Math.min(
-      Number(payment.amount),
+    payment.displayAmount = Math.min(
+      Number(payment.displayAmount),
       remainingAmount.value / 100
-    )
+    ).toString()
   }
+
+  // Convert display amount to cents
+  payment.amount = Math.round(Number(payment.displayAmount) * 100)
 
   // Calculate fees if applicable
   if (hasPaymentFees(payment.method_id)) {
-    payment.fees = calculateFees(payment.method_id, payment.amount * 100)
+    payment.fees = calculateFees(payment.method_id, payment.amount)
   }
 
   // Set initial received amount for cash payments
   if (isCashOnly(payment.method_id)) {
+    payment.displayReceived = payment.displayAmount
     payment.received = payment.amount
     payment.returned = 0
   }
@@ -375,8 +387,10 @@ const validateAmount = (index) => {
 const addPayment = () => {
   payments.value.push({ 
     method_id: null, 
-    amount: 0, 
+    amount: 0,
+    displayAmount: '0',
     received: 0,
+    displayReceived: '0',
     returned: 0,
     fees: 0 
   })
@@ -399,13 +413,13 @@ const processPayment = async () => {
 
   processing.value = true
   try {
-    // Format payments for API
+    // Format payments for API - amounts are already in cents
     const formattedPayments = payments.value.map(payment => ({
       method_id: payment.method_id,
       name: getPaymentMethod(payment.method_id).name,
-      amount: Math.round(payment.amount * 100), // Convert to cents
-      received: Math.round(payment.received * 100), // Convert to cents
-      returned: Math.round(payment.returned * 100), // Convert to cents
+      amount: payment.amount,
+      received: payment.received,
+      returned: payment.returned,
       valid: true
     }))
 
@@ -432,11 +446,14 @@ watch(() => dialog.value, async (newValue) => {
       // Get company settings
       await fetchSettings()
 
-      // Reset state
+      // Reset state with initial display amount
+      const initialDisplayAmount = settings.value?.allow_partial_pay === '1' ? '0' : (invoiceTotal.value / 100).toString()
       payments.value = [{
         method_id: null,
-        amount: settings.value?.allow_partial_pay === '1' ? 0 : invoiceTotal.value / 100,
+        amount: 0,
+        displayAmount: initialDisplayAmount,
         received: 0,
+        displayReceived: '0',
         returned: 0,
         fees: 0
       }]

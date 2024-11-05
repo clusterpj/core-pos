@@ -61,7 +61,8 @@ export const convertHeldOrderToInvoice = async (invoice) => {
     // Format items according to API requirements
     console.log('Formatting items data')
     const formattedItems = invoice.hold_items.map(item => {
-      const itemPrice = toCents(item.price)
+      // Note: item.price is already in cents
+      const itemPrice = Number(item.price)
       const itemQuantity = parseInt(item.quantity)
       const itemTotal = itemPrice * itemQuantity
 
@@ -77,7 +78,7 @@ export const convertHeldOrderToInvoice = async (invoice) => {
         discount: "0",
         discount_val: 0,
         discount_type: "fixed",
-        tax: toCents(item.tax || 0),
+        tax: Number(item.tax || 0), // tax is already in cents
         retention_amount: 0,
         retention_concept: null,
         retention_percentage: null,
@@ -113,22 +114,22 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       invoice_date: formatApiDate(currentDate),
       due_date: formatApiDate(dueDate),
 
-      // Amounts
-      sub_total: toCents(invoice.sub_total),
-      total: toCents(invoice.total),
-      due_amount: toCents(invoice.total),
-      tax: toCents(invoice.tax || 0),
+      // Amounts (already in cents)
+      sub_total: Number(invoice.sub_total),
+      total: Number(invoice.total),
+      due_amount: Number(invoice.total),
+      tax: Number(invoice.tax || 0),
       
       // Discount
       discount: invoice.discount || "0",
       discount_type: invoice.discount_type || "fixed",
-      discount_val: toCents(invoice.discount_val || 0),
+      discount_val: Number(invoice.discount_val || 0), // already in cents
       discount_per_item: settings.discount_per_item || "NO",
 
       // Tip
       tip: invoice.tip || "0",
       tip_type: invoice.tip_type || "fixed",
-      tip_val: toCents(invoice.tip_val || 0),
+      tip_val: Number(invoice.tip_val || 0), // already in cents
 
       // Arrays
       items: formattedItems,

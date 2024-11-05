@@ -51,7 +51,7 @@ export function usePayment() {
   /**
    * Create a payment for an invoice
    * @param {Object} invoice - The invoice object
-   * @param {Array} payments - Array of payment method objects
+   * @param {Array} payments - Array of payment method objects with amounts in backend format (431 for $4.31)
    */
   const createPayment = async (invoice, payments) => {
     loading.value = true
@@ -94,7 +94,7 @@ export function usePayment() {
 
       // Format payment data according to API requirements
       const paymentData = {
-        amount: totalPayment, // Amount in cents
+        amount: totalPayment, // Amount already in backend format
         invoice_id: invoice.id,
         is_multiple: true,
         payment_date: new Date().toISOString().split('T')[0],
@@ -106,9 +106,9 @@ export function usePayment() {
           return {
             id: payment.method_id,
             name: method.name,
-            amount: payment.amount, // Amount in cents
-            received: payment.received || 0, // Amount received in cents (for cash payments)
-            returned: payment.returned || 0, // Amount returned in cents (for cash payments)
+            amount: payment.amount, // Amount already in backend format
+            received: payment.received || 0, // Amount already in backend format
+            returned: payment.returned || 0, // Amount already in backend format
             valid: true
           }
         }),
@@ -157,8 +157,8 @@ export function usePayment() {
   /**
    * Calculate fees for a payment method
    * @param {number} methodId - Payment method ID
-   * @param {number} amount - Payment amount in cents
-   * @returns {number} Fee amount in cents
+   * @param {number} amount - Payment amount in backend format (431 for $4.31)
+   * @returns {number} Fee amount in backend format
    */
   const calculateFees = (methodId, amount) => {
     const method = paymentMethods.value.find(m => m.id === methodId)
