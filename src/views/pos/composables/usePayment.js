@@ -65,7 +65,7 @@ export function usePayment() {
 
       // Get next payment number
       const nextNumberResponse = await posOperations.getNextNumber('payment')
-      if (!nextNumberResponse?.number) {
+      if (!nextNumberResponse?.nextNumber || !nextNumberResponse?.prefix) {
         throw new Error('Failed to get next payment number')
       }
 
@@ -100,7 +100,7 @@ export function usePayment() {
         payment_date: new Date().toISOString().split('T')[0],
         paymentNumAttribute: nextNumberResponse.nextNumber,
         paymentPrefix: nextNumberResponse.prefix,
-        payment_number: nextNumberResponse.number,
+        payment_number: `${nextNumberResponse.prefix}${nextNumberResponse.nextNumber}`,
         payment_methods: payments.map(payment => {
           const method = getPaymentMethod(payment.method_id)
           return {
