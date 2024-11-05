@@ -75,7 +75,9 @@ export const useCompanyStore = defineStore('company', {
         title: register.name,
         value: register.id,
         description: register.description,
-        storeName: register.store_name
+        storeName: register.store_name,
+        customerId: register.customer_id,
+        storeId: register.store_id
       }))
     },
 
@@ -121,47 +123,13 @@ export const useCompanyStore = defineStore('company', {
       }
     },
 
-    async setSelectedCustomer(customerId) {
-      logger.info('Setting selected customer:', customerId)
-      
-      // Only set if customer exists
-      const customer = this.customers.find(c => c.id === customerId)
-      if (customer) {
-        this.selectedCustomer = customerId
-        logger.debug('Found customer:', customer)
-        localStorage.setItem('companyId', customer.company_id)
-        localStorage.setItem('selectedCustomer', customerId)
-        
-        // Reset dependent selections
-        this.selectedStore = null
-        this.selectedCashier = null
-        this.stores = []
-        this.cashRegisters = []
-        
-        // Fetch stores
-        await this.fetchStores()
-      } else {
-        logger.warn('Customer not found for ID:', customerId)
-      }
-    },
-
-    async fetchStores() {
-      if (!this.selectedCustomer) {
-        logger.warn('No customer selected, skipping store fetch')
-        return
-      }
-
+    async fetchStores(companyId) {
       logger.startGroup('Company Store: Fetch Stores')
       this.loadingStores = true
       this.storeError = null
 
       try {
-        const customer = this.customers.find(c => c.id === this.selectedCustomer)
-        if (!customer) {
-          throw new Error('Selected customer not found')
-        }
-
-        logger.debug('Fetching stores for company:', customer.company_id)
+        logger.debug('Fetching stores for company:', companyId)
 
         const params = {
           limit: 10000,
@@ -175,7 +143,7 @@ export const useCompanyStore = defineStore('company', {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            company: customer.company_id
+            company: companyId
           }
         }
 
@@ -197,32 +165,7 @@ export const useCompanyStore = defineStore('company', {
       }
     },
 
-    async setSelectedStore(storeId) {
-      logger.info('Setting selected store:', storeId)
-      
-      // Only set if store exists
-      const store = this.stores.find(s => s.id === storeId)
-      if (store) {
-        this.selectedStore = storeId
-        localStorage.setItem('selectedStore', storeId)
-        
-        // Reset dependent selections
-        this.selectedCashier = null
-        this.cashRegisters = []
-        
-        // Fetch registers
-        await this.fetchCashRegisters()
-      } else {
-        logger.warn('Store not found for ID:', storeId)
-      }
-    },
-
     async fetchCashRegisters() {
-      if (!this.selectedStore) {
-        logger.warn('No store selected, skipping cash register fetch')
-        return
-      }
-
       logger.startGroup('Company Store: Fetch Cash Registers')
       this.loadingCashRegisters = true
       this.cashRegisterError = null
@@ -243,12 +186,7 @@ export const useCompanyStore = defineStore('company', {
         const response = await apiClient.get('/v1/core-pos/cash-register/getCashRegistersUser', config)
 
         if (response.data?.success) {
-          let registers = response.data.data || []
-          
-          // Filter registers for current store
-          registers = registers.filter(register => register.store_id === this.selectedStore)
-          
-          this.cashRegisters = registers
+          this.cashRegisters = response.data.data || []
           logger.info(`Loaded ${this.cashRegisters.length} cash registers`)
         } else {
           throw new Error(response.data?.message || 'Failed to load cash registers')
@@ -263,16 +201,78 @@ export const useCompanyStore = defineStore('company', {
       }
     },
 
-    setSelectedCashier(registerId) {
+    async setSelectedCashier(registerId) {
       logger.info('Setting selected cash register:', registerId)
       
-      // Only set if register exists
       const register = this.cashRegisters.find(r => r.id === registerId)
-      if (register) {
-        this.selectedCashier = registerId
-        localStorage.setItem('selectedCashier', registerId)
-      } else {
+      if (!register) {
         logger.warn('Cash register not found for ID:', registerId)
+        return
+      }
+
+      // Set cashier
+      this.selectedCashier = registerId
+      localStorage.setItem('selectedCashier', registerId)
+
+      // Auto-select customer and fetch stores
+      if (register.customer_id) {
+        this.selectedCustomer = register.customer_id
+        localStorage.setItem('selectedCustomer', register.customer_id)
+        
+        const customer = this.customers.find(c => c.id === register.customer_id)
+        if (customer) {
+          localStorage.setItem('companyId', customer.company_id)
+          // Fetch stores for the customer's company
+          await this.fetchStores(customer.company_id)
+        }
+      }
+
+      // Auto-select store
+      if (register.store_id) {
+        // Verify store exists in fetched stores
+        const storeExists = this.stores.some(s => s.id === register.store_id)
+        if (storeExists) {
+          this.selectedStore = register.store_id
+          localStorage.setItem('selectedStore', register.store_id)
+        } else {
+          logger.warn('Store not found in available stores:', register.store_id)
+          throw new Error('Associated store not available')
+        }
+      }
+
+      logger.info('Auto-selected customer and store:', {
+        cashier: registerId,
+        customer: register.customer_id,
+        store: register.store_id
+      })
+    },
+
+    // Optional manual selection methods
+    async setSelectedCustomer(customerId) {
+      logger.info('Manual customer selection:', customerId)
+      
+      const customer = this.customers.find(c => c.id === customerId)
+      if (customer) {
+        this.selectedCustomer = customerId
+        localStorage.setItem('selectedCustomer', customerId)
+        localStorage.setItem('companyId', customer.company_id)
+        
+        // Fetch stores for the selected customer's company
+        await this.fetchStores(customer.company_id)
+      } else {
+        logger.warn('Customer not found for ID:', customerId)
+      }
+    },
+
+    async setSelectedStore(storeId) {
+      logger.info('Manual store selection:', storeId)
+      
+      const store = this.stores.find(s => s.id === storeId)
+      if (store) {
+        this.selectedStore = storeId
+        localStorage.setItem('selectedStore', storeId)
+      } else {
+        logger.warn('Store not found for ID:', storeId)
       }
     },
 
@@ -280,6 +280,16 @@ export const useCompanyStore = defineStore('company', {
       logger.startGroup('Company Store: Initialize')
       try {
         await this.fetchCustomers()
+        await this.fetchCashRegisters()
+        
+        // If we have a selected customer, fetch stores
+        if (this.selectedCustomer) {
+          const customer = this.customers.find(c => c.id === this.selectedCustomer)
+          if (customer) {
+            await this.fetchStores(customer.company_id)
+          }
+        }
+        
         logger.info('Company store initialized successfully')
       } catch (error) {
         logger.error('Failed to initialize company store', error)
