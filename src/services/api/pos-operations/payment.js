@@ -7,7 +7,7 @@ export const paymentOperations = {
     logger.startGroup('POS Operations: Get Payment Methods')
     try {
       logger.debug('Requesting payment methods')
-      const response = await apiClient.get('payments/multiple/get-payment-methods')
+      const response = await apiClient.post('payments/multiple/get-payment-methods')
       
       if (!response.data?.payment_methods) {
         throw new Error('Invalid payment methods response')

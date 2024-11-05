@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { posApi } from '../../../services/api/pos-api'
+import { usePosOperations } from '../../../services/api/pos-operations'
 import { logger } from '../../../utils/logger'
 
 export function usePayment() {
@@ -7,13 +7,14 @@ export function usePayment() {
   const paymentMethods = ref([])
   const error = ref(null)
   const settings = ref(null)
+  const posOperations = usePosOperations()
 
   /**
    * Fetch company settings
    */
   const fetchSettings = async () => {
     try {
-      const response = await posApi.getCompanySettings()
+      const response = await posOperations.getCompanySettings()
       settings.value = response
       return response
     } catch (err) {
@@ -31,8 +32,12 @@ export function usePayment() {
     error.value = null
     
     try {
-      const response = await posApi.payment.getMethods()
-      paymentMethods.value = response.data || []
+      const response = await posOperations.getPaymentMethods()
+      if (response.success && response.data) {
+        paymentMethods.value = response.data
+      } else {
+        throw new Error('Failed to fetch payment methods')
+      }
       return response.data
     } catch (err) {
       error.value = err.message
@@ -58,35 +63,24 @@ export function usePayment() {
         await fetchSettings()
       }
 
-      // Get next payment number if auto-generate is enabled
-      let paymentNumber
-      if (settings.value.payment_auto_generate === 'YES') {
-        const nextNumberResponse = await posApi.payment.getNextNumber()
-        if (!nextNumberResponse?.payment_number) {
-          throw new Error('Failed to get next payment number')
-        }
-        paymentNumber = nextNumberResponse.payment_number
-      } else {
-        // For manual number entry, we should handle this case
-        // For now, we'll throw an error as we don't have UI for manual entry
-        throw new Error('Manual payment number entry is not supported')
+      // Get next payment number
+      const nextNumberResponse = await posOperations.getNextNumber('payment')
+      if (!nextNumberResponse?.number) {
+        throw new Error('Failed to get next payment number')
       }
 
       // Validate payments
       for (const payment of payments) {
         // Validate denomination if method has denominations
         const method = paymentMethods.value.find(m => m.id === payment.method_id)
-        if (method?.denominations?.length && !payment.denomination) {
+        if (method?.pos_money?.length && !payment.denomination) {
           throw new Error(`Denomination is required for ${method.name}`)
         }
 
-        // Validate reference if required
-        if (method?.requires_reference && !payment.reference) {
-          throw new Error(`Reference number is required for ${method.name}`)
+        // Calculate and validate fees if active
+        if (method?.IsPaymentFeeActive === 'YES') {
+          payment.fees = calculateFees(payment.method_id, payment.amount)
         }
-
-        // Calculate and validate fees
-        payment.fees = calculateFees(payment.method_id, payment.amount)
       }
 
       // Calculate total payment amount including fees
@@ -98,41 +92,39 @@ export function usePayment() {
         throw new Error('Partial payments are not allowed. Full payment is required.')
       }
 
-      // Prepare payment data
+      // Format payment data according to API requirements
       const paymentData = {
-        payment_number: paymentNumber,
-        payment_date: new Date().toISOString().split('T')[0],
+        amount: totalPayment, // Amount in cents
         invoice_id: invoice.id,
-        total: totalPayment,
-        total_fees: totalFees,
-        payments: payments.map(payment => ({
-          payment_method_id: payment.method_id,
-          amount: payment.amount,
-          reference: payment.reference || null,
-          denomination: payment.denomination || null,
-          fees: payment.fees || 0
-        })),
-        is_pos: true,
-        status: 'COMPLETED',
+        is_multiple: true,
+        payment_date: new Date().toISOString().split('T')[0],
+        paymentNumAttribute: nextNumberResponse.nextNumber,
+        paymentPrefix: nextNumberResponse.prefix,
+        payment_number: nextNumberResponse.number,
+        payment_methods: payments.map(payment => {
+          const method = getPaymentMethod(payment.method_id)
+          return {
+            id: payment.method_id,
+            name: method.name,
+            amount: payment.amount, // Amount in cents
+            received: payment.received || 0, // Amount received in cents (for cash payments)
+            returned: payment.returned || 0, // Amount returned in cents (for cash payments)
+            valid: true
+          }
+        }),
+        status: { value: "Approved", text: "Approved" },
+        user_id: invoice.user_id,
         notes: `Payment for invoice ${invoice.invoice_number}`
       }
 
-      // Create payment
-      const response = await posApi.payment.create(paymentData)
+      // Create payment using the correct endpoint
+      const response = await posOperations.createPayment(paymentData)
       
-      if (!response?.payment?.id) {
+      if (!response?.success) {
         throw new Error('Failed to create payment')
       }
 
-      // Get payment details
-      const paymentDetails = await posApi.payment.getById(response.payment.id)
-      
-      // Update invoice if needed (e.g., mark as paid if full payment)
-      if (totalPayment === invoice.total) {
-        logger.info('Invoice fully paid:', invoice.id)
-      }
-
-      return paymentDetails
+      return response.payment
     } catch (err) {
       error.value = err.message
       logger.error('Failed to create payment:', err)
@@ -143,13 +135,13 @@ export function usePayment() {
   }
 
   /**
-   * Check if a payment method requires a reference number
+   * Check if a payment method is cash only
    * @param {number} methodId - Payment method ID
    * @returns {boolean}
    */
-  const requiresReference = (methodId) => {
+  const isCashOnly = (methodId) => {
     const method = paymentMethods.value.find(m => m.id === methodId)
-    return method?.requires_reference || false
+    return method?.only_cash === 1
   }
 
   /**
@@ -159,7 +151,7 @@ export function usePayment() {
    */
   const getDenominations = (methodId) => {
     const method = paymentMethods.value.find(m => m.id === methodId)
-    return method?.denominations || []
+    return method?.pos_money || []
   }
 
   /**
@@ -170,29 +162,31 @@ export function usePayment() {
    */
   const calculateFees = (methodId, amount) => {
     const method = paymentMethods.value.find(m => m.id === methodId)
-    if (!method?.fees) return 0
+    if (!method?.registrationdatafees) return 0
 
-    const { type, value } = method.fees
-    
-    switch (type) {
-      case 'FIXED':
-        // Fixed fee amount in cents
-        return Math.round(value * 100)
-      
-      case 'PERCENTAGE':
-        // Calculate percentage of the amount
-        return Math.round((amount * value) / 100)
-      
-      case 'FIXED_PLUS_PERCENTAGE':
-        // Both fixed fee and percentage
-        const fixedFee = Math.round(value.fixed * 100)
-        const percentageFee = Math.round((amount * value.percentage) / 100)
-        return fixedFee + percentageFee
-      
-      default:
-        logger.warn(`Unknown fee type: ${type}`)
-        return 0
+    const fees = method.registrationdatafees
+    let totalFee = 0
+
+    if (fees.type === 'FIXED') {
+      totalFee = Math.round(fees.value * 100)
+    } else if (fees.type === 'PERCENTAGE') {
+      totalFee = Math.round((amount * fees.value) / 100)
+    } else if (fees.type === 'FIXED_PLUS_PERCENTAGE') {
+      const fixedFee = Math.round(fees.value.fixed * 100)
+      const percentageFee = Math.round((amount * fees.value.percentage) / 100)
+      totalFee = fixedFee + percentageFee
     }
+
+    return totalFee
+  }
+
+  /**
+   * Get payment method details
+   * @param {number} methodId - Payment method ID
+   * @returns {Object|null}
+   */
+  const getPaymentMethod = (methodId) => {
+    return paymentMethods.value.find(m => m.id === methodId)
   }
 
   return {
@@ -203,8 +197,9 @@ export function usePayment() {
     fetchSettings,
     fetchPaymentMethods,
     createPayment,
-    requiresReference,
     getDenominations,
-    calculateFees
+    calculateFees,
+    getPaymentMethod,
+    isCashOnly
   }
 }

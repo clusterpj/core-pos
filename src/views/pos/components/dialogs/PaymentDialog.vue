@@ -27,11 +27,11 @@
                   <v-card-text>
                     <div class="d-flex justify-space-between mb-2">
                       <span>Invoice Number:</span>
-                      <strong>{{ invoice.invoice_number }}</strong>
+                      <strong>{{ invoiceNumber }}</strong>
                     </div>
                     <div class="d-flex justify-space-between mb-2">
                       <span>Total Amount:</span>
-                      <strong>{{ formatCurrency(invoice.total / 100) }}</strong>
+                      <strong>{{ formatCurrency(invoiceTotal / 100) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between">
                       <span>Remaining:</span>
@@ -50,21 +50,11 @@
                   <v-select
                     v-model="payment.method_id"
                     :items="paymentMethods"
-                    item-title="name"
+                    item-title="formattedNameLabel"
                     item-value="id"
                     label="Payment Method"
                     :rules="[v => !!v || 'Payment method is required']"
                     @update:model-value="handleMethodChange(index)"
-                  ></v-select>
-
-                  <!-- Denominations (if available) -->
-                  <v-select
-                    v-if="getDenominations(payment.method_id)?.length"
-                    v-model="payment.denomination"
-                    :items="getDenominations(payment.method_id)"
-                    label="Denomination"
-                    :rules="[v => !getDenominations(payment.method_id)?.length || !!v || 'Denomination is required']"
-                    @update:model-value="handleDenominationChange(index)"
                   ></v-select>
 
                   <!-- Amount Input -->
@@ -76,30 +66,64 @@
                       v => !!v || 'Amount is required',
                       v => v > 0 || 'Amount must be greater than 0',
                       v => allowPartialPay || v <= remainingAmount / 100 || 'Amount exceeds remaining balance',
-                      v => allowPartialPay || Number(v) === invoice.total / 100 || 'Full payment is required'
+                      v => allowPartialPay || Number(v) === invoiceTotal / 100 || 'Full payment is required'
                     ]"
                     :prefix="'$'"
                     @input="validateAmount(index)"
                   ></v-text-field>
 
-                  <!-- Fees Display (if applicable) -->
-                  <div v-if="payment.fees > 0" class="text-caption mb-2">
+                  <!-- Cash Payment Fields -->
+                  <template v-if="isCashOnly(payment.method_id)">
+                    <!-- Denominations Grid -->
+                    <div v-if="getDenominations(payment.method_id)?.length" class="mb-4">
+                      <div class="text-subtitle-2 mb-2">Quick Amount Selection</div>
+                      <v-row>
+                        <v-col v-for="money in getDenominations(payment.method_id)" 
+                              :key="money.id" 
+                              cols="4" 
+                              class="pa-1">
+                          <v-btn block
+                                variant="outlined"
+                                size="small"
+                                @click="handleDenominationClick(money, index)">
+                            {{ formatCurrency(Number(money.amount)) }}
+                          </v-btn>
+                        </v-col>
+                      </v-row>
+                    </div>
+
+                    <!-- Received Amount -->
+                    <v-text-field
+                      v-model="payment.received"
+                      label="Amount Received"
+                      type="number"
+                      :rules="[
+                        v => !!v || 'Received amount is required',
+                        v => Number(v) >= Number(payment.amount) || 'Received amount must be greater than or equal to payment amount'
+                      ]"
+                      :prefix="'$'"
+                      @input="calculateChange(index)"
+                    ></v-text-field>
+
+                    <!-- Change Amount Display -->
+                    <div v-if="payment.returned > 0" class="text-caption mb-2">
+                      <div class="d-flex justify-space-between">
+                        <span>Change:</span>
+                        <strong>{{ formatCurrency(payment.returned) }}</strong>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Payment Fees -->
+                  <div v-if="hasPaymentFees(payment.method_id)" class="text-caption mb-2">
                     <div class="d-flex justify-space-between">
                       <span>Service Fee:</span>
                       <strong>{{ formatCurrency(payment.fees / 100) }}</strong>
                     </div>
-                    <div v-if="getPaymentMethod(payment.method_id)?.fees" class="text-caption text-grey">
+                    <div class="text-grey">
                       {{ getFeeDescription(payment.method_id, payment.amount * 100) }}
                     </div>
                   </div>
-
-                  <!-- Reference Number (if required) -->
-                  <v-text-field
-                    v-if="requiresReference(payment.method_id)"
-                    v-model="payment.reference"
-                    label="Reference"
-                    :rules="[v => !!v || 'Reference number is required']"
-                  ></v-text-field>
 
                   <!-- Remove Payment Button -->
                   <v-btn
@@ -178,7 +202,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { usePayment } from '../../composables/usePayment'
-import { posApi } from '../../../../services/api/pos-api'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -198,16 +221,35 @@ const {
   createPayment,
   fetchPaymentMethods,
   fetchSettings,
-  requiresReference,
   getDenominations,
-  calculateFees
+  calculateFees,
+  getPaymentMethod,
+  isCashOnly
 } = usePayment()
 
 const processing = ref(false)
-const payments = ref([{ method_id: null, amount: 0, reference: '', denomination: null, fees: 0 }])
+const payments = ref([{ 
+  method_id: null, 
+  amount: 0, 
+  received: 0,
+  returned: 0,
+  fees: 0 
+}])
+
+// Computed properties for invoice details
+const invoiceNumber = computed(() => {
+  return props.invoice?.invoice?.invoice_number || 
+         `${props.invoice?.invoicePrefix}-${props.invoice?.nextInvoiceNumber}` || 
+         ''
+})
+
+const invoiceTotal = computed(() => {
+  return props.invoice?.invoice?.total || 0
+})
+
 const allowPartialPay = computed(() => settings.value?.allow_partial_pay === '1')
 
-// Computed properties
+// Dialog computed property
 const dialog = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
@@ -217,7 +259,7 @@ const remainingAmount = computed(() => {
   const totalPaid = payments.value.reduce((sum, payment) => {
     return sum + (Number(payment.amount) || 0) * 100
   }, 0)
-  return props.invoice.total - totalPaid
+  return invoiceTotal.value - totalPaid
 })
 
 const totalPayments = computed(() => {
@@ -240,9 +282,7 @@ const canAddMorePayments = computed(() => {
 const isValid = computed(() => {
   return payments.value.every(payment => {
     if (!payment.method_id || !payment.amount) return false
-    if (requiresReference(payment.method_id) && !payment.reference) return false
-    const denominations = getDenominations(payment.method_id)
-    if (denominations?.length && !payment.denomination) return false
+    if (isCashOnly(payment.method_id) && !payment.received) return false
     return true
   }) && (allowPartialPay.value || remainingAmount.value === 0)
 })
@@ -255,22 +295,23 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
-const getPaymentMethod = (methodId) => {
-  return paymentMethods.value.find(m => m.id === methodId)
+const hasPaymentFees = (methodId) => {
+  const method = getPaymentMethod(methodId)
+  return method?.IsPaymentFeeActive === 'YES'
 }
 
 const getFeeDescription = (methodId, amount) => {
   const method = getPaymentMethod(methodId)
-  if (!method?.fees) return ''
+  if (!method?.registrationdatafees) return ''
 
-  const { type, value } = method.fees
-  switch (type) {
+  const fees = method.registrationdatafees
+  switch (fees.type) {
     case 'FIXED':
-      return `Fixed fee: ${formatCurrency(value)}`
+      return `Fixed fee: ${formatCurrency(fees.value)}`
     case 'PERCENTAGE':
-      return `${value}% of transaction amount`
+      return `${fees.value}% of transaction amount`
     case 'FIXED_PLUS_PERCENTAGE':
-      return `${formatCurrency(value.fixed)} + ${value.percentage}% of transaction amount`
+      return `${formatCurrency(fees.value.fixed)} + ${fees.value.percentage}% of transaction amount`
     default:
       return ''
   }
@@ -278,13 +319,30 @@ const getFeeDescription = (methodId, amount) => {
 
 const handleMethodChange = (index) => {
   const payment = payments.value[index]
-  payment.denomination = null
+  payment.received = payment.amount
+  payment.returned = 0
   payment.fees = 0
   validateAmount(index)
 }
 
-const handleDenominationChange = (index) => {
-  validateAmount(index)
+const handleDenominationClick = (money, index) => {
+  const payment = payments.value[index]
+  payment.received = Number(payment.received || 0) + Number(money.amount)
+  calculateChange(index)
+}
+
+const calculateChange = (index) => {
+  const payment = payments.value[index]
+  if (!payment.received || !payment.amount) return
+
+  const received = Number(payment.received)
+  const amount = Number(payment.amount)
+  
+  if (received >= amount) {
+    payment.returned = received - amount
+  } else {
+    payment.returned = 0
+  }
 }
 
 const validateAmount = (index) => {
@@ -293,7 +351,7 @@ const validateAmount = (index) => {
 
   if (!allowPartialPay.value) {
     // If partial pay is not allowed, force full payment
-    payment.amount = props.invoice.total / 100
+    payment.amount = invoiceTotal.value / 100
   } else {
     // Otherwise, limit to remaining amount
     payment.amount = Math.min(
@@ -302,12 +360,26 @@ const validateAmount = (index) => {
     )
   }
 
-  // Calculate fees
-  payment.fees = calculateFees(payment.method_id, payment.amount * 100)
+  // Calculate fees if applicable
+  if (hasPaymentFees(payment.method_id)) {
+    payment.fees = calculateFees(payment.method_id, payment.amount * 100)
+  }
+
+  // Set initial received amount for cash payments
+  if (isCashOnly(payment.method_id)) {
+    payment.received = payment.amount
+    payment.returned = 0
+  }
 }
 
 const addPayment = () => {
-  payments.value.push({ method_id: null, amount: 0, reference: '', denomination: null, fees: 0 })
+  payments.value.push({ 
+    method_id: null, 
+    amount: 0, 
+    received: 0,
+    returned: 0,
+    fees: 0 
+  })
 }
 
 const removePayment = (index) => {
@@ -330,14 +402,15 @@ const processPayment = async () => {
     // Format payments for API
     const formattedPayments = payments.value.map(payment => ({
       method_id: payment.method_id,
+      name: getPaymentMethod(payment.method_id).name,
       amount: Math.round(payment.amount * 100), // Convert to cents
-      reference: payment.reference || null,
-      denomination: payment.denomination,
-      fees: payment.fees
+      received: Math.round(payment.received * 100), // Convert to cents
+      returned: Math.round(payment.returned * 100), // Convert to cents
+      valid: true
     }))
 
     // Create payment
-    const result = await createPayment(props.invoice, formattedPayments)
+    const result = await createPayment(props.invoice.invoice, formattedPayments)
     
     // Emit success
     emit('payment-complete', result)
@@ -362,9 +435,9 @@ watch(() => dialog.value, async (newValue) => {
       // Reset state
       payments.value = [{
         method_id: null,
-        amount: settings.value?.allow_partial_pay === '1' ? 0 : props.invoice.total / 100,
-        reference: '',
-        denomination: null,
+        amount: settings.value?.allow_partial_pay === '1' ? 0 : invoiceTotal.value / 100,
+        received: 0,
+        returned: 0,
         fees: 0
       }]
       processing.value = false
