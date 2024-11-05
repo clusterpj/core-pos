@@ -71,10 +71,10 @@ export function usePayment() {
 
       // Validate payments
       for (const payment of payments) {
-        // Validate denomination if method has denominations
+        // Validate cash payments have received amount
         const method = paymentMethods.value.find(m => m.id === payment.method_id)
-        if (method?.pos_money?.length && !payment.denomination) {
-          throw new Error(`Denomination is required for ${method.name}`)
+        if (method?.only_cash === 1 && !payment.received) {
+          throw new Error(`Received amount is required for ${method.name}`)
         }
 
         // Calculate and validate fees if active
