@@ -4,21 +4,22 @@
     <v-btn
       color="primary"
       prepend-icon="mdi-clipboard-list"
-      @click="dialog = true"
+      @click="updateModelValue(true)"
       :disabled="disabled"
     >
       Orders
     </v-btn>
 
     <v-dialog
-      v-model="dialog"
+      :model-value="modelValue"
+      @update:model-value="updateModelValue"
       max-width="1200"
     >
       <v-card>
         <v-card-title class="text-h5">
           Held Orders
           <v-spacer></v-spacer>
-          <v-btn icon @click="dialog = false">
+          <v-btn icon @click="updateModelValue(false)">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
@@ -77,7 +78,7 @@
 
       <PaymentDialog
         v-model="showPaymentDialog"
-        :invoice="currentInvoice"
+        :invoice="currentInvoice || {}"
         @payment-complete="handlePaymentComplete"
       />
     </v-dialog>
@@ -93,16 +94,25 @@ import DeleteConfirmationDialog from './components/DeleteConfirmationDialog.vue'
 import PaymentDialog from '../dialogs/PaymentDialog.vue'
 
 const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    required: true
+  },
   disabled: {
     type: Boolean,
     default: false
   }
 })
 
-const dialog = ref(false)
+const emit = defineEmits(['update:model-value'])
+
 const deleteDialog = ref(false)
 const isDeleting = ref(false)
 const selectedInvoice = ref(null)
+
+const updateModelValue = (value) => {
+  emit('update:model-value', value)
+}
 
 const {
   loading,
@@ -130,7 +140,7 @@ const {
 const handleLoadOrder = async (invoice) => {
   const success = await loadOrder(invoice)
   if (success) {
-    dialog.value = false
+    updateModelValue(false)
   }
 }
 
@@ -185,7 +195,7 @@ const confirmDelete = async () => {
 }
 
 // Watch for dialog open to refresh the list
-watch(dialog, async (newValue) => {
+watch(() => props.modelValue, async (newValue) => {
   if (newValue) {
     await fetchHoldInvoices()
   }
@@ -205,7 +215,7 @@ watch(showPaymentDialog, async (newValue) => {
       // Refresh the list
       await fetchHoldInvoices()
       // Close the main dialog
-      dialog.value = false
+      updateModelValue(false)
     }
   }
 })

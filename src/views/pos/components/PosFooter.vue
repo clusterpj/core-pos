@@ -4,7 +4,10 @@
     <div class="d-flex gap-2 justify-space-between w-100">
       <!-- Order Type Actions -->
       <div class="d-flex gap-2">
-        <held-orders-modal :disabled="false" />
+        <held-orders-modal 
+          v-model="showHeldOrdersModal"
+          :disabled="false" 
+        />
         <dine-in-modal :disabled="isDisabled" />
         <to-go-modal :disabled="isDisabled" />
         <delivery-modal :disabled="isDisabled" />
@@ -44,7 +47,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import HeldOrdersModal from './HeldOrdersModal.vue'
+import HeldOrdersModal from './held-orders/HeldOrdersModal.vue'
 import DineInModal from './order-types/DineInModal.vue'
 import ToGoModal from './order-types/ToGoModal.vue'
 import DeliveryModal from './order-types/DeliveryModal.vue'
@@ -63,6 +66,7 @@ const { items, holdInvoiceId } = storeToRefs(cartStore)
 const { isConfigured } = storeToRefs(companyStore)
 
 const showPaymentDialog = ref(false)
+const showHeldOrdersModal = ref(false)
 
 // Compute if cart is empty based on items length
 const isEmpty = computed(() => items.value.length === 0)
