@@ -7,7 +7,7 @@
       type="error"
       closable
       class="ma-4"
-      @click:close="error = null"
+      @click:close="clearError"
     >
       {{ error }}
     </v-alert>
@@ -170,103 +170,42 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useCompanyStore } from '../../stores/company'
-import { useCartStore } from '../../stores/cart-store'
 import PosCart from './components/PosCart.vue'
 import PosProducts from './components/PosProducts.vue'
 import PosFooter from './components/PosFooter.vue'
 import ReferenceDialog from './components/dialogs/ReferenceDialog.vue'
-import { posOperations } from '../../services/api/pos-operations'
+import { useCashierSelection } from './composables/useCashierSelection'
+import { useOrderManagement } from './composables/useOrderManagement'
+import { useErrorHandling } from './composables/useErrorHandling'
 import { logger } from '../../utils/logger'
 
+// Store initialization
 const companyStore = useCompanyStore()
-const cartStore = useCartStore()
 
-// UI state
-const loading = ref(false)
-const error = ref(null)
-const cashierError = ref('')
-const showSelectionDialog = ref(false)
+// Composables
+const {
+  showSelectionDialog,
+  selectedCashier,
+  cashierError,
+  isReadyToContinue,
+  handleCashierChange,
+  initializeSelection
+} = useCashierSelection()
 
-// Dialog state
-const showReferenceDialog = ref(false)
+const {
+  showReferenceDialog,
+  confirmHoldOrder,
+  printOrder,
+  submitOrder
+} = useOrderManagement()
 
-// Selected values
-const selectedCashier = ref(null)
-
-// Computed
-const isReadyToContinue = computed(() => {
-  return companyStore.isConfigured && 
-         !companyStore.loadingStores && 
-         !companyStore.loading &&
-         !companyStore.storeError
-})
-
-// Handle cashier selection
-const handleCashierChange = async (cashierId) => {
-  if (!cashierId) return
-  
-  try {
-    cashierError.value = ''
-    await companyStore.setSelectedCashier(cashierId)
-    
-    // Validate configuration after selection
-    if (!companyStore.isConfigured) {
-      cashierError.value = 'Selected cashier has incomplete configuration'
-      return
-    }
-  } catch (err) {
-    error.value = err.message
-    cashierError.value = err.message
-    logger.error('Failed to set cashier:', err)
-  }
-}
-
-// Hold Order Management
-const confirmHoldOrder = async (referenceNumber) => {
-  if (!referenceNumber) return
-  
-  try {
-    const holdInvoice = cartStore.prepareHoldInvoiceData(
-      companyStore.selectedStore,
-      companyStore.selectedCashier,
-      referenceNumber
-    )
-    await posOperations.createHoldInvoice(holdInvoice)
-    cartStore.clearCart()
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to create hold invoice:', err)
-    throw err
-  }
-}
-
-const submitOrder = () => {
-  showReferenceDialog.value = true
-}
-
-const printOrder = async (orderId = null) => {
-  try {
-    if (orderId) {
-      await posOperations.printOrder(orderId)
-    } else {
-      // Print current cart
-      const orderData = {
-        items: cartStore.items,
-        total: cartStore.total,
-        subtotal: cartStore.subtotal,
-        tax: cartStore.taxAmount
-      }
-      
-      const response = await posOperations.submitOrder(orderData)
-      await posOperations.printOrder(response.invoice.id)
-    }
-  } catch (err) {
-    error.value = err.message
-    logger.error('Failed to print order:', err)
-  }
-}
+const {
+  error,
+  loading,
+  clearError
+} = useErrorHandling()
 
 // Watch for configuration changes
 watch(
@@ -283,15 +222,9 @@ watch(
 onMounted(async () => {
   logger.startGroup('POS View: Mount')
   loading.value = true
-  error.value = null
   
   try {
-    await companyStore.initializeStore()
-    
-    // Show selection dialog if not configured
-    if (!companyStore.isConfigured) {
-      showSelectionDialog.value = true
-    }
+    await initializeSelection()
   } catch (err) {
     error.value = err.message || 'Failed to initialize POS view'
     logger.error('Failed to initialize POS view:', err)
