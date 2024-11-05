@@ -73,58 +73,11 @@
     </div>
 
     <!-- Edit Item Dialog -->
-    <v-dialog v-model="showEditDialog" max-width="500">
-      <v-card>
-        <v-card-title class="d-flex justify-space-between align-center">
-          {{ editingItem?.name }}
-          <v-chip>Qty: {{ editingItem?.quantity || 0 }}</v-chip>
-        </v-card-title>
-
-        <v-card-text>
-          <!-- Split Item Option -->
-          <div class="mb-4">
-            <div class="text-subtitle-2 mb-2">Split Item</div>
-            <div class="d-flex align-center gap-2">
-              <v-text-field
-                v-model="splitQuantity"
-                type="number"
-                label="Quantity to split"
-                :min="1"
-                :max="editingItem?.quantity - 1"
-                density="compact"
-                hide-details
-                style="max-width: 120px"
-              />
-              <v-btn
-                color="primary"
-                variant="outlined"
-                :disabled="!canSplit"
-                @click="splitItem"
-              >
-                Split
-              </v-btn>
-            </div>
-          </div>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="closeEditDialog"
-          >
-            Cancel
-          </v-btn>
-          <v-btn
-            color="primary"
-            @click="closeEditDialog"
-          >
-            Save
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <edit-item-dialog
+      v-model="showEditDialog"
+      :item="editingItem"
+      :index="editingIndex"
+    />
 
     <!-- Loading Overlay -->
     <v-overlay
@@ -141,102 +94,24 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useCartStore } from '../../../stores/cart-store'
-import { usePosStore } from '../../../stores/pos-store'
-import { logger } from '../../../utils/logger'
+import { ref } from 'vue'
 import CartItemList from './cart/CartItemList.vue'
 import CartSummary from './cart/CartSummary.vue'
+import EditItemDialog from './cart/EditItemDialog.vue'
+import { useCart } from './cart/composables/useCart'
 
-const cartStore = useCartStore()
-const posStore = usePosStore()
+const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder } = useCart()
 
-// Local state
+// Local state for edit dialog
 const showEditDialog = ref(false)
 const editingItem = ref(null)
 const editingIndex = ref(null)
-const splitQuantity = ref(1)
-const updating = ref(false)
-
-// Computed
-const canSplit = computed(() => {
-  return editingItem.value &&
-         splitQuantity.value > 0 &&
-         splitQuantity.value < editingItem.value.quantity
-})
 
 // Methods
-const clearOrder = () => {
-  cartStore.clearCart()
-}
-
-const updateQuantity = (itemId, quantity, index) => {
-  cartStore.updateItemQuantity(itemId, quantity, index)
-}
-
-const removeItem = (itemId, index) => {
-  cartStore.removeItem(itemId, index)
-}
-
 const editItem = (item, index) => {
   editingItem.value = { ...item }
   editingIndex.value = index
   showEditDialog.value = true
-}
-
-const splitItem = () => {
-  if (canSplit.value) {
-    cartStore.splitItem(
-      editingIndex.value,
-      Number(splitQuantity.value)
-    )
-    closeEditDialog()
-  }
-}
-
-const closeEditDialog = () => {
-  showEditDialog.value = false
-  editingItem.value = null
-  editingIndex.value = null
-  splitQuantity.value = 1
-}
-
-// Update held order
-const updateOrder = async () => {
-  try {
-    const description = cartStore.holdOrderDescription
-    if (!description) {
-      throw new Error('No order description found')
-    }
-
-    updating.value = true
-    logger.debug('Updating order with description:', description)
-
-    // Prepare the order data from the current cart state
-    const orderData = cartStore.prepareHoldInvoiceData(
-      posStore.selectedStore,
-      posStore.selectedCashier,
-      description
-    )
-
-    // Update the hold invoice using description as identifier
-    const response = await posStore.updateHoldInvoice(description, orderData)
-
-    if (response.success) {
-      window.toastr?.['success']('Order updated successfully')
-      // Clear the hold invoice ID after successful update
-      cartStore.setHoldInvoiceId(null)
-      // Clear the cart after successful update
-      cartStore.clearCart()
-    } else {
-      throw new Error(response.message || 'Failed to update order')
-    }
-  } catch (error) {
-    logger.error('Failed to update order:', error)
-    window.toastr?.['error'](error.message || 'Failed to update order')
-  } finally {
-    updating.value = false
-  }
 }
 </script>
 
