@@ -1,21 +1,40 @@
-// src/types/order.ts
-export interface Order {
-  id: number
-  order_number: string
-  customer_id?: number
-  user_id: number
-  status: OrderStatus
-  total: number
-  created_at: string
-  updated_at: string
+import { Product } from './product'
+import { User } from './user'
+
+export enum InvoiceStatus {
+  PENDING = 'PENDING',
+  GENERATED = 'GENERATED',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED'
 }
 
-export type OrderStatus = 'pending' | 'completed' | 'cancelled'
+export interface Order {
+  id?: number
+  user_id?: number
+  total: number
+  subtotal: number
+  tax: number
+  discount?: number
+  products: Product[]
+  status: string
+  type: string
+  notes?: string
+  created_at?: Date
+  updated_at?: Date
+  
+  // New invoice-related fields
+  invoice_number?: string
+  invoice_status?: InvoiceStatus
+  invoice_generated_at?: Date
+}
 
-// Basic type for dashboard statistics
-export interface OrderStats {
-  total_orders: number
-  total_sales: number
-  average_order_value: number
-  period: string
+export interface InvoiceGenerationRequest {
+  orderId: number
+  userId: number
+}
+
+export interface InvoiceResponse {
+  order: Order
+  invoice_number: string
+  status: InvoiceStatus
 }

@@ -1,202 +1,234 @@
 # Cart Components Documentation
 
 ## Overview
+The cart functionality is implemented through a set of modular components and composables that handle cart operations, item management, and order processing in the CorePOS system.
 
-The cart functionality has been refactored to improve modularity and maintainability while preserving all existing functionality. The refactoring splits the original PosCart component into three main parts:
-
-1. `PosCart.vue` - Main container component
-2. `EditItemDialog.vue` - Extracted dialog component for item editing
-3. `composables/useCart.js` - Reusable cart operations logic
-
-## Component Structure
-
+## Directory Structure
 ```
 cart/
+├── CartItemList.vue       # Cart items display and management
+├── CartSummary.vue       # Order totals and calculations
+├── EditItemDialog.vue    # Item editing dialog
+├── OrderNotes.vue        # Order notes management
 ├── README.md
-├── CartItemList.vue
-├── CartSummary.vue
-├── EditItemDialog.vue
-├── PosCart.vue
 └── composables/
-    └── useCart.js
+    └── useCart.js        # Cart operations logic
 ```
 
 ## Components
 
-### PosCart.vue
+### CartItemList.vue
+Displays and manages cart items.
 
-The main container component that orchestrates cart functionality.
+**Features:**
+- Item quantity management
+- Item removal
+- Item editing
+- Price display
+- Quantity validation
 
-#### Key Features
-- Displays current order status
-- Manages held orders
-- Shows cart items and summary
-- Handles loading states
+**Events:**
+- `edit`: Triggered when editing an item
+- `remove`: Triggered when removing an item
+- `update-quantity`: Triggered when changing item quantity
 
-#### Usage Example
-```vue
-<template>
-  <pos-cart />
-</template>
+### CartSummary.vue
+Displays order totals and calculations.
 
-<script setup>
-import PosCart from './components/PosCart.vue'
-</script>
-```
+**Props:**
+- `subtotal`: Order subtotal
+- `discountAmount`: Applied discount
+- `taxRate`: Current tax rate
+- `taxAmount`: Calculated tax
+- `total`: Final order total
+
+**Features:**
+- Dynamic calculations
+- Formatted currency display
+- Tax calculations
+- Discount display
 
 ### EditItemDialog.vue
+Modal dialog for editing cart items.
 
-A reusable dialog component for editing cart items.
+**Props:**
+- `modelValue`: Controls dialog visibility
+- `item`: Item being edited
+- `index`: Item's position in cart
 
-#### Props
-- `modelValue` (Boolean): Controls dialog visibility
-- `item` (Object): The item being edited
-- `index` (Number): Item's index in the cart
+**Events:**
+- `update:modelValue`: Dialog visibility changes
+- `save`: Item modifications saved
 
-#### Events
-- `update:modelValue`: Emitted when dialog visibility changes
+### OrderNotes.vue
+Manages order notes and descriptions.
 
-#### Usage Example
-```vue
-<template>
-  <edit-item-dialog
-    v-model="showDialog"
-    :item="currentItem"
-    :index="itemIndex"
-  />
-</template>
-```
+**Features:**
+- Note entry and editing
+- Character limit validation
+- Auto-save functionality
+- Hold order descriptions
 
 ## Composables
 
 ### useCart.js
+Centralizes cart operations logic.
 
-A composable that encapsulates cart operations and state management.
-
-#### Features
-- Cart operations (clear, update quantity, remove items)
-- Hold order management
-- Update functionality for held orders
-
-#### Available Methods
-- `clearOrder()`: Clears the current cart
-- `updateQuantity(itemId, quantity, index)`: Updates item quantity
-- `removeItem(itemId, index)`: Removes an item from cart
-- `updateOrder()`: Updates a held order
-
-#### Usage Example
-```vue
-<script setup>
-import { useCart } from './composables/useCart'
-
-const { 
-  cartStore,
-  updating,
-  clearOrder,
-  updateQuantity,
-  removeItem,
-  updateOrder
-} = useCart()
-</script>
-```
-
-## Implementation Details
-
-### Update Function
-
-The update functionality is preserved exactly as in the original implementation to maintain compatibility and prevent regressions. This function:
-
-1. Validates order description
-2. Prepares order data
-3. Sends update request
-4. Handles success/failure cases
-5. Manages loading states
-
-```javascript
-const updateOrder = async () => {
-  try {
-    const description = cartStore.holdOrderDescription
-    if (!description) {
-      throw new Error('No order description found')
-    }
-
-    updating.value = true
-    logger.debug('Updating order with description:', description)
-
-    const orderData = cartStore.prepareHoldInvoiceData(
-      posStore.selectedStore,
-      posStore.selectedCashier,
-      description
-    )
-
-    const response = await posStore.updateHoldInvoice(description, orderData)
-
-    if (response.success) {
-      window.toastr?.['success']('Order updated successfully')
-      cartStore.setHoldInvoiceId(null)
-      cartStore.clearCart()
-    } else {
-      throw new Error(response.message || 'Failed to update order')
-    }
-  } catch (error) {
-    logger.error('Failed to update order:', error)
-    window.toastr?.['error'](error.message || 'Failed to update order')
-  } finally {
-    updating.value = false
-  }
+**Features:**
+```typescript
+interface CartOperations {
+  cartStore: CartStore;
+  updating: Ref<boolean>;
+  clearOrder: () => void;
+  updateQuantity: (itemId: string, quantity: number, index?: number) => void;
+  removeItem: (itemId: string, index?: number) => void;
+  updateOrder: () => Promise<void>;
 }
 ```
 
-### State Management
+**Key Operations:**
+- Cart clearing
+- Quantity updates
+- Item removal
+- Order updates
+- Hold order management
 
-The cart state is managed through the Pinia store (`useCartStore`), which remains unchanged to maintain backwards compatibility. The composable pattern wraps store operations to provide a cleaner API while preserving all functionality.
+## State Management
 
-### Error Handling
+### Cart Store Integration
+- Uses Pinia cart store
+- Maintains reactive state
+- Handles mutations
+- Manages cart calculations
 
-Error handling is implemented at multiple levels:
-1. Component level - UI feedback for user actions
-2. Composable level - Operation-specific error handling
-3. Store level - State management errors
+### Local State
+- Dialog visibility
+- Form states
+- Loading indicators
+- Error messages
 
-### Mobile & Tablet Optimizations
+## Implementation Details
 
-The components include responsive design optimizations:
-- Sticky headers and footers
-- Appropriate spacing and layouts
-- Touch-friendly interaction areas
+### Cart Operations
+```typescript
+// Clear cart
+const clearOrder = () => cartStore.clearCart()
 
-## Important Considerations
+// Update item quantity
+const updateQuantity = (itemId, quantity, index) => {
+  cartStore.updateItemQuantity(itemId, quantity, index)
+}
 
-1. **Backwards Compatibility**
-   - No changes to external API
-   - Existing imports continue to work
-   - Same event handling patterns
+// Remove item
+const removeItem = (itemId, index) => {
+  cartStore.removeItem(itemId, index)
+}
+```
 
-2. **State Management**
-   - Cart store remains single source of truth
-   - Composable provides convenient access
-   - State mutations follow existing patterns
+### Hold Order Management
+```typescript
+// Update hold order
+const updateOrder = async () => {
+  if (!cartStore.holdOrderDescription) {
+    throw new Error('No order description')
+  }
+  
+  const orderData = cartStore.prepareHoldInvoiceData(
+    store,
+    cashier,
+    description
+  )
+  
+  await posStore.updateHoldInvoice(description, orderData)
+}
+```
 
-3. **Error Handling**
-   - Comprehensive error catching
-   - User-friendly error messages
-   - Proper error logging
+## Error Handling
 
-4. **Performance**
-   - Efficient state updates
-   - Optimized rendering
-   - Proper cleanup in composables
+### Validation
+- Quantity limits
+- Required fields
+- Data type validation
+- API response validation
 
-5. **Maintainability**
-   - Clear separation of concerns
-   - Documented components and functions
-   - Consistent code style
+### Error Messages
+- User-friendly notifications
+- Detailed error logging
+- Error state management
+- Recovery options
+
+## Performance Optimizations
+
+### Rendering
+- Computed properties
+- Reactive refs
+- Efficient updates
+- Lazy loading
+
+### State Updates
+- Batched mutations
+- Optimized calculations
+- Debounced inputs
+- Memory management
+
+## Mobile & Tablet Support
+
+### Responsive Design
+- Flexible layouts
+- Touch targets
+- Swipe actions
+- Keyboard handling
+
+### Performance
+- Optimized rendering
+- Efficient scrolling
+- Memory management
+- Touch event handling
+
+## Testing Strategy
+
+### Unit Tests
+- Component rendering
+- Event handling
+- Computed properties
+- Validation logic
+
+### Integration Tests
+- Cart operations
+- Store interactions
+- API calls
+- Error scenarios
+
+### E2E Tests
+- User workflows
+- Cart management
+- Order processing
+- Payment flows
 
 ## Future Improvements
 
-While maintaining backwards compatibility, future improvements could include:
-1. Enhanced type safety with TypeScript
-2. Unit tests for composables
-3. E2E tests for critical paths
-4. Performance optimizations for large orders
-5. Additional cart features (e.g., bulk operations)
+### Features
+- Bulk operations
+- Drag-and-drop reordering
+- Advanced search
+- Item suggestions
+
+### Technical
+- TypeScript migration
+- Performance optimizations
+- Enhanced error handling
+- Offline support
+
+### UX/UI
+- Enhanced animations
+- Keyboard shortcuts
+- Accessibility improvements
+- Touch gestures
+
+## Dependencies
+- Vue 3
+- Vuetify 3
+- Pinia
+- Logger utility
+- Cart store
+- POS store
