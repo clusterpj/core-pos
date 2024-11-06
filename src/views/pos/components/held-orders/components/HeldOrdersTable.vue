@@ -8,6 +8,7 @@
         <th class="text-left" style="min-width: 120px">Date</th>
         <th class="text-left" style="min-width: 100px">Items</th>
         <th class="text-left" style="min-width: 120px">Total</th>
+        <th class="text-left" style="min-width: 100px">Status</th>
         <th class="text-left" style="min-width: 300px">Actions</th>
       </tr>
     </thead>
@@ -46,6 +47,15 @@
         <td>{{ invoice.hold_items?.length || 0 }} items</td>
         <td>{{ formatCurrency(invoice.total / 100) }}</td>
         <td>
+          <v-chip
+            :color="getStatusColor(invoice.paid_status)"
+            size="small"
+            class="text-uppercase"
+          >
+            {{ invoice.paid_status || 'UNPAID' }}
+          </v-chip>
+        </td>
+        <td>
           <div class="d-flex gap-2">
             <v-btn
               size="small"
@@ -53,7 +63,7 @@
               variant="elevated"
               @click="$emit('load', invoice)"
               :loading="loadingOrder === invoice.id"
-              :disabled="convertingOrder === invoice.id || deletingOrder === invoice.id"
+              :disabled="convertingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
             >
               <v-icon size="small" class="mr-1">mdi-cart-arrow-down</v-icon>
               Load
@@ -64,7 +74,7 @@
               variant="elevated"
               @click="handleConvert(invoice)"
               :loading="convertingOrder === invoice.id"
-              :disabled="loadingOrder === invoice.id || deletingOrder === invoice.id"
+              :disabled="loadingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
             >
               <v-icon size="small" class="mr-1">mdi-file-document-arrow-right</v-icon>
               Convert
@@ -75,7 +85,7 @@
               variant="elevated"
               @click="$emit('delete', invoice)"
               :loading="deletingOrder === invoice.id"
-              :disabled="loadingOrder === invoice.id || convertingOrder === invoice.id"
+              :disabled="loadingOrder === invoice.id || convertingOrder === invoice.id || invoice.paid_status === 'PAID'"
             >
               <v-icon size="small" class="mr-1">mdi-delete</v-icon>
               Delete
@@ -138,7 +148,23 @@ const getTooltipText = (invoice) => {
   return `${invoice.description}\n\nNotes: ${notes}`
 }
 
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'PAID':
+      return 'success'
+    case 'UNPAID':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
+
 const handleConvert = (invoice) => {
+  if (invoice.paid_status === 'PAID') {
+    window.toastr?.['error']('Cannot convert a paid invoice')
+    return
+  }
+  
   console.log('HeldOrdersTable: Convert button clicked for invoice:', invoice)
   console.log('HeldOrdersTable: Emitting convert event with invoice data:', {
     id: invoice.id,
