@@ -87,9 +87,9 @@ export function usePayment() {
       const totalPayment = payments.reduce((sum, payment) => sum + payment.amount, 0)
       const totalFees = payments.reduce((sum, payment) => sum + (payment.fees || 0), 0)
 
-      // Validate payment amount based on partial payment setting
-      if (settings.value.allow_partial_pay !== '1' && totalPayment !== invoice.total) {
-        throw new Error('Partial payments are not allowed. Full payment is required.')
+      // Validate full payment is made
+      if (totalPayment !== invoice.total) {
+        throw new Error('Full payment is required.')
       }
 
       // Format payment data according to API requirements

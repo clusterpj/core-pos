@@ -51,6 +51,40 @@ export const actions = {
     }
   },
 
+  splitItem(state, index, splitQuantity) {
+    logger.info('Splitting item:', { index, splitQuantity })
+    
+    const originalItem = state.items[index]
+    if (!originalItem || splitQuantity >= originalItem.quantity) {
+      logger.error('Invalid split operation:', { originalItem, splitQuantity })
+      return
+    }
+
+    // Calculate remaining quantity for original item
+    const remainingQuantity = originalItem.quantity - splitQuantity
+
+    // Update original item quantity
+    originalItem.quantity = remainingQuantity
+    originalItem.total = originalItem.price * remainingQuantity
+    originalItem.sub_total = originalItem.total
+
+    // Create new item with split quantity
+    const newItem = {
+      ...originalItem,
+      quantity: splitQuantity,
+      total: originalItem.price * splitQuantity,
+      sub_total: originalItem.price * splitQuantity
+    }
+
+    // Insert new item after the original item
+    state.items.splice(index + 1, 0, newItem)
+    
+    logger.info('Split completed:', { 
+      originalItem: state.items[index],
+      newItem: state.items[index + 1]
+    })
+  },
+
   removeItem(state, { itemId, index = null }) {
     logger.info('Removing item from cart:', { itemId, index })
     if (index !== null) {

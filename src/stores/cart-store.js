@@ -21,6 +21,10 @@ export const useCartStore = defineStore('cart', {
       actions.removeItem(this, { itemId, index })
     },
 
+    splitItem(index, splitQuantity) {
+      actions.splitItem(this, index, splitQuantity)
+    },
+
     // State mutations
     setDiscount(type, value) {
       mutations.setDiscount(this, { type, value })

@@ -1,5 +1,4 @@
 <!-- src/views/pos/components/dialogs/PaymentDialog.vue -->
-<!-- Previous template code remains exactly the same until the script section -->
 <template>
   <v-dialog v-model="dialog" max-width="600px" persistent>
     <v-card>
@@ -450,7 +449,7 @@ const validateAmount = (index) => {
   const payment = payments.value[index]
   if (!payment.displayAmount) return
 
-  // Force full payment
+  // Set full payment amount
   payment.displayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString()
 
   // Convert display amount to cents
@@ -523,9 +522,6 @@ const processPayment = async () => {
 
   processing.value = true
   try {
-    // Calculate total amount including tip
-    const totalAmount = invoiceTotal.value + tipAmount.value
-
     // Format payments for API - amounts are already in cents
     const formattedPayments = payments.value.map(payment => ({
       method_id: payment.method_id,
@@ -536,15 +532,13 @@ const processPayment = async () => {
       valid: true
     }))
 
-    // Create invoice data with tip and ensure total matches
+    // Update invoice data with tip
     const invoiceData = {
       ...props.invoice.invoice,
       tip: selectedTipPercent.value || Number(customTipPercent.value) || 0,
       tip_type: tipType.value,
       tip_val: tipAmount.value,
-      total: totalAmount, // Ensure total includes tip
-      due_amount: totalAmount, // Update due amount to match total
-      sub_total: invoiceTotal.value // Original amount without tip
+      total: invoiceTotal.value + tipAmount.value // Update total to include tip
     }
 
     // Create payment
