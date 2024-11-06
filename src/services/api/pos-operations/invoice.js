@@ -36,6 +36,29 @@ export const invoiceOperations = {
     }
   },
 
+  async getHoldInvoice(id) {
+    logger.startGroup('POS Operations: Get Hold Invoice')
+    try {
+      logger.debug('Requesting hold invoice:', id)
+      const response = await api.holdInvoice.getById(id)
+      
+      // Handle both possible response structures
+      const invoiceData = response.data?.data || response.data
+      
+      if (!invoiceData) {
+        throw new Error('Invalid hold invoice response')
+      }
+
+      logger.debug('Hold invoice response:', invoiceData)
+      logger.info('Hold invoice fetched successfully')
+      return invoiceData
+    } catch (error) {
+      return handleApiError(error)
+    } finally {
+      logger.endGroup()
+    }
+  },
+
   async updateHoldInvoice(id, invoiceData) {
     logger.startGroup('POS Operations: Update Hold Invoice')
     try {
@@ -68,9 +91,13 @@ export const invoiceOperations = {
     try {
       logger.debug('Creating invoice with data:', invoiceData)
 
-      // Validate hold order if converting from one
-      if (invoiceData.hold_invoice_id) {
+      // Skip hold invoice validation if we're creating from prepared data
+      // This is the case when creating from cart store data during payment
+      if (invoiceData.hold_invoice_id && !invoiceData.is_prepared_data) {
         const holdOrder = await this.getHoldInvoice(invoiceData.hold_invoice_id)
+        if (!holdOrder) {
+          throw new Error('Failed to fetch hold invoice')
+        }
         validateHoldOrder(holdOrder)
       }
 

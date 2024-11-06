@@ -20,8 +20,35 @@ export const formatCurrency = (amount) => {
 
 // Convert decimal to cents (biginteger)
 export const toCents = (amount) => {
-  if (!amount) return 0
-  return Math.round(parseFloat(amount) * 100)
+  // Handle null or undefined
+  if (amount == null) return 0
+  
+  // Convert to number and handle potential string input
+  const value = Number(amount)
+  
+  // Handle potential NaN
+  if (isNaN(value)) return 0
+  
+  // If value is already in cents (> 100), return as is
+  if (value > 100) return Math.round(value)
+  
+  // Convert to cents and round to avoid floating point issues
+  return Math.round(value * 100)
+}
+
+// Convert cents to dollars
+export const toDollars = (amount) => {
+  // Handle null or undefined
+  if (amount == null) return 0
+  
+  // Convert to number
+  const value = Number(amount)
+  
+  // Handle potential NaN
+  if (isNaN(value)) return 0
+  
+  // Convert to dollars
+  return value / 100
 }
 
 // Get order type from invoice

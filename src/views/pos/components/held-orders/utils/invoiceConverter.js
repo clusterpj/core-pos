@@ -61,13 +61,13 @@ export const convertHeldOrderToInvoice = async (invoice) => {
     // Format items according to API requirements
     console.log('Formatting items data')
     const formattedItems = invoice.hold_items.map(item => {
-      // Note: item.price is already in cents
-      const itemPrice = Number(item.price)
+      // Convert price to cents if needed
+      const itemPrice = toCents(item.price)
       const itemQuantity = parseInt(item.quantity)
       const itemTotal = itemPrice * itemQuantity
 
       return {
-        item_id: item.item_id,
+        item_id: Number(item.item_id),
         name: item.name,
         description: item.description || '',
         price: itemPrice,
@@ -78,7 +78,7 @@ export const convertHeldOrderToInvoice = async (invoice) => {
         discount: "0",
         discount_val: 0,
         discount_type: "fixed",
-        tax: Number(item.tax || 0), // tax is already in cents
+        tax: toCents(item.tax || 0),
         retention_amount: 0,
         retention_concept: null,
         retention_percentage: null,
@@ -100,36 +100,37 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       is_hold_invoice: true,
       is_invoice_pos: 1,
       is_pdf_pos: settings.pdf_format_pos === '1',
+      is_prepared_data: true,
 
       // IDs and references
       invoice_number: invoiceNumber,
       invoice_template_id: 1,
       invoice_pbx_modify: 0,
-      hold_invoice_id: invoice.id,
-      store_id: invoice.store_id,
-      cash_register_id: invoice.cash_register_id,
-      user_id: invoice.user_id,
+      hold_invoice_id: Number(invoice.id),
+      store_id: Number(invoice.store_id),
+      cash_register_id: Number(invoice.cash_register_id),
+      user_id: Number(invoice.user_id),
 
       // Dates
       invoice_date: formatApiDate(currentDate),
       due_date: formatApiDate(dueDate),
 
-      // Amounts (already in cents)
-      sub_total: Number(invoice.sub_total),
-      total: Number(invoice.total),
-      due_amount: Number(invoice.total),
-      tax: Number(invoice.tax || 0),
+      // Amounts (convert to cents if needed)
+      sub_total: toCents(invoice.sub_total),
+      total: toCents(invoice.total),
+      due_amount: toCents(invoice.total),
+      tax: toCents(invoice.tax || 0),
       
       // Discount
       discount: invoice.discount || "0",
       discount_type: invoice.discount_type || "fixed",
-      discount_val: Number(invoice.discount_val || 0), // already in cents
+      discount_val: toCents(invoice.discount_val || 0),
       discount_per_item: settings.discount_per_item || "NO",
 
       // Tip
       tip: invoice.tip || "0",
       tip_type: invoice.tip_type || "fixed",
-      tip_val: Number(invoice.tip_val || 0), // already in cents
+      tip_val: toCents(invoice.tip_val || 0),
 
       // Arrays
       items: formattedItems,

@@ -21,6 +21,32 @@ export const invoiceActions = {
       const dueDate = getDueDate()
       const orderType = parseOrderType(state.notes)
 
+      // Format items with proper price conversions
+      const items = state.items.map(item => {
+        const itemPrice = priceHelpers.toCents(item.price > 100 ? item.price / 100 : item.price)
+        const itemQuantity = parseInt(item.quantity)
+        const itemTotal = itemPrice * itemQuantity
+
+        return {
+          item_id: Number(item.id),
+          name: item.name,
+          description: item.description || '',
+          price: itemPrice,
+          quantity: itemQuantity,
+          unit_name: item.unit_name || 'units',
+          sub_total: itemTotal,
+          total: itemTotal,
+          discount: "0",
+          discount_val: 0,
+          discount_type: "fixed",
+          tax: priceHelpers.toCents(item.tax || 0),
+          retention_amount: 0,
+          retention_concept: null,
+          retention_percentage: null,
+          retentions_id: null
+        }
+      })
+
       const invoice = {
         print_pdf: false,
         is_invoice_pos: 1,
@@ -32,8 +58,8 @@ export const invoiceActions = {
         package_bool: false,
         invoice_date: currentDate,
         due_date: dueDate,
-        invoice_number: "-",
-        user_id: currentCustomer.creator_id,
+        invoice_number: referenceNumber || "-",
+        user_id: Number(currentCustomer.creator_id),
         total: priceHelpers.toCents(getters.total),
         due_amount: priceHelpers.toCents(getters.total),
         sub_total: priceHelpers.toCents(getters.subtotal),
@@ -42,14 +68,14 @@ export const invoiceActions = {
         discount: state.discountValue.toString(),
         discount_val: priceHelpers.toCents(getters.discountAmount),
         discount_per_item: "NO",
-        items: prepareItemsForApi(state.items),
+        items: items,
         invoice_template_id: 1,
         banType: true,
         invoice_pbx_modify: 0,
         packages: [],
-        cash_register_id: cashRegisterId || 1,
-        store_id: storeId || 1,
-        company_id: companyStore.company?.id || 1,
+        cash_register_id: Number(cashRegisterId) || 1,
+        store_id: Number(storeId) || 1,
+        company_id: Number(companyStore.company?.id) || 1,
         taxes: {},
         notes: state.notes,
         contact: {},
@@ -63,11 +89,12 @@ export const invoiceActions = {
         late_fee_taxes: 0,
         pbx_service_price: 0,
         sent: 0,
-        viewed: 0
+        viewed: 0,
+        is_prepared_data: true
       }
 
       if (state.holdInvoiceId) {
-        invoice.hold_invoice_id = state.holdInvoiceId
+        invoice.hold_invoice_id = Number(state.holdInvoiceId)
         invoice.is_hold_invoice = true
       }
 
