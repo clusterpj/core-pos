@@ -12,6 +12,7 @@ import {
   getOrderTypeColor 
 } from '../utils/formatters'
 import { convertHeldOrderToInvoice } from '../utils/invoiceConverter'
+import { parseOrderNotes } from '../../../../../stores/cart/helpers'
 
 export function useHeldOrders() {
   const posStore = usePosStore()
@@ -174,7 +175,27 @@ export function useHeldOrders() {
       }
 
       if (invoice.notes) {
-        cartStore.setNotes(invoice.notes)
+        try {
+          // Parse the existing notes
+          const notesObj = JSON.parse(invoice.notes)
+          const orderType = notesObj.orderInfo?.type || notesObj.type || 'UNKNOWN'
+          const customerNotes = parseOrderNotes(invoice.notes)
+
+          // Create new notes object with both order type and customer notes
+          const newNotes = {
+            orderInfo: {
+              type: orderType,
+              customer: notesObj.orderInfo?.customer || notesObj.customer || {}
+            },
+            customerNotes: customerNotes
+          }
+
+          // Set the notes in cart store
+          cartStore.setNotes(JSON.stringify(newNotes))
+        } catch (e) {
+          logger.warn('Failed to parse notes, setting as is:', e)
+          cartStore.setNotes(invoice.notes)
+        }
       }
 
       // Set the hold invoice ID and description in cart store

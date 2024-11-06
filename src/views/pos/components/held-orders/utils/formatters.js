@@ -28,8 +28,9 @@ export const toCents = (amount) => {
 export const getOrderType = (invoice) => {
   try {
     if (invoice.notes) {
-      const orderInfo = JSON.parse(invoice.notes)
-      return orderInfo.type || 'UNKNOWN'
+      const notesObj = JSON.parse(invoice.notes)
+      // Check both new and old structure
+      return notesObj.orderInfo?.type || notesObj.type || 'UNKNOWN'
     }
   } catch (err) {
     console.error('Failed to parse order type:', err)

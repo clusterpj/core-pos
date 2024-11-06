@@ -36,11 +36,21 @@ export const parseOrderType = (notes) => {
   let orderType = 'UNKNOWN'
   try {
     const notesObj = JSON.parse(notes)
-    orderType = notesObj.type || 'UNKNOWN'
+    orderType = notesObj.orderInfo?.type || notesObj.type || 'UNKNOWN'
   } catch (e) {
     logger.warn('Failed to parse notes for order type')
   }
   return orderType
+}
+
+export const parseOrderNotes = (notes) => {
+  try {
+    const notesObj = JSON.parse(notes)
+    return notesObj.customerNotes || ''
+  } catch (e) {
+    // If notes is a plain string, return it as is
+    return typeof notes === 'string' ? notes : ''
+  }
 }
 
 export const getCurrentDate = () => new Date().toISOString().split('T')[0]

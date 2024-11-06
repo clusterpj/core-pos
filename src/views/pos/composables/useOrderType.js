@@ -3,6 +3,7 @@ import { useCartStore } from '../../../stores/cart-store'
 import { usePosStore } from '../../../stores/pos-store'
 import { logger } from '../../../utils/logger'
 import { posOperations } from '../../../services/api/pos-operations'
+import { parseOrderNotes } from '../../../stores/cart/helpers'
 
 // Order type constants
 export const ORDER_TYPES = {
@@ -25,8 +26,30 @@ export function useOrderType() {
     pickupTime: '', // For pickup
     instructions: ''
   })
+  const customerNotes = ref('')
   const loading = ref(false)
   const error = ref(null)
+
+  // Initialize from cart store notes
+  if (cartStore.notes) {
+    try {
+      const notesObj = JSON.parse(cartStore.notes)
+      if (notesObj.orderInfo?.type) {
+        orderType.value = notesObj.orderInfo.type
+      }
+      if (notesObj.customerNotes) {
+        customerNotes.value = notesObj.customerNotes
+      }
+      if (notesObj.orderInfo?.customer) {
+        customerInfo.value = {
+          ...customerInfo.value,
+          ...notesObj.orderInfo.customer
+        }
+      }
+    } catch (e) {
+      logger.warn('Failed to initialize from cart notes:', e)
+    }
+  }
 
   // Computed
   const isValid = computed(() => {
@@ -62,9 +85,11 @@ export function useOrderType() {
       if (cartStore.notes) {
         try {
           const notesObj = JSON.parse(cartStore.notes)
-          if (notesObj.type && Object.values(ORDER_TYPES).includes(notesObj.type)) {
-            logger.debug('Order type found in notes:', notesObj.type)
-            return notesObj.type
+          const type = notesObj.orderInfo?.type || notesObj.type
+          if (type && Object.values(ORDER_TYPES).includes(type)) {
+            logger.debug('Order type found in notes:', type)
+            orderType.value = type // Keep local state in sync
+            return type
           }
         } catch (e) {
           logger.warn('Failed to parse order type from notes:', e)
@@ -79,11 +104,8 @@ export function useOrderType() {
           if (invoiceName.startsWith(type)) {
             logger.debug('Order type determined from hold invoice name:', type)
             // Update notes to preserve the type
-            const orderInfo = {
-              type,
-              customer: { ...customerInfo.value }
-            }
-            cartStore.setNotes(JSON.stringify(orderInfo))
+            orderType.value = type // Keep local state in sync
+            updateOrderNotes(type, customerInfo.value, customerNotes.value)
             return type
           }
         }
@@ -92,21 +114,31 @@ export function useOrderType() {
       // If no type found, default to TO_GO for held orders
       if (cartStore.holdInvoiceId) {
         logger.debug('No order type found for held order, defaulting to TO_GO')
-        const orderInfo = {
-          type: ORDER_TYPES.TO_GO,
-          customer: { ...customerInfo.value }
-        }
-        cartStore.setNotes(JSON.stringify(orderInfo))
+        orderType.value = ORDER_TYPES.TO_GO // Keep local state in sync
+        updateOrderNotes(ORDER_TYPES.TO_GO, customerInfo.value, customerNotes.value)
         return ORDER_TYPES.TO_GO
       }
 
       logger.debug('No order type found')
-      return null
+      return orderType.value || null
     } catch (e) {
       logger.error('Error determining current order type:', e)
-      return null
+      return orderType.value || null
     }
   })
+
+  // Helper function to update notes with all order information
+  const updateOrderNotes = (type, customer, notes = '') => {
+    // If type is not provided, use current order type
+    const orderData = {
+      orderInfo: {
+        type: type || orderType.value,
+        customer: { ...customer }
+      },
+      customerNotes: notes
+    }
+    cartStore.setNotes(JSON.stringify(orderData))
+  }
 
   // Methods
   const setOrderType = (type) => {
@@ -126,12 +158,16 @@ export function useOrderType() {
     }
     error.value = null
 
-    // Update notes with new order type
-    const orderInfo = {
-      type,
-      customer: { ...customerInfo.value }
+    // Initialize notes structure with empty notes
+    const orderData = {
+      orderInfo: {
+        type,
+        customer: { ...customerInfo.value }
+      },
+      customerNotes: ''
     }
-    cartStore.setNotes(JSON.stringify(orderInfo))
+    cartStore.setNotes(JSON.stringify(orderData))
+    customerNotes.value = '' // Reset local notes state
     logger.debug('Order type set:', type)
   }
 
@@ -141,12 +177,36 @@ export function useOrderType() {
       ...info
     }
     // Update notes with new customer info
-    const orderInfo = {
+    updateOrderNotes(orderType.value, customerInfo.value, customerNotes.value)
+    logger.debug('Customer info updated:', customerInfo.value)
+  }
+
+  const setCustomerNotes = (notes) => {
+    customerNotes.value = notes
+    // Get current notes object if it exists
+    let currentOrderInfo = {
       type: orderType.value,
       customer: { ...customerInfo.value }
     }
-    cartStore.setNotes(JSON.stringify(orderInfo))
-    logger.debug('Customer info updated:', customerInfo.value)
+    
+    try {
+      if (cartStore.notes) {
+        const notesObj = JSON.parse(cartStore.notes)
+        if (notesObj.orderInfo) {
+          currentOrderInfo = notesObj.orderInfo
+        }
+      }
+    } catch (e) {
+      logger.warn('Failed to parse existing notes:', e)
+    }
+
+    // Update notes while preserving order info
+    const orderData = {
+      orderInfo: currentOrderInfo,
+      customerNotes: notes
+    }
+    cartStore.setNotes(JSON.stringify(orderData))
+    logger.debug('Customer notes updated:', notes)
   }
 
   const processOrder = async () => {
@@ -162,12 +222,8 @@ export function useOrderType() {
     error.value = null
 
     try {
-      // Add order type and customer info to cart store notes
-      const orderInfo = {
-        type: orderType.value,
-        customer: { ...customerInfo.value }
-      }
-      cartStore.setNotes(JSON.stringify(orderInfo))
+      // Update notes with all order information
+      updateOrderNotes(orderType.value, customerInfo.value, customerNotes.value)
 
       // For dine-in, tables are handled separately
       if (orderType.value === ORDER_TYPES.DINE_IN) {
@@ -256,6 +312,7 @@ export function useOrderType() {
       pickupTime: '',
       instructions: ''
     }
+    customerNotes.value = ''
     error.value = null
   }
 
@@ -263,6 +320,7 @@ export function useOrderType() {
     // State
     orderType,
     customerInfo,
+    customerNotes,
     loading,
     error,
 
@@ -275,6 +333,7 @@ export function useOrderType() {
     // Methods
     setOrderType,
     setCustomerInfo,
+    setCustomerNotes,
     processOrder,
     reset,
 

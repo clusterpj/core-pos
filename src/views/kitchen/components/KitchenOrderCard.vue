@@ -28,6 +28,21 @@
         </template>
       </div>
 
+      <!-- Order Notes -->
+      <div v-if="orderNotes" class="order-notes mb-4">
+        <v-alert
+          color="info"
+          variant="tonal"
+          density="comfortable"
+          class="mb-0"
+        >
+          <template v-slot:prepend>
+            <v-icon size="small">mdi-note-text-outline</v-icon>
+          </template>
+          <div class="text-body-2">{{ orderNotes }}</div>
+        </v-alert>
+      </div>
+
       <div class="space-y-4 max-h-48 overflow-y-auto">
         <template v-for="(item, index) in order.hold_items" :key="index">
           <div class="mb-3">
@@ -64,6 +79,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { parseOrderNotes } from '../../../stores/cart/helpers'
 
 const props = defineProps({
   order: {
@@ -83,6 +99,11 @@ const statusColor = computed(() => {
   if (isCompleted.value) return 'success'
   if (props.order.status === 'in_progress') return 'info'
   return 'warning'
+})
+
+const orderNotes = computed(() => {
+  if (!props.order.notes) return null
+  return parseOrderNotes(props.order.notes)
 })
 
 const formatTime = (timestamp) => {
@@ -124,5 +145,9 @@ const formatTime = (timestamp) => {
 
 :deep(.v-chip) {
   font-weight: 500 !important;
+}
+
+.order-notes :deep(.v-alert) {
+  padding: 8px 16px;
 }
 </style>

@@ -22,7 +22,25 @@
           </v-chip>
         </td>
         <td class="text-truncate" style="max-width: 200px">
-          {{ invoice.description }}
+          <v-tooltip
+            :text="getTooltipText(invoice)"
+            location="top"
+            open-delay="300"
+          >
+            <template v-slot:activator="{ props }">
+              <span v-bind="props" class="cursor-help">
+                {{ invoice.description }}
+                <v-icon
+                  v-if="hasNotes(invoice)"
+                  size="x-small"
+                  color="grey-darken-1"
+                  class="ml-1"
+                >
+                  mdi-note-text-outline
+                </v-icon>
+              </span>
+            </template>
+          </v-tooltip>
         </td>
         <td>{{ formatDate(invoice.created_at) }}</td>
         <td>{{ invoice.hold_items?.length || 0 }} items</td>
@@ -70,6 +88,8 @@
 </template>
 
 <script setup>
+import { parseOrderNotes } from '../../../../../stores/cart/helpers'
+
 const props = defineProps({
   invoices: {
     type: Array,
@@ -107,6 +127,17 @@ const props = defineProps({
 
 const emit = defineEmits(['load', 'convert', 'delete'])
 
+const hasNotes = (invoice) => {
+  const notes = parseOrderNotes(invoice.notes)
+  return notes && notes.trim().length > 0
+}
+
+const getTooltipText = (invoice) => {
+  const notes = parseOrderNotes(invoice.notes)
+  if (!notes) return invoice.description
+  return `${invoice.description}\n\nNotes: ${notes}`
+}
+
 const handleConvert = (invoice) => {
   console.log('HeldOrdersTable: Convert button clicked for invoice:', invoice)
   console.log('HeldOrdersTable: Emitting convert event with invoice data:', {
@@ -132,5 +163,9 @@ const handleConvert = (invoice) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.cursor-help {
+  cursor: help;
 }
 </style>

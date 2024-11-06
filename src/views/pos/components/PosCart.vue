@@ -61,6 +61,9 @@
       </template>
     </div>
 
+    <!-- Order Notes -->
+    <order-notes v-if="!cartStore.isEmpty" />
+
     <!-- Order Summary - Always visible at bottom -->
     <div class="cart-summary-wrapper px-4 pb-4">
       <cart-summary
@@ -98,6 +101,7 @@ import { ref } from 'vue'
 import CartItemList from './cart/CartItemList.vue'
 import CartSummary from './cart/CartSummary.vue'
 import EditItemDialog from './cart/EditItemDialog.vue'
+import OrderNotes from './cart/OrderNotes.vue'
 import { useCart } from './cart/composables/useCart'
 
 const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder } = useCart()
