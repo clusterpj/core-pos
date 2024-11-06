@@ -1,4 +1,5 @@
 <!-- src/views/pos/components/dialogs/PaymentDialog.vue -->
+<!-- Previous template code remains exactly the same until the script section -->
 <template>
   <v-dialog v-model="dialog" max-width="600px" persistent>
     <v-card>
@@ -30,8 +31,16 @@
                       <strong>{{ invoiceNumber }}</strong>
                     </div>
                     <div class="d-flex justify-space-between mb-2">
-                      <span>Total Amount:</span>
+                      <span>Subtotal:</span>
                       <strong>{{ formatCurrency(invoiceTotal / 100) }}</strong>
+                    </div>
+                    <div class="d-flex justify-space-between mb-2" v-if="tipAmount > 0">
+                      <span>Tip:</span>
+                      <strong>{{ formatCurrency(tipAmount / 100) }}</strong>
+                    </div>
+                    <div class="d-flex justify-space-between mb-2">
+                      <span>Total Amount:</span>
+                      <strong>{{ formatCurrency((invoiceTotal + tipAmount) / 100) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between">
                       <span>Remaining:</span>
@@ -39,6 +48,21 @@
                     </div>
                   </v-card-text>
                 </v-card>
+              </v-col>
+            </v-row>
+
+            <!-- Tip Button -->
+            <v-row>
+              <v-col cols="12">
+                <v-btn
+                  block
+                  color="primary"
+                  variant="outlined"
+                  @click="showTipDialog = true"
+                  class="mb-4"
+                >
+                  {{ tipAmount > 0 ? `Update Tip (${formatCurrency(tipAmount / 100)})` : 'Add Tip' }}
+                </v-btn>
               </v-col>
             </v-row>
 
@@ -65,8 +89,7 @@
                     :rules="[
                       v => !!v || 'Amount is required',
                       v => v > 0 || 'Amount must be greater than 0',
-                      v => allowPartialPay || v <= invoiceTotal / 100 || 'Amount exceeds remaining balance',
-                      v => allowPartialPay || Number(v) === invoiceTotal / 100 || 'Full payment is required'
+                      v => Number(v) === (invoiceTotal + tipAmount) / 100 || 'Full payment is required'
                     ]"
                     :prefix="'$'"
                     @input="validateAmount(index)"
@@ -197,6 +220,66 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Tip Dialog -->
+  <v-dialog v-model="showTipDialog" max-width="400px">
+    <v-card>
+      <v-card-title class="text-h6">
+        Select Tip Amount
+      </v-card-title>
+      <v-card-text>
+        <p class="text-subtitle-2 mb-4">Choose a tip percentage or enter a custom amount.</p>
+        
+        <!-- Preset Tip Percentages -->
+        <v-row class="mb-4">
+          <v-col v-for="percent in tipPercentages" :key="percent" cols="3">
+            <v-btn
+              block
+              :variant="selectedTipPercent === percent ? 'flat' : 'outlined'"
+              :color="selectedTipPercent === percent ? 'primary' : undefined"
+              @click="selectTipPercent(percent)"
+            >
+              {{ percent }}%
+            </v-btn>
+          </v-col>
+        </v-row>
+
+        <!-- Custom Tip Input -->
+        <v-row>
+          <v-col cols="12">
+            <v-text-field
+              v-model="customTipPercent"
+              label="Custom %"
+              type="number"
+              min="0"
+              max="100"
+              append-inner-text="%"
+              @input="handleCustomTipInput"
+            ></v-text-field>
+          </v-col>
+        </v-row>
+
+        <!-- Tip Amount Display -->
+        <v-row v-if="calculatedTip > 0">
+          <v-col cols="12">
+            <div class="d-flex justify-space-between">
+              <span>Tip Amount:</span>
+              <strong>{{ formatCurrency(calculatedTip / 100) }}</strong>
+            </div>
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn color="grey" variant="text" @click="cancelTip">
+          Cancel
+        </v-btn>
+        <v-btn color="primary" @click="confirmTip">
+          Confirm Tip
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -238,6 +321,14 @@ const payments = ref([{
   fees: 0 
 }])
 
+// Tip related state
+const showTipDialog = ref(false)
+const tipPercentages = [15, 18, 20, 25]
+const selectedTipPercent = ref(null)
+const customTipPercent = ref('')
+const tipAmount = ref(0)
+const tipType = ref('percentage')
+
 // Computed properties for invoice details
 const invoiceNumber = computed(() => {
   return props.invoice?.invoice?.invoice_number || 
@@ -250,7 +341,10 @@ const invoiceTotal = computed(() => {
   return props.invoice?.invoice?.total || 0
 })
 
-const allowPartialPay = computed(() => settings.value?.allow_partial_pay === '1')
+const calculatedTip = computed(() => {
+  const percent = selectedTipPercent.value || Number(customTipPercent.value) || 0
+  return Math.round((invoiceTotal.value * percent) / 100)
+})
 
 // Dialog computed property
 const dialog = computed({
@@ -262,7 +356,7 @@ const remainingAmount = computed(() => {
   const totalPaid = payments.value.reduce((sum, payment) => {
     return sum + payment.amount
   }, 0)
-  return invoiceTotal.value - totalPaid
+  return (invoiceTotal.value + tipAmount.value) - totalPaid
 })
 
 const totalPayments = computed(() => {
@@ -278,8 +372,7 @@ const totalFees = computed(() => {
 })
 
 const canAddMorePayments = computed(() => {
-  return (allowPartialPay.value || remainingAmount.value > 0) && 
-         payments.value.length < paymentMethods.value.length
+  return remainingAmount.value > 0 && payments.value.length < paymentMethods.value.length
 })
 
 const isValid = computed(() => {
@@ -287,7 +380,7 @@ const isValid = computed(() => {
     if (!payment.method_id || !payment.amount) return false
     if (isCashOnly(payment.method_id) && !payment.received) return false
     return true
-  }) && (allowPartialPay.value || remainingAmount.value === 0)
+  }) && remainingAmount.value === 0
 })
 
 // Methods
@@ -357,16 +450,8 @@ const validateAmount = (index) => {
   const payment = payments.value[index]
   if (!payment.displayAmount) return
 
-  if (!allowPartialPay.value) {
-    // If partial pay is not allowed, force full payment
-    payment.displayAmount = (invoiceTotal.value / 100).toString()
-  } else {
-    // Otherwise, limit to remaining amount
-    payment.displayAmount = Math.min(
-      Number(payment.displayAmount),
-      remainingAmount.value / 100
-    ).toString()
-  }
+  // Force full payment
+  payment.displayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString()
 
   // Convert display amount to cents
   payment.amount = Math.round(Number(payment.displayAmount) * 100)
@@ -388,7 +473,7 @@ const addPayment = () => {
   payments.value.push({ 
     method_id: null, 
     amount: 0,
-    displayAmount: '0',
+    displayAmount: ((invoiceTotal.value + tipAmount.value) / 100).toString(),
     received: 0,
     displayReceived: '0',
     returned: 0,
@@ -408,11 +493,39 @@ const closeDialog = () => {
   }
 }
 
+// Tip related methods
+const selectTipPercent = (percent) => {
+  selectedTipPercent.value = percent
+  customTipPercent.value = ''
+}
+
+const handleCustomTipInput = () => {
+  selectedTipPercent.value = null
+}
+
+const cancelTip = () => {
+  showTipDialog.value = false
+  selectedTipPercent.value = null
+  customTipPercent.value = ''
+}
+
+const confirmTip = () => {
+  tipAmount.value = calculatedTip.value
+  tipType.value = 'percentage'
+  showTipDialog.value = false
+  
+  // Update payment amounts after tip change
+  payments.value.forEach((payment, index) => validateAmount(index))
+}
+
 const processPayment = async () => {
   if (!isValid.value || processing.value) return
 
   processing.value = true
   try {
+    // Calculate total amount including tip
+    const totalAmount = invoiceTotal.value + tipAmount.value
+
     // Format payments for API - amounts are already in cents
     const formattedPayments = payments.value.map(payment => ({
       method_id: payment.method_id,
@@ -423,8 +536,19 @@ const processPayment = async () => {
       valid: true
     }))
 
+    // Create invoice data with tip and ensure total matches
+    const invoiceData = {
+      ...props.invoice.invoice,
+      tip: selectedTipPercent.value || Number(customTipPercent.value) || 0,
+      tip_type: tipType.value,
+      tip_val: tipAmount.value,
+      total: totalAmount, // Ensure total includes tip
+      due_amount: totalAmount, // Update due amount to match total
+      sub_total: invoiceTotal.value // Original amount without tip
+    }
+
     // Create payment
-    const result = await createPayment(props.invoice.invoice, formattedPayments)
+    const result = await createPayment(invoiceData, formattedPayments)
     
     // Emit success
     emit('payment-complete', result)
@@ -447,7 +571,7 @@ watch(() => dialog.value, async (newValue) => {
       await fetchSettings()
 
       // Reset state with initial display amount
-      const initialDisplayAmount = settings.value?.allow_partial_pay === '1' ? '0' : (invoiceTotal.value / 100).toString()
+      const initialDisplayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString()
       payments.value = [{
         method_id: null,
         amount: 0,
@@ -458,6 +582,11 @@ watch(() => dialog.value, async (newValue) => {
         fees: 0
       }]
       processing.value = false
+      
+      // Reset tip state
+      tipAmount.value = 0
+      selectedTipPercent.value = null
+      customTipPercent.value = ''
       
       // Fetch payment methods
       await fetchPaymentMethods()
