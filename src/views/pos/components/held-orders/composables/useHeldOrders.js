@@ -3,7 +3,7 @@ import { usePosStore } from '../../../../../stores/pos-store'
 import { useCartStore } from '../../../../../stores/cart-store'
 import { storeToRefs } from 'pinia'
 import { logger } from '../../../../../utils/logger'
-import { OrderType } from '../../../../../types/order'
+import { OrderType, PaidStatus } from '../../../../../types/order'
 import { usePayment } from '../../../composables/usePayment'
 import { 
   formatDate, 
@@ -27,8 +27,10 @@ export function useHeldOrders() {
   const convertingOrder = ref(null)
   const search = ref('')
   const selectedType = ref('ALL')
+  const selectedStatus = ref('ALL')
   const showPaymentDialog = ref(false)
   const currentInvoice = ref(null)
+  const originalHoldInvoice = ref(null)
 
   // Order type options for filter
   const orderTypes = [
@@ -39,13 +41,18 @@ export function useHeldOrders() {
     { title: 'Pickup', value: OrderType.PICKUP }
   ]
 
-  // Filter invoices based on search and type
+  // Filter invoices based on search, type and status
   const filteredInvoices = computed(() => {
     let filtered = holdInvoices.value
 
     // Apply type filter
     if (selectedType.value !== 'ALL') {
       filtered = filtered.filter(invoice => invoice.type === selectedType.value)
+    }
+
+    // Apply status filter
+    if (selectedStatus.value !== 'ALL') {
+      filtered = filtered.filter(invoice => invoice.paid_status === selectedStatus.value)
     }
 
     // Apply search filter
@@ -67,12 +74,13 @@ export function useHeldOrders() {
     try {
       logger.info('Payment completed successfully:', paymentResult)
       
-      if (!currentInvoice.value?.hold_invoice_id) {
-        throw new Error('Missing hold invoice ID')
+      // Use originalHoldInvoice.value instead of looking for hold_invoice_id in currentInvoice
+      if (!originalHoldInvoice.value?.id) {
+        throw new Error('Original hold invoice not found')
       }
       
       // Delete the held order
-      const deleteResponse = await posStore.deleteHoldInvoice(currentInvoice.value.hold_invoice_id)
+      const deleteResponse = await posStore.deleteHoldInvoice(originalHoldInvoice.value.id)
       console.log('Delete held order response:', deleteResponse)
       
       if (!deleteResponse.success) {
@@ -84,6 +92,7 @@ export function useHeldOrders() {
       
       // Reset state
       currentInvoice.value = null
+      originalHoldInvoice.value = null
       showPaymentDialog.value = false
       
       return true
@@ -103,6 +112,7 @@ export function useHeldOrders() {
       }
 
       convertingOrder.value = invoice.id
+      originalHoldInvoice.value = invoice // Store the original hold invoice
       
       // Convert the order to invoice
       const result = await convertHeldOrderToInvoice(invoice)
@@ -264,6 +274,7 @@ export function useHeldOrders() {
     convertingOrder,
     search,
     selectedType,
+    selectedStatus,
     orderTypes,
     holdInvoices,
     filteredInvoices,

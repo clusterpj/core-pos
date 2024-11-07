@@ -1,4 +1,5 @@
 import { logger } from '../../../../../utils/logger'
+import { OrderType, PaidStatus } from '../../../../../types/order'
 
 // Validate invoice data before API call
 export const validateInvoiceData = (data) => {
@@ -11,7 +12,9 @@ export const validateInvoiceData = (data) => {
     'total',
     'sub_total',
     'items',
-    'user_id'
+    'user_id',
+    'type',
+    'paid_status'
   ]
 
   const missingFields = requiredFields.filter(field => !data[field])
@@ -29,6 +32,16 @@ export const validateInvoiceData = (data) => {
       throw new Error(`Invalid item data at index ${index}`)
     }
   })
+
+  // Validate type
+  if (!Object.values(OrderType).includes(data.type)) {
+    throw new Error(`Invalid order type: ${data.type}. Must be one of: ${Object.values(OrderType).join(', ')}`)
+  }
+
+  // Validate paid_status
+  if (!Object.values(PaidStatus).includes(data.paid_status)) {
+    throw new Error(`Invalid paid status: ${data.paid_status}. Must be either PAID or UNPAID`)
+  }
 
   logger.debug('Invoice data validation passed')
   return true
@@ -49,6 +62,16 @@ export const validateInvoiceForConversion = (invoice) => {
       throw new Error(`Invalid item data at index ${index}: missing required fields`)
     }
   })
+
+  // Validate type
+  if (!Object.values(OrderType).includes(invoice.type)) {
+    throw new Error(`Invalid order type: ${invoice.type}. Must be one of: ${Object.values(OrderType).join(', ')}`)
+  }
+
+  // Validate paid_status if present
+  if (invoice.paid_status && !Object.values(PaidStatus).includes(invoice.paid_status)) {
+    throw new Error(`Invalid paid status: ${invoice.paid_status}. Must be either PAID or UNPAID`)
+  }
 
   return true
 }

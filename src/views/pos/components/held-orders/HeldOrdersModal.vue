@@ -42,9 +42,11 @@
               <HeldOrdersFilters
                 :search="search"
                 :selectedType="selectedType"
+                :selectedStatus="selectedStatus"
                 :orderTypes="orderTypes"
                 @update:search="search = $event"
                 @update:selectedType="selectedType = $event"
+                @update:selectedStatus="selectedStatus = $event"
               />
 
               <v-row>
@@ -121,6 +123,7 @@ const {
   convertingOrder,
   search,
   selectedType,
+  selectedStatus,
   orderTypes,
   holdInvoices,
   filteredInvoices,

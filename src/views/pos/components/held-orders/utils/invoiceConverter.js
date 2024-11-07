@@ -2,6 +2,7 @@ import { posApi } from '../../../../../services/api/pos-api'
 import { logger } from '../../../../../utils/logger'
 import { formatApiDate, toCents } from './formatters'
 import { validateInvoiceData, validateInvoiceForConversion } from './validators'
+import { OrderType, PaidStatus } from '../../../../../types/order'
 
 export const convertHeldOrderToInvoice = async (invoice) => {
   console.log('Starting conversion process for invoice:', {
@@ -132,6 +133,11 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       tip_type: invoice.tip_type || "fixed",
       tip_val: toCents(invoice.tip_val || 0),
 
+      // Status
+      status: "SENT",
+      paid_status: invoice.paid_status || PaidStatus.UNPAID,
+      type: invoice.type,
+
       // Arrays
       items: formattedItems,
       taxes: invoice.taxes || [],
@@ -156,12 +162,19 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       throw new Error('Failed to create invoice: Invalid response')
     }
 
+    // Add hold_invoice_id to the response
+    invoiceResponse.invoice.hold_invoice_id = invoice.id
+
     // 5. Get created invoice details
     console.log('Fetching created invoice details')
     const createdInvoice = await posApi.invoice.getById(invoiceResponse.invoice.id)
     if (!createdInvoice) {
       throw new Error('Failed to fetch created invoice details')
     }
+
+    // Add hold_invoice_id to the created invoice
+    createdInvoice.hold_invoice_id = invoice.id
+
     console.log('Created invoice details:', createdInvoice)
 
     logger.info('Order converted to invoice successfully:', createdInvoice.id)
