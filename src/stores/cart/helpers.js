@@ -56,17 +56,6 @@ export const prepareItemsForApi = (items) => {
   })
 }
 
-export const parseOrderType = (notes) => {
-  let orderType = 'UNKNOWN'
-  try {
-    const notesObj = JSON.parse(notes)
-    orderType = notesObj.orderInfo?.type || notesObj.type || 'UNKNOWN'
-  } catch (e) {
-    logger.warn('Failed to parse notes for order type')
-  }
-  return orderType
-}
-
 export const parseOrderNotes = (notes) => {
   try {
     const notesObj = JSON.parse(notes)

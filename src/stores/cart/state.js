@@ -1,3 +1,5 @@
+import { OrderType } from '../../types/order'
+
 export const state = () => ({
   items: [],
   discountType: 'fixed',
@@ -8,7 +10,8 @@ export const state = () => ({
   notes: '',
   selectedTables: [],
   holdInvoiceId: null,
-  holdOrderDescription: null
+  holdOrderDescription: null,
+  type: null // Add type to state
 })
 
 export const mutations = {
@@ -36,6 +39,13 @@ export const mutations = {
     state.discountValue = value
   },
 
+  setType(state, type) {
+    if (type && !Object.values(OrderType).includes(type)) {
+      throw new Error(`Invalid order type: ${type}`)
+    }
+    state.type = type
+  },
+
   clearCart(state) {
     state.items = []
     state.discountType = 'fixed'
@@ -44,5 +54,6 @@ export const mutations = {
     state.selectedTables = []
     state.holdInvoiceId = null
     state.holdOrderDescription = null
+    state.type = null // Reset type when clearing cart
   }
 }

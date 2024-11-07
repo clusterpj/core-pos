@@ -1,3 +1,5 @@
+import { OrderType } from '../../types/order'
+
 export const getters = {
   subtotal: (state) => {
     return state.items.reduce((sum, item) => {
@@ -70,5 +72,13 @@ export const getters = {
 
   isHoldOrder: (state) => {
     return state.holdInvoiceId !== null
+  },
+
+  orderType: (state) => {
+    return state.type || null
+  },
+
+  isValidOrderType: (state) => {
+    return state.type && Object.values(OrderType).includes(state.type)
   }
 }

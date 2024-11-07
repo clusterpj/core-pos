@@ -1,4 +1,4 @@
-import { ORDER_TYPES } from '../../../composables/useOrderType'
+import { OrderType } from '../../../../../types/order'
 
 // Format date for API (YYYY-MM-DD)
 export const formatApiDate = (date) => {
@@ -53,26 +53,20 @@ export const toDollars = (amount) => {
 
 // Get order type from invoice
 export const getOrderType = (invoice) => {
-  try {
-    if (invoice.notes) {
-      const notesObj = JSON.parse(invoice.notes)
-      // Check both new and old structure
-      return notesObj.orderInfo?.type || notesObj.type || 'UNKNOWN'
-    }
-  } catch (err) {
-    console.error('Failed to parse order type:', err)
+  // Use the type field directly
+  if (invoice.type && Object.values(OrderType).includes(invoice.type)) {
+    return invoice.type
   }
-  return 'UNKNOWN'
+  return OrderType.DINE_IN // Default to DINE IN if no type is set
 }
 
 // Get color for order type chip
 export const getOrderTypeColor = (type) => {
   const colors = {
-    [ORDER_TYPES.DINE_IN]: 'primary',
-    [ORDER_TYPES.TO_GO]: 'success',
-    [ORDER_TYPES.DELIVERY]: 'warning',
-    [ORDER_TYPES.PICKUP]: 'info',
-    'UNKNOWN': 'grey'
+    [OrderType.DINE_IN]: 'primary',
+    [OrderType.TO_GO]: 'success',
+    [OrderType.DELIVERY]: 'warning',
+    [OrderType.PICKUP]: 'info'
   }
   return colors[type] || 'grey'
 }

@@ -104,6 +104,11 @@ export const actions = {
     state.notes = notes
   },
 
+  setType(state, type) {
+    logger.info('Setting order type:', type)
+    state.type = type
+  },
+
   setSelectedTables(state, tables) {
     state.selectedTables = tables
   },
@@ -130,5 +135,6 @@ export const actions = {
     state.selectedTables = []
     state.holdInvoiceId = null
     state.holdOrderDescription = null
+    state.type = null // Clear type when clearing cart
   }
 }

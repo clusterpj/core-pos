@@ -138,9 +138,10 @@
 import { ref, computed, watch } from 'vue'
 import { useTableAssignment } from '../../composables/useTableAssignment'
 import { useOrderType } from '../../composables/useOrderType'
-import { usePosStore } from '@/stores/pos-store'
-import { useCartStore } from '@/stores/cart-store'
-import { logger } from '@/utils/logger'
+import { usePosStore } from '../../../../stores/pos-store'
+import { useCartStore } from '../../../../stores/cart-store'
+import { logger } from '../../../../utils/logger'
+import { OrderType } from '../../../../types/order'
 
 // Props
 const props = defineProps({
@@ -169,7 +170,6 @@ const {
 
 const {
   setOrderType,
-  ORDER_TYPES,
   setCustomerInfo,
   canCreateOrder
 } = useOrderType()
@@ -224,8 +224,8 @@ const processOrder = async () => {
   processing.value = true
 
   try {
-    // Set order type
-    setOrderType(ORDER_TYPES.DINE_IN)
+    // Set order type using the new OrderType enum
+    setOrderType(OrderType.DINE_IN)
 
     // Prepare table information
     const selectedTablesData = getSelectedTablesForApi()
@@ -241,11 +241,16 @@ const processOrder = async () => {
 
     // Set cart store information
     cartStore.setSelectedTables(selectedTablesData)
+    
+    // Set only customer-related information in notes
     cartStore.setNotes(JSON.stringify({
-      type: ORDER_TYPES.DINE_IN,
-      tables: selectedTablesData,
-      tableNumbers: tableNames,
-      customerCount: totalCustomers
+      orderInfo: {
+        customer: {
+          tableNumbers: tableNames,
+          customerCount: totalCustomers
+        },
+        tables: selectedTablesData
+      }
     }))
 
     // Create hold invoice data
@@ -272,15 +277,10 @@ const processOrder = async () => {
       await posStore.fetchHoldInvoices()
       
       // Look for our order in the latest invoices
-      const orderExists = posStore.holdInvoices.some(invoice => {
-        try {
-          const notes = JSON.parse(invoice.notes || '{}')
-          return notes.type === ORDER_TYPES.DINE_IN && 
-                 notes.tableNumbers === tableNames
-        } catch {
-          return false
-        }
-      })
+      const orderExists = posStore.holdInvoices.some(invoice => 
+        invoice.type === OrderType.DINE_IN && 
+        invoice.description?.includes(`DINE_IN_Table_${tableNames}`)
+      )
 
       if (orderExists) {
         // Order was created successfully despite the error
@@ -309,7 +309,7 @@ const closeModal = () => {
 watch(dialog, async (newValue) => {
   if (newValue) {
     try {
-      setOrderType(ORDER_TYPES.DINE_IN)
+      setOrderType(OrderType.DINE_IN)
       await loadTables()
     } catch (err) {
       logger.error('Failed to initialize dine-in modal:', err)

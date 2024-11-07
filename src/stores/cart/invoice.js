@@ -1,6 +1,7 @@
 import { useCompanyStore } from '../company'
 import { logger } from '../../utils/logger'
-import { prepareItemsForApi, parseOrderType, getCurrentDate, getDueDate, priceHelpers } from './helpers'
+import { prepareItemsForApi, getCurrentDate, getDueDate, priceHelpers } from './helpers'
+import { OrderType } from '../../types/order'
 
 export const invoiceActions = {
   prepareInvoiceData(state, getters, { storeId, cashRegisterId, referenceNumber }) {
@@ -19,7 +20,7 @@ export const invoiceActions = {
 
       const currentDate = getCurrentDate()
       const dueDate = getDueDate()
-      const orderType = parseOrderType(state.notes)
+      const orderType = state.type || OrderType.DINE_IN // Use type directly from state with default
 
       // Format items with proper price conversions
       const items = state.items.map(item => {
@@ -90,7 +91,8 @@ export const invoiceActions = {
         pbx_service_price: 0,
         sent: 0,
         viewed: 0,
-        is_prepared_data: true
+        is_prepared_data: true,
+        type: orderType // Add type directly to invoice data
       }
 
       if (state.holdInvoiceId) {
@@ -98,7 +100,7 @@ export const invoiceActions = {
         invoice.is_hold_invoice = true
       }
 
-      if (orderType === 'DINE_IN' && state.selectedTables.length > 0) {
+      if (orderType === OrderType.DINE_IN && state.selectedTables.length > 0) {
         invoice.tables_selected = state.selectedTables
       }
 

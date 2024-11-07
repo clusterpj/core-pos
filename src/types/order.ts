@@ -8,6 +8,18 @@ export enum InvoiceStatus {
   CANCELLED = 'CANCELLED'
 }
 
+export enum PaidStatus {
+  PAID = 'PAID',
+  UNPAID = 'UNPAID'
+}
+
+export enum OrderType {
+  DINE_IN = 'DINE IN',
+  TO_GO = 'TO-GO',
+  DELIVERY = 'DELIVERY',
+  PICKUP = 'PICKUP'
+}
+
 export interface Order {
   id?: number
   user_id?: number
@@ -17,7 +29,8 @@ export interface Order {
   discount?: number
   products: Product[]
   status: string
-  type: string
+  type: OrderType
+  paid_status: PaidStatus
   notes?: string
   created_at?: Date
   updated_at?: Date

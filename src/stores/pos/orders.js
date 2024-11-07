@@ -1,4 +1,5 @@
 import { logger } from '../../utils/logger'
+import { OrderType, PaidStatus } from '../../types/order'
 
 export const createOrdersModule = (state, posApi, posOperations) => {
   const validateHoldInvoiceData = (data) => {
@@ -9,7 +10,9 @@ export const createOrdersModule = (state, posApi, posOperations) => {
       'due_amount',
       'user_id',
       'store_id',
-      'cash_register_id'
+      'cash_register_id',
+      'type',
+      'paid_status'
     ]
     
     const missing = required.filter(field => !data[field])
@@ -26,6 +29,16 @@ export const createOrdersModule = (state, posApi, posOperations) => {
         throw new Error(`Invalid item at index ${index}: missing price or quantity`)
       }
     })
+
+    // Validate type
+    if (!Object.values(OrderType).includes(data.type)) {
+      throw new Error(`Invalid order type: ${data.type}. Must be one of: ${Object.values(OrderType).join(', ')}`)
+    }
+
+    // Validate paid_status
+    if (!Object.values(PaidStatus).includes(data.paid_status)) {
+      throw new Error(`Invalid paid status: ${data.paid_status}. Must be either PAID or UNPAID`)
+    }
   }
 
   const prepareHoldInvoiceData = (orderData) => {

@@ -1,7 +1,8 @@
 import apiClient from '../client'
 import { logger } from '../../../utils/logger'
 import api from '../pos-api'
-import { handleApiError, validateHoldOrder } from './utils'
+import { handleApiError, validateHoldOrder, transformHoldInvoiceResponse } from './utils'
+import { PaidStatus, OrderType } from '../../../types/order'
 
 export const invoiceOperations = {
   async getHoldInvoices() {
@@ -10,24 +11,29 @@ export const invoiceOperations = {
       logger.debug('Requesting hold invoices')
       const response = await api.holdInvoice.getAll()
       
-      if (!response.data?.data) {
+      if (!response.data) {
         throw new Error('Invalid hold invoices response')
       }
 
-      // Validate each hold invoice
-      response.data.data.forEach(invoice => {
-        try {
-          validateHoldOrder(invoice)
-        } catch (error) {
-          logger.warn(`Invalid hold order ${invoice.id}:`, error.message)
-        }
-      })
+      // Transform response to include required parameters
+      const transformedData = transformHoldInvoiceResponse(response.data)
 
-      logger.debug('Hold invoices response:', response.data)
+      // Validate each hold invoice
+      if (transformedData.hold_invoices?.data) {
+        transformedData.hold_invoices.data.forEach(invoice => {
+          try {
+            validateHoldOrder(invoice)
+          } catch (error) {
+            logger.warn(`Invalid hold order ${invoice.id}:`, error.message)
+          }
+        })
+      }
+
+      logger.debug('Hold invoices response:', transformedData)
       logger.info('Hold invoices fetched successfully')
       return {
         success: true,
-        ...response.data
+        ...transformedData
       }
     } catch (error) {
       return handleApiError(error)
@@ -49,9 +55,12 @@ export const invoiceOperations = {
         throw new Error('Invalid hold invoice response')
       }
 
-      logger.debug('Hold invoice response:', invoiceData)
+      // Transform response to include required parameters
+      const transformedData = transformHoldInvoiceResponse(invoiceData)
+
+      logger.debug('Hold invoice response:', transformedData)
       logger.info('Hold invoice fetched successfully')
-      return invoiceData
+      return transformedData
     } catch (error) {
       return handleApiError(error)
     } finally {
@@ -64,20 +73,36 @@ export const invoiceOperations = {
     try {
       logger.debug('Updating hold invoice:', { id, data: invoiceData })
 
-      const response = await api.holdInvoice.update(id, {
+      // Set default values if not provided
+      const updatedData = {
         ...invoiceData,
+        paid_status: invoiceData.paid_status || PaidStatus.UNPAID,
+        type: invoiceData.type || OrderType.DINE_IN,
         is_hold_invoice: true
-      })
+      }
+
+      // Validate parameters if present
+      if (updatedData.paid_status && !Object.values(PaidStatus).includes(updatedData.paid_status)) {
+        throw new Error('Invalid paid_status. Must be either PAID or UNPAID')
+      }
+
+      if (updatedData.type && !Object.values(OrderType).includes(updatedData.type)) {
+        throw new Error('Invalid type. Must be one of: DINE IN, TO-GO, DELIVERY, PICKUP')
+      }
+
+      const response = await api.holdInvoice.update(id, updatedData)
 
       logger.debug('Hold invoice update response:', response)
       logger.info('Hold invoice updated successfully:', {
         invoiceId: id,
-        total: invoiceData.total
+        total: updatedData.total,
+        paid_status: updatedData.paid_status,
+        type: updatedData.type
       })
 
       return {
         success: true,
-        data: response.data
+        data: transformHoldInvoiceResponse(response.data)
       }
     } catch (error) {
       return handleApiError(error)
@@ -91,27 +116,44 @@ export const invoiceOperations = {
     try {
       logger.debug('Creating invoice with data:', invoiceData)
 
+      // Set default values if not provided
+      const updatedData = {
+        ...invoiceData,
+        paid_status: invoiceData.paid_status || PaidStatus.UNPAID,
+        type: invoiceData.type || OrderType.DINE_IN
+      }
+
+      // Validate parameters if present
+      if (updatedData.paid_status && !Object.values(PaidStatus).includes(updatedData.paid_status)) {
+        throw new Error('Invalid paid_status. Must be either PAID or UNPAID')
+      }
+
+      if (updatedData.type && !Object.values(OrderType).includes(updatedData.type)) {
+        throw new Error('Invalid type. Must be one of: DINE IN, TO-GO, DELIVERY, PICKUP')
+      }
+
       // Skip hold invoice validation if we're creating from prepared data
-      // This is the case when creating from cart store data during payment
-      if (invoiceData.hold_invoice_id && !invoiceData.is_prepared_data) {
-        const holdOrder = await this.getHoldInvoice(invoiceData.hold_invoice_id)
+      if (updatedData.hold_invoice_id && !updatedData.is_prepared_data) {
+        const holdOrder = await this.getHoldInvoice(updatedData.hold_invoice_id)
         if (!holdOrder) {
           throw new Error('Failed to fetch hold invoice')
         }
         validateHoldOrder(holdOrder)
       }
 
-      const response = await apiClient.post('invoices', invoiceData)
+      const response = await apiClient.post('invoices', updatedData)
 
       logger.debug('Invoice creation response:', response.data)
       logger.info('Invoice created successfully:', {
         invoiceId: response.data.invoice?.id,
-        total: response.data.invoice?.total
+        total: response.data.invoice?.total,
+        paid_status: updatedData.paid_status,
+        type: updatedData.type
       })
       
       return {
         success: true,
-        ...response.data
+        ...transformHoldInvoiceResponse(response.data)
       }
     } catch (error) {
       return handleApiError(error)
@@ -134,7 +176,7 @@ export const invoiceOperations = {
       logger.info('Invoice fetched successfully')
       return {
         success: true,
-        ...response.data.invoice
+        ...transformHoldInvoiceResponse(response.data.invoice)
       }
     } catch (error) {
       return handleApiError(error)

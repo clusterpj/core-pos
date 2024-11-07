@@ -34,6 +34,10 @@ export const useCartStore = defineStore('cart', {
       mutations.setNotes(this, notes)
     },
 
+    setType(type) {
+      mutations.setType(this, type)
+    },
+
     setSelectedTables(tables) {
       mutations.setSelectedTables(this, tables)
     },

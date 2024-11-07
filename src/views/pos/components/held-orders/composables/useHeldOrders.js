@@ -3,7 +3,7 @@ import { usePosStore } from '../../../../../stores/pos-store'
 import { useCartStore } from '../../../../../stores/cart-store'
 import { storeToRefs } from 'pinia'
 import { logger } from '../../../../../utils/logger'
-import { ORDER_TYPES } from '../../../composables/useOrderType'
+import { OrderType } from '../../../../../types/order'
 import { usePayment } from '../../../composables/usePayment'
 import { 
   formatDate, 
@@ -33,10 +33,10 @@ export function useHeldOrders() {
   // Order type options for filter
   const orderTypes = [
     { title: 'All Orders', value: 'ALL' },
-    { title: 'Dine In', value: ORDER_TYPES.DINE_IN },
-    { title: 'To Go', value: ORDER_TYPES.TO_GO },
-    { title: 'Delivery', value: ORDER_TYPES.DELIVERY },
-    { title: 'Pickup', value: ORDER_TYPES.PICKUP }
+    { title: 'Dine In', value: OrderType.DINE_IN },
+    { title: 'To Go', value: OrderType.TO_GO },
+    { title: 'Delivery', value: OrderType.DELIVERY },
+    { title: 'Pickup', value: OrderType.PICKUP }
   ]
 
   // Filter invoices based on search and type
@@ -45,7 +45,7 @@ export function useHeldOrders() {
 
     // Apply type filter
     if (selectedType.value !== 'ALL') {
-      filtered = filtered.filter(invoice => getOrderType(invoice) === selectedType.value)
+      filtered = filtered.filter(invoice => invoice.type === selectedType.value)
     }
 
     // Apply search filter
@@ -174,17 +174,20 @@ export function useHeldOrders() {
         )
       }
 
+      // Set order type directly
+      if (invoice.type) {
+        cartStore.setType(invoice.type)
+      }
+
+      // Parse customer notes from notes field
       if (invoice.notes) {
         try {
-          // Parse the existing notes
           const notesObj = JSON.parse(invoice.notes)
-          const orderType = notesObj.orderInfo?.type || notesObj.type || 'UNKNOWN'
           const customerNotes = parseOrderNotes(invoice.notes)
 
-          // Create new notes object with both order type and customer notes
+          // Create new notes object with only customer info and notes
           const newNotes = {
             orderInfo: {
-              type: orderType,
               customer: notesObj.orderInfo?.customer || notesObj.customer || {}
             },
             customerNotes: customerNotes
