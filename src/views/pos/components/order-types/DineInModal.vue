@@ -30,6 +30,20 @@
             </v-col>
           </v-row>
 
+          <!-- Error State -->
+          <v-row v-else-if="error">
+            <v-col cols="12">
+              <v-alert type="error" variant="tonal">
+                {{ error }}
+              </v-alert>
+              <div class="text-center mt-4">
+                <v-btn color="primary" @click="retryLoadTables">
+                  Retry
+                </v-btn>
+              </div>
+            </v-col>
+          </v-row>
+
           <!-- No Tables State -->
           <v-row v-else-if="!tables.length">
             <v-col cols="12" class="text-center">
@@ -136,7 +150,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { useTableAssignment } from '../../composables/useTableAssignment'
+import { useTableManagement } from '../../composables/useTableManagement'
 import { useOrderType } from '../../composables/useOrderType'
 import { usePosStore } from '../../../../stores/pos-store'
 import { useCartStore } from '../../../../stores/cart-store'
@@ -157,16 +171,13 @@ const cartStore = useCartStore()
 
 // Composables
 const {
-  tables,
-  selectedTables,
-  loading: tablesLoading,
-  loadTables,
-  addTable,
-  removeTable,
-  updateTableQuantity,
-  clearTableSelection,
-  getSelectedTablesForApi
-} = useTableAssignment()
+  loading: tableLoading,
+  error,
+  getTables,
+  isTableOccupied,
+  selectedCashier,
+  currentCashRegister
+} = useTableManagement()
 
 const {
   setOrderType,
@@ -176,42 +187,60 @@ const {
 
 // Local state
 const dialog = ref(false)
-const loading = computed(() => tablesLoading.value)
+const loading = computed(() => tableLoading.value)
 const processing = ref(false)
+const tables = ref([])
+const selectedTables = ref([])
 
 // Methods
 const isTableAvailable = (table) => {
-  return !table.is_occupied && !selectedTables.value.some(t => t.table_id === table.id)
+  return !isTableOccupied(table.id) || isTableSelected(table.id)
 }
 
 const isTableSelected = (tableId) => {
-  return selectedTables.value.some(t => t.table_id === tableId)
+  return selectedTables.value.some(t => t.id === tableId)
 }
 
 const getTableQuantity = (tableId) => {
-  const table = selectedTables.value.find(t => t.table_id === tableId)
+  const table = selectedTables.value.find(t => t.id === tableId)
   return table ? table.quantity : 1
 }
 
 const handleTableClick = (table) => {
-  if (!isTableAvailable(table) && !isTableSelected(table.id)) return
+  if (!isTableAvailable(table)) return
 
-  if (isTableSelected(table.id)) {
-    removeTable(table.id)
+  const index = selectedTables.value.findIndex(t => t.id === table.id)
+  if (index >= 0) {
+    selectedTables.value.splice(index, 1)
   } else {
-    addTable(table.id, 1)
+    selectedTables.value.push({
+      id: table.id,
+      name: table.name,
+      quantity: 1
+    })
   }
 }
 
 const incrementQuantity = (tableId) => {
-  const currentQuantity = getTableQuantity(tableId)
-  updateTableQuantity(tableId, currentQuantity + 1)
+  const table = selectedTables.value.find(t => t.id === tableId)
+  if (table) {
+    table.quantity++
+  }
 }
 
 const decrementQuantity = (tableId) => {
-  const currentQuantity = getTableQuantity(tableId)
-  if (currentQuantity > 1) {
-    updateTableQuantity(tableId, currentQuantity - 1)
+  const table = selectedTables.value.find(t => t.id === tableId)
+  if (table && table.quantity > 1) {
+    table.quantity--
+  }
+}
+
+const retryLoadTables = async () => {
+  try {
+    tables.value = await getTables()
+  } catch (err) {
+    logger.error('Failed to retry loading tables:', err)
+    window.toastr?.['error']('Failed to load tables')
   }
 }
 
@@ -224,12 +253,17 @@ const processOrder = async () => {
   processing.value = true
 
   try {
-    // Set order type using the new OrderType enum
+    // Set order type
     setOrderType(OrderType.DINE_IN)
 
     // Prepare table information
-    const selectedTablesData = getSelectedTablesForApi()
-    const tableNames = selectedTables.value.map(t => t.name).join(', ')
+    const selectedTablesData = selectedTables.value.map(table => ({
+      table_id: table.id,
+      name: table.name,
+      quantity: table.quantity
+    }))
+    
+    const tableNames = selectedTablesData.map(t => t.name).join(', ')
     const totalCustomers = selectedTablesData.reduce((sum, table) => sum + table.quantity, 0)
 
     // Set customer info
@@ -256,7 +290,7 @@ const processOrder = async () => {
     // Create hold invoice data
     const orderData = cartStore.prepareHoldInvoiceData(
       posStore.selectedStore,
-      posStore.selectedCashier,
+      selectedCashier.value,
       `DINE_IN_Table_${tableNames}`
     )
 
@@ -290,8 +324,8 @@ const processOrder = async () => {
       }
     }
   } catch (err) {
-    // Just log the error, don't show it in UI
     logger.error('Failed to hold dine-in order:', err)
+    window.toastr?.['error']('Failed to create dine-in order')
   } finally {
     processing.value = false
   }
@@ -301,7 +335,7 @@ const processOrder = async () => {
 const closeModal = () => {
   if (!processing.value) {
     dialog.value = false
-    clearTableSelection()
+    selectedTables.value = []
   }
 }
 
@@ -310,12 +344,13 @@ watch(dialog, async (newValue) => {
   if (newValue) {
     try {
       setOrderType(OrderType.DINE_IN)
-      await loadTables()
+      tables.value = await getTables()
     } catch (err) {
       logger.error('Failed to initialize dine-in modal:', err)
+      window.toastr?.['error']('Failed to load tables')
     }
   } else {
-    clearTableSelection()
+    selectedTables.value = []
   }
 })
 

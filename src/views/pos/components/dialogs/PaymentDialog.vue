@@ -284,6 +284,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { usePayment } from '../../composables/usePayment'
+import { useTableManagement } from '../../composables/useTableManagement'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -296,8 +297,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'payment-complete'])
 
 const {
-  loading,
-  error,
+  loading: paymentLoading,
+  error: paymentError,
   paymentMethods,
   settings,
   createPayment,
@@ -308,6 +309,15 @@ const {
   getPaymentMethod,
   isCashOnly
 } = usePayment()
+
+const {
+  loading: tableLoading,
+  error: tableError,
+  releaseTablesAfterPayment
+} = useTableManagement()
+
+const loading = computed(() => paymentLoading.value || tableLoading.value)
+const error = computed(() => paymentError.value || tableError.value)
 
 const processing = ref(false)
 const payments = ref([{ 
@@ -543,6 +553,17 @@ const processPayment = async () => {
 
     // Create payment
     const result = await createPayment(invoiceData, formattedPayments)
+    
+    // Release tables if this was a dine-in order
+    if (invoiceData.type === 'DINE_IN' && invoiceData.tables_selected?.length) {
+      try {
+        await releaseTablesAfterPayment(invoiceData.tables_selected)
+      } catch (err) {
+        console.error('Failed to release tables:', err)
+        // Don't throw error here, as payment was successful
+        window.toastr?.['warning']('Payment successful, but failed to update table status')
+      }
+    }
     
     // Emit success
     emit('payment-complete', result)
