@@ -107,6 +107,9 @@
                   </template>
                   <template v-else-if="!isTableAvailable(table)">
                     <div class="d-flex flex-column gap-2">
+                      <div class="text-center text-error font-weight-bold mb-2">
+                        Table Currently Occupied
+                      </div>
                       <div class="d-flex align-center">
                         <v-icon size="small" class="mr-2">mdi-account-group</v-icon>
                         <span>{{ table.quantity || 0 }} Persons</span>
@@ -114,6 +117,9 @@
                       <div class="d-flex align-center">
                         <v-icon size="small" class="mr-2">mdi-food</v-icon>
                         <span>{{ table.items || 0 }} Items</span>
+                      </div>
+                      <div class="text-caption text-center mt-2">
+                        Please wait until the current order is completed
                       </div>
                     </div>
                   </template>
@@ -175,6 +181,7 @@ const {
   error,
   getTables,
   isTableOccupied,
+  setTableOccupancy,
   selectedCashier,
   currentCashRegister
 } = useTableManagement()
@@ -207,7 +214,10 @@ const getTableQuantity = (tableId) => {
 }
 
 const handleTableClick = (table) => {
-  if (!isTableAvailable(table)) return
+  if (!isTableAvailable(table)) {
+    window.toastr?.['warning']('This table is currently occupied')
+    return
+  }
 
   const index = selectedTables.value.findIndex(t => t.id === table.id)
   if (index >= 0) {
@@ -256,11 +266,13 @@ const processOrder = async () => {
     // Set order type
     setOrderType(OrderType.DINE_IN)
 
-    // Prepare table information
+    // Prepare table information with both id and table_id fields
     const selectedTablesData = selectedTables.value.map(table => ({
+      id: table.id, // Add id field for backend compatibility
       table_id: table.id,
       name: table.name,
-      quantity: table.quantity
+      quantity: table.quantity,
+      in_use: 1 // Mark table as occupied
     }))
     
     const tableNames = selectedTablesData.map(t => t.name).join(', ')
@@ -276,8 +288,8 @@ const processOrder = async () => {
     // Set cart store information
     cartStore.setSelectedTables(selectedTablesData)
     
-    // Set only customer-related information in notes
-    cartStore.setNotes(JSON.stringify({
+    // Set customer and table information in notes
+    const orderInfo = {
       orderInfo: {
         customer: {
           tableNumbers: tableNames,
@@ -285,18 +297,44 @@ const processOrder = async () => {
         },
         tables: selectedTablesData
       }
-    }))
+    }
 
-    // Create hold invoice data
-    const orderData = cartStore.prepareHoldInvoiceData(
-      posStore.selectedStore,
-      selectedCashier.value,
-      `DINE_IN_Table_${tableNames}`
-    )
+    cartStore.setNotes(JSON.stringify(orderInfo))
+
+    // Create hold invoice data with both tables arrays
+    const orderData = {
+      ...cartStore.prepareHoldInvoiceData(
+        posStore.selectedStore,
+        selectedCashier.value,
+        `DINE_IN_Table_${tableNames}`
+      ),
+      tables_selected: selectedTablesData.map(table => ({
+        id: table.id,
+        table_id: table.id,
+        name: table.name,
+        quantity: table.quantity,
+        in_use: 1
+      })),
+      hold_tables: selectedTablesData.map(table => ({
+        id: table.id,
+        table_id: table.id,
+        name: table.name,
+        quantity: table.quantity,
+        in_use: 1
+      }))
+    }
 
     try {
       // Hold the order
       await posStore.holdOrder(orderData)
+      
+      // Mark tables as occupied
+      selectedTablesData.forEach(table => {
+        setTableOccupancy(table.table_id, true)
+      })
+
+      // Refresh tables list
+      await getTables()
       
       // If we get here, assume success since errors would be caught
       cartStore.clearCart()
@@ -318,6 +356,12 @@ const processOrder = async () => {
 
       if (orderExists) {
         // Order was created successfully despite the error
+        // Mark tables as occupied
+        selectedTablesData.forEach(table => {
+          setTableOccupancy(table.table_id, true)
+        })
+        // Refresh tables list
+        await getTables()
         cartStore.clearCart()
         dialog.value = false
         window.toastr?.['success']('Dine-in order held successfully')

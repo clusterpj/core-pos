@@ -101,7 +101,16 @@ export const invoiceActions = {
       }
 
       if (orderType === OrderType.DINE_IN && state.selectedTables.length > 0) {
-        invoice.tables_selected = state.selectedTables
+        // Ensure tables have both id and table_id fields
+        const formattedTables = state.selectedTables.map(table => ({
+          id: table.id,
+          table_id: table.id,
+          name: table.name,
+          quantity: table.quantity,
+          in_use: 1
+        }))
+        invoice.tables_selected = formattedTables
+        invoice.hold_tables = formattedTables
       }
 
       logger.info('Invoice data prepared:', invoice)
@@ -119,7 +128,10 @@ export const invoiceActions = {
     return {
       ...data,
       is_hold_invoice: true,
-      hold_invoice_id: null
+      hold_invoice_id: null,
+      // Ensure both table arrays are present in hold invoice
+      tables_selected: data.tables_selected || [],
+      hold_tables: data.tables_selected || [] // Use same data for both arrays
     }
   }
 }

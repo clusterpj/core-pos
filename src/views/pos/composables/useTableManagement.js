@@ -66,12 +66,53 @@ export function useTableManagement() {
 
     // Check if any unpaid hold invoice is using this table
     return holdInvoices.value.some(invoice => {
-      // Check if the invoice has hold_tables and is unpaid
-      if (invoice.paid_status === PaidStatus.UNPAID && invoice.hold_tables?.length > 0) {
-        // Check if this table is in the hold_tables array
-        return invoice.hold_tables.some(holdTable => holdTable.table_id === tableId)
+      // Check if the invoice has tables_selected and is unpaid
+      if (invoice.paid_status === PaidStatus.UNPAID) {
+        // First check tables_selected array
+        if (invoice.tables_selected?.length > 0) {
+          const tableFound = invoice.tables_selected.some(table => 
+            table.table_id === tableId
+          )
+          if (tableFound) return true
+        }
+        
+        // Then check hold_tables array
+        if (invoice.hold_tables?.length > 0) {
+          return invoice.hold_tables.some(holdTable => 
+            holdTable.table_id === tableId
+          )
+        }
       }
       return false
+    })
+  }
+
+  /**
+   * Set table occupancy status in hold invoice
+   * @param {number} tableId - Table ID to update
+   * @param {boolean} occupied - Whether the table is occupied
+   */
+  const setTableOccupancy = (tableId, occupied) => {
+    if (!holdInvoices.value?.length) return
+
+    holdInvoices.value.forEach(invoice => {
+      // Update tables_selected array
+      if (invoice.tables_selected?.length > 0) {
+        invoice.tables_selected.forEach(table => {
+          if (table.table_id === tableId) {
+            table.in_use = occupied ? 1 : 0
+          }
+        })
+      }
+
+      // Update hold_tables array
+      if (invoice.hold_tables?.length > 0) {
+        invoice.hold_tables.forEach(holdTable => {
+          if (holdTable.table_id === tableId) {
+            holdTable.in_use = occupied ? 1 : 0
+          }
+        })
+      }
     })
   }
 
@@ -86,21 +127,28 @@ export function useTableManagement() {
     error.value = null
 
     try {
-      logger.info('Refreshing hold invoices after payment:', tables)
+      logger.info('Releasing tables after payment:', tables)
       
+      // Update in_use status for each table
+      tables.forEach(table => {
+        setTableOccupancy(table.table_id || table.id, false)
+      })
+
       // Refresh hold invoices to update table status
       await posStore.fetchHoldInvoices()
 
       // Verify tables were released
-      const stillOccupied = tables.filter(table => isTableOccupied(table.id))
+      const stillOccupied = tables.filter(table => 
+        isTableOccupied(table.table_id || table.id)
+      )
       if (stillOccupied.length > 0) {
         logger.warn('Some tables still appear occupied:', stillOccupied)
       }
 
-      logger.info('Hold invoices refreshed successfully')
+      logger.info('Tables released successfully')
     } catch (err) {
       error.value = err.message
-      logger.error('Failed to refresh hold invoices:', err)
+      logger.error('Failed to release tables:', err)
       throw err
     } finally {
       loading.value = false
@@ -112,6 +160,7 @@ export function useTableManagement() {
     error,
     getTables,
     isTableOccupied,
+    setTableOccupancy,
     releaseTablesAfterPayment,
     selectedCashier,
     currentCashRegister
