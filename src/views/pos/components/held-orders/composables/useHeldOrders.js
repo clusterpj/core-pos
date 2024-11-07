@@ -78,13 +78,17 @@ export function useHeldOrders() {
       if (!originalHoldInvoice.value?.id) {
         throw new Error('Original hold invoice not found')
       }
+
+      // Update the held order's paid status instead of deleting it
+      const updateResponse = await posStore.updateHoldInvoice(originalHoldInvoice.value.id, {
+        ...originalHoldInvoice.value,
+        paid_status: PaidStatus.PAID
+      })
       
-      // Delete the held order
-      const deleteResponse = await posStore.deleteHoldInvoice(originalHoldInvoice.value.id)
-      console.log('Delete held order response:', deleteResponse)
+      console.log('Update held order response:', updateResponse)
       
-      if (!deleteResponse.success) {
-        throw new Error(deleteResponse.message || 'Failed to delete hold invoice')
+      if (!updateResponse.success) {
+        throw new Error(updateResponse.message || 'Failed to update hold invoice')
       }
       
       // Show success message

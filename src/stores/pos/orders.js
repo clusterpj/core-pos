@@ -149,6 +149,39 @@ export const createOrdersModule = (state, posApi, posOperations) => {
     }
   }
 
+  const updateHoldInvoicePaidStatus = async (id, paidStatus) => {
+    logger.startGroup('Orders Module: Update Hold Invoice Paid Status')
+    state.loading.value.holdInvoices = true
+    state.error.value = null
+
+    try {
+      if (!id) {
+        throw new Error('Invoice ID is required')
+      }
+
+      if (!Object.values(PaidStatus).includes(paidStatus)) {
+        throw new Error(`Invalid paid status: ${paidStatus}. Must be either PAID or UNPAID`)
+      }
+
+      const response = await posApi.holdInvoice.updatePaidStatus(id, paidStatus)
+      
+      if (response.success) {
+        await fetchHoldInvoices() // Refresh the list
+        logger.info('Hold invoice paid status updated successfully:', { id, paidStatus })
+        return { success: true, data: response.data }
+      }
+      
+      throw new Error(response.message || 'Failed to update hold invoice paid status')
+    } catch (error) {
+      logger.error('Failed to update hold invoice paid status:', error)
+      state.error.value = error.message
+      return { success: false, error: error.message }
+    } finally {
+      state.loading.value.holdInvoices = false
+      logger.endGroup()
+    }
+  }
+
   const fetchHoldInvoices = async () => {
     logger.startGroup('Orders Module: Fetch Hold Invoices')
     state.loading.value.holdInvoices = true
@@ -198,6 +231,7 @@ export const createOrdersModule = (state, posApi, posOperations) => {
   return {
     holdOrder,
     updateHoldInvoice,
+    updateHoldInvoicePaidStatus,
     fetchHoldInvoices,
     deleteHoldInvoice
   }
