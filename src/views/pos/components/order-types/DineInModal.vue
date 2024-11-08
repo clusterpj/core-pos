@@ -76,56 +76,51 @@
                   <span>{{ table.name }}</span>
                   <v-chip
                     :color="isTableAvailable(table) ? 'success' : 'error'"
-                    :text-color="isTableAvailable(table) ? 'black' : 'white'"
                     size="small"
                   >
-                    {{ isTableAvailable(table) ? 'Available' : 'Occupied' }}
+                    {{ isTableAvailable(table) ? 'Available' : 'In Use' }}
                   </v-chip>
                 </v-card-title>
 
                 <v-card-text>
+                  <!-- Selected Table View -->
                   <template v-if="isTableSelected(table.id)">
-                    <div class="d-flex align-center justify-center my-4">
-                      <v-btn
-                        icon
-                        variant="outlined"
-                        @click.stop="decrementQuantity(table.id)"
-                        :disabled="getTableQuantity(table.id) <= 1"
-                      >
-                        <v-icon>mdi-minus</v-icon>
-                      </v-btn>
-                      <span class="mx-4 text-h5">{{ getTableQuantity(table.id) }}</span>
-                      <v-btn
-                        icon
-                        variant="outlined"
-                        @click.stop="incrementQuantity(table.id)"
-                      >
-                        <v-icon>mdi-plus</v-icon>
-                      </v-btn>
+                    <div class="d-flex flex-column align-center py-2">
+                      <div class="text-subtitle-1 mb-2">Number of People</div>
+                      <div class="d-flex align-center">
+                        <v-btn
+                          icon
+                          variant="outlined"
+                          @click.stop="decrementQuantity(table.id)"
+                          :disabled="getTableQuantity(table.id) <= 1"
+                        >
+                          <v-icon>mdi-minus</v-icon>
+                        </v-btn>
+                        <span class="mx-4 text-h5">{{ getTableQuantity(table.id) }}</span>
+                        <v-btn
+                          icon
+                          variant="outlined"
+                          @click.stop="incrementQuantity(table.id)"
+                        >
+                          <v-icon>mdi-plus</v-icon>
+                        </v-btn>
+                      </div>
                     </div>
-                    <div class="text-center text-subtitle-1">Persons</div>
                   </template>
+
+                  <!-- Occupied Table View -->
                   <template v-else-if="!isTableAvailable(table)">
-                    <div class="d-flex flex-column gap-2">
-                      <div class="text-center text-error font-weight-bold mb-2">
-                        Table Currently Occupied
-                      </div>
-                      <div class="d-flex align-center">
-                        <v-icon size="small" class="mr-2">mdi-account-group</v-icon>
-                        <span>{{ table.quantity || 0 }} Persons</span>
-                      </div>
-                      <div class="d-flex align-center">
-                        <v-icon size="small" class="mr-2">mdi-food</v-icon>
-                        <span>{{ table.items || 0 }} Items</span>
-                      </div>
-                      <div class="text-caption text-center mt-2">
-                        Please wait until the current order is completed
-                      </div>
+                    <div class="d-flex align-center justify-center py-4">
+                      <v-icon color="error" class="mr-2">mdi-account-group</v-icon>
+                      <span class="text-h6">{{ table.quantity }} People</span>
                     </div>
                   </template>
+
+                  <!-- Available Table View -->
                   <template v-else>
-                    <div class="text-subtitle-2 text-center py-4">
-                      Click to select
+                    <div class="d-flex align-center justify-center py-4">
+                      <v-icon size="large" color="success" class="mr-2">mdi-cursor-pointer</v-icon>
+                      <span class="text-subtitle-1">Click to Select</span>
                     </div>
                   </template>
                 </v-card-text>
@@ -408,6 +403,7 @@ defineExpose({
 .table-card {
   transition: all 0.3s ease;
   cursor: pointer;
+  min-height: 180px;
 }
 
 .table-card.available {

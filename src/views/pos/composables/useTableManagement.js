@@ -16,6 +16,46 @@ export function useTableManagement() {
   const { selectedCashier, currentCashRegister } = storeToRefs(companyStore)
 
   /**
+   * Find the hold invoice for a specific table
+   * @param {number} tableId - Table ID to find invoice for
+   * @returns {Object|null} - Hold invoice or null if not found
+   */
+  const findHoldInvoiceForTable = (tableId) => {
+    if (!holdInvoices.value?.length) return null
+
+    return holdInvoices.value.find(invoice => {
+      if (invoice.paid_status === PaidStatus.UNPAID) {
+        return (
+          invoice.tables_selected?.some(table => table.table_id === tableId) ||
+          invoice.hold_tables?.some(table => table.table_id === tableId)
+        )
+      }
+      return false
+    })
+  }
+
+  /**
+   * Get table information from hold invoices
+   * @param {number} tableId - Table ID to check
+   * @returns {Object|null} - Table information or null if not found
+   */
+  const getTableInfoFromHoldInvoices = (tableId) => {
+    const invoice = findHoldInvoiceForTable(tableId)
+    if (!invoice) return null
+
+    // Get table info
+    const tableInfo = invoice.tables_selected?.find(table => table.table_id === tableId) ||
+                     invoice.hold_tables?.find(table => table.table_id === tableId)
+
+    logger.info(`Table ${tableId} info:`, { tableInfo })
+
+    return {
+      quantity: tableInfo?.quantity || 0,
+      invoiceId: invoice.id
+    }
+  }
+
+  /**
    * Get tables for the current cash register
    */
   const getTables = async () => {
@@ -40,11 +80,18 @@ export function useTableManagement() {
         throw new Error('Failed to fetch tables')
       }
 
-      // Map tables with their occupancy status
-      const tables = response.data.map(table => ({
-        ...table,
-        is_occupied: isTableOccupied(table.id)
-      }))
+      // Map tables with their occupancy status and current information
+      const tables = response.data.map(table => {
+        const isOccupied = isTableOccupied(table.id)
+        const tableInfo = isOccupied ? getTableInfoFromHoldInvoices(table.id) : null
+
+        return {
+          ...table,
+          is_occupied: isOccupied,
+          quantity: tableInfo ? tableInfo.quantity : 0,
+          invoiceId: tableInfo ? tableInfo.invoiceId : null
+        }
+      })
 
       return tables
     } catch (err) {

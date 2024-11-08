@@ -12,7 +12,6 @@ import {
   getOrderType, 
   getOrderTypeColor 
 } from '../utils/formatters'
-import { convertHeldOrderToInvoice } from '../utils/invoiceConverter'
 import { parseOrderNotes } from '../../../../../stores/cart/helpers'
 
 export function useHeldOrders() {
@@ -122,21 +121,28 @@ export function useHeldOrders() {
       convertingOrder.value = invoice.id
       originalHoldInvoice.value = invoice // Store the original hold invoice
       
-      // Convert the order to invoice
-      const result = await convertHeldOrderToInvoice(invoice)
-      
-      if (result.success) {
-        // Get payment methods
-        console.log('Fetching payment methods')
-        await fetchPaymentMethods()
+      // Get payment methods before showing dialog
+      console.log('Fetching payment methods')
+      await fetchPaymentMethods()
 
-        // Show payment dialog
-        console.log('Setting up payment dialog')
-        currentInvoice.value = result.invoice
-        showPaymentDialog.value = true
+      // Show payment dialog directly with held order data
+      console.log('Setting up payment dialog')
+      currentInvoice.value = {
+        invoice: invoice,
+        invoicePrefix: invoice.invoice_prefix || 'INV',
+        nextInvoiceNumber: invoice.id
       }
+      showPaymentDialog.value = true
       
-      return result
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to prepare for payment:', error)
+      logger.error('Failed to prepare for payment:', error)
+      window.toastr?.['error'](error.message || 'Failed to prepare for payment')
+      return {
+        success: false,
+        error: error.message
+      }
     } finally {
       convertingOrder.value = null
     }
@@ -220,12 +226,6 @@ export function useHeldOrders() {
       }
 
       // Set the hold invoice ID and description in cart store
-      cartStore.setHoldInvoiceId(invoice.id)
-      cartStore.setHoldOrderDescription(invoice.description || `Order #${invoice.id}`)
-
-      logger.info('Order loaded successfully:', invoice.id)
-      return true
-    } catch (error) {
       logger.error('Failed to load order:', error)
       window.toastr?.['error'](error.message || 'Failed to load order')
       return false
