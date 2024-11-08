@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { usePosStore } from '../../../../../stores/pos-store'
 import { useCartStore } from '../../../../../stores/cart-store'
 import { storeToRefs } from 'pinia'
@@ -13,6 +13,8 @@ import {
   getOrderTypeColor 
 } from '../utils/formatters'
 import { parseOrderNotes } from '../../../../../stores/cart/helpers'
+
+const HISTORY_STORAGE_KEY = 'core_pos_order_history'
 
 export function useHeldOrders() {
   const posStore = usePosStore()
@@ -33,6 +35,29 @@ export function useHeldOrders() {
   const currentInvoice = ref(null)
   const originalHoldInvoice = ref(null)
   const orderHistory = ref([])
+
+  // Initialize order history from localStorage
+  const initializeOrderHistory = () => {
+    try {
+      const storedHistory = localStorage.getItem(HISTORY_STORAGE_KEY)
+      if (storedHistory) {
+        orderHistory.value = JSON.parse(storedHistory)
+        logger.info('Initialized order history from localStorage:', orderHistory.value.length)
+      }
+    } catch (error) {
+      logger.error('Failed to initialize order history from localStorage:', error)
+    }
+  }
+
+  // Persist order history to localStorage
+  const persistOrderHistory = () => {
+    try {
+      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(orderHistory.value))
+      logger.debug('Persisted order history to localStorage')
+    } catch (error) {
+      logger.error('Failed to persist order history to localStorage:', error)
+    }
+  }
 
   // Order type options for filter
   const orderTypes = [
@@ -57,6 +82,7 @@ export function useHeldOrders() {
 
       // Add to history
       orderHistory.value.unshift(historicalOrder)
+      persistOrderHistory() // Persist after adding to history
 
       // Delete the original order
       await deleteOrder(invoice.id)
@@ -226,6 +252,8 @@ export function useHeldOrders() {
       }
 
       // Set the hold invoice ID and description in cart store
+      return true
+    } catch (error) {
       logger.error('Failed to load order:', error)
       window.toastr?.['error'](error.message || 'Failed to load order')
       return false
@@ -273,6 +301,11 @@ export function useHeldOrders() {
       loading.value = false
     }
   }
+
+  // Initialize on mount
+  onMounted(() => {
+    initializeOrderHistory()
+  })
 
   return {
     // State

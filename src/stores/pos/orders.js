@@ -1,7 +1,32 @@
 import { logger } from '../../utils/logger'
 import { OrderType, PaidStatus } from '../../types/order'
 
+const STORAGE_KEY = 'core_pos_hold_invoices'
+
 export const createOrdersModule = (state, posApi, posOperations) => {
+  // Initialize hold invoices from localStorage
+  const initializeHoldInvoices = () => {
+    try {
+      const storedInvoices = localStorage.getItem(STORAGE_KEY)
+      if (storedInvoices) {
+        state.holdInvoices.value = JSON.parse(storedInvoices)
+        logger.info('Initialized hold invoices from localStorage:', state.holdInvoices.value.length)
+      }
+    } catch (error) {
+      logger.error('Failed to initialize hold invoices from localStorage:', error)
+    }
+  }
+
+  // Update localStorage with current hold invoices
+  const persistHoldInvoices = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.holdInvoices.value))
+      logger.debug('Persisted hold invoices to localStorage')
+    } catch (error) {
+      logger.error('Failed to persist hold invoices to localStorage:', error)
+    }
+  }
+
   const validateHoldInvoiceData = (data) => {
     const required = [
       'items',
@@ -191,6 +216,7 @@ export const createOrdersModule = (state, posApi, posOperations) => {
       const response = await posApi.holdInvoice.getAll()
       if (response.success && response.data?.hold_invoices) {
         state.holdInvoices.value = response.data.hold_invoices.data || []
+        persistHoldInvoices() // Persist to localStorage after successful fetch
         logger.info('Hold invoices fetched successfully:', state.holdInvoices.value.length)
         return { success: true, data: state.holdInvoices.value }
       }
@@ -227,6 +253,9 @@ export const createOrdersModule = (state, posApi, posOperations) => {
       logger.endGroup()
     }
   }
+
+  // Initialize hold invoices when module is created
+  initializeHoldInvoices()
 
   return {
     holdOrder,
