@@ -93,6 +93,7 @@ export const convertHeldOrderToInvoice = async (invoice) => {
 
     // 3. Prepare invoice data according to API requirements
     console.log('Preparing invoice data')
+    console.log('Invoice data', invoice)
     const invoiceData = {
       // Required boolean flags
       avalara_bool: false,

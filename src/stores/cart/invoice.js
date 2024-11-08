@@ -10,7 +10,7 @@ export const invoiceActions = {
       const companyStore = useCompanyStore()
       const currentCustomer = companyStore.currentCustomer
 
-      if (!currentCustomer?.creator_id) {
+      if (!currentCustomer?.id) {
         throw new Error('Creator ID not found in current customer')
       }
 
@@ -60,7 +60,7 @@ export const invoiceActions = {
         invoice_date: currentDate,
         due_date: dueDate,
         invoice_number: referenceNumber || "-",
-        user_id: Number(currentCustomer.creator_id),
+        user_id: Number(currentCustomer.id),
         total: priceHelpers.toCents(getters.total),
         due_amount: priceHelpers.toCents(getters.total),
         sub_total: priceHelpers.toCents(getters.subtotal),

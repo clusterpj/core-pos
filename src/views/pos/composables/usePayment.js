@@ -101,7 +101,7 @@ export function usePayment() {
       const paymentData = {
         amount: totalPayment, // Amount already in backend format
         invoice_id: invoice.invoice.id,
-        is_multiple: true,
+        is_multiple: 1,
         payment_date: new Date().toISOString().split('T')[0],
         paymentNumAttribute: nextNumberResponse.nextNumber,
         paymentPrefix: nextNumberResponse.prefix,
