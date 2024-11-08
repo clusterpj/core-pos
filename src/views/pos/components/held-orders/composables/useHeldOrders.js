@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { logger } from '../../../../../utils/logger'
 import { OrderType, PaidStatus } from '../../../../../types/order'
 import { usePayment } from '../../../composables/usePayment'
+import { useTableManagement } from '../../../composables/useTableManagement'
 import { 
   formatDate, 
   formatCurrency, 
@@ -19,6 +20,7 @@ export function useHeldOrders() {
   const cartStore = useCartStore()
   const { holdInvoices, holdInvoiceSettings } = storeToRefs(posStore)
   const { fetchPaymentMethods } = usePayment()
+  const { releaseTablesAfterPayment } = useTableManagement()
 
   // State
   const loading = ref(false)
@@ -31,6 +33,7 @@ export function useHeldOrders() {
   const showPaymentDialog = ref(false)
   const currentInvoice = ref(null)
   const originalHoldInvoice = ref(null)
+  const orderHistory = ref([])
 
   // Order type options for filter
   const orderTypes = [
@@ -41,31 +44,38 @@ export function useHeldOrders() {
     { title: 'Pickup', value: OrderType.PICKUP }
   ]
 
-  // Filter invoices based on search, type and status
-  const filteredInvoices = computed(() => {
-    let filtered = holdInvoices.value
+  // Move paid order to history
+  const moveToHistory = async (invoice) => {
+    try {
+      // Create a copy of the invoice without table information
+      const historicalOrder = {
+        ...invoice,
+        tables_selected: [],
+        hold_tables: [],
+        paid_status: PaidStatus.PAID,
+        paid_at: new Date().toISOString()
+      }
 
-    // Apply type filter
-    if (selectedType.value !== 'ALL') {
-      filtered = filtered.filter(invoice => invoice.type === selectedType.value)
+      // Add to history
+      orderHistory.value.unshift(historicalOrder)
+
+      // Delete the original order
+      await deleteOrder(invoice.id)
+
+      // Release the tables
+      if (invoice.tables_selected?.length) {
+        await releaseTablesAfterPayment(invoice.tables_selected)
+      }
+      if (invoice.hold_tables?.length) {
+        await releaseTablesAfterPayment(invoice.hold_tables)
+      }
+
+      return true
+    } catch (error) {
+      logger.error('Failed to move order to history:', error)
+      return false
     }
-
-    // Apply status filter
-    if (selectedStatus.value !== 'ALL') {
-      filtered = filtered.filter(invoice => invoice.paid_status === selectedStatus.value)
-    }
-
-    // Apply search filter
-    if (search.value) {
-      const searchTerm = search.value.toLowerCase()
-      filtered = filtered.filter(invoice => 
-        invoice.description?.toLowerCase().includes(searchTerm) ||
-        invoice.id?.toString().includes(searchTerm)
-      )
-    }
-
-    return filtered
-  })
+  }
 
   // Handle payment completion
   const handlePaymentComplete = async (paymentResult) => {
@@ -74,21 +84,15 @@ export function useHeldOrders() {
     try {
       logger.info('Payment completed successfully:', paymentResult)
       
-      // Use originalHoldInvoice.value instead of looking for hold_invoice_id in currentInvoice
       if (!originalHoldInvoice.value?.id) {
         throw new Error('Original hold invoice not found')
       }
 
-      // Update the held order's paid status instead of deleting it
-      const updateResponse = await posStore.updateHoldInvoice(originalHoldInvoice.value.id, {
-        ...originalHoldInvoice.value,
-        paid_status: PaidStatus.PAID
-      })
+      // Move the order to history
+      const success = await moveToHistory(originalHoldInvoice.value)
       
-      console.log('Update held order response:', updateResponse)
-      
-      if (!updateResponse.success) {
-        throw new Error(updateResponse.message || 'Failed to update hold invoice')
+      if (!success) {
+        throw new Error('Failed to move order to history')
       }
       
       // Show success message
@@ -281,7 +285,8 @@ export function useHeldOrders() {
     selectedStatus,
     orderTypes,
     holdInvoices,
-    filteredInvoices,
+    orderHistory,
+    filteredInvoices: computed(() => holdInvoices.value),
     showPaymentDialog,
     currentInvoice,
 

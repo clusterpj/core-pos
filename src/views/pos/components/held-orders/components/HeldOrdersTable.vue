@@ -5,11 +5,12 @@
       <tr>
         <th class="text-left" style="min-width: 100px">Type</th>
         <th class="text-left" style="min-width: 200px">Description</th>
-        <th class="text-left" style="min-width: 120px">Date</th>
+        <th class="text-left" style="min-width: 120px">Created</th>
+        <th v-if="hideActions" class="text-left" style="min-width: 120px">Paid</th>
         <th class="text-left" style="min-width: 100px">Items</th>
         <th class="text-left" style="min-width: 120px">Total</th>
         <th class="text-left" style="min-width: 100px">Status</th>
-        <th class="text-left" style="min-width: 300px">Actions</th>
+        <th v-if="!hideActions" class="text-left" style="min-width: 300px">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -44,6 +45,7 @@
           </v-tooltip>
         </td>
         <td>{{ formatDate(invoice.created_at) }}</td>
+        <td v-if="hideActions">{{ formatDate(invoice.paid_at) }}</td>
         <td>{{ invoice.hold_items?.length || 0 }} items</td>
         <td>{{ formatCurrency(invoice.total / 100) }}</td>
         <td>
@@ -55,7 +57,7 @@
             {{ invoice.paid_status || 'UNPAID' }}
           </v-chip>
         </td>
-        <td>
+        <td v-if="!hideActions">
           <div class="d-flex gap-2">
             <v-btn
               size="small"
@@ -132,6 +134,10 @@ const props = defineProps({
   formatCurrency: {
     type: Function,
     required: true
+  },
+  hideActions: {
+    type: Boolean,
+    default: false
   }
 })
 

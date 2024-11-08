@@ -17,7 +17,7 @@
     >
       <v-card>
         <v-card-title class="text-h5">
-          Held Orders
+          Orders
           <v-spacer></v-spacer>
           <v-btn icon @click="updateModelValue(false)">
             <v-icon>mdi-close</v-icon>
@@ -26,47 +26,100 @@
 
         <v-card-text>
           <v-container>
-            <v-row v-if="loading">
-              <v-col cols="12" class="text-center">
-                <v-progress-circular indeterminate></v-progress-circular>
-              </v-col>
-            </v-row>
+            <v-tabs v-model="activeTab">
+              <v-tab value="active">Active Orders</v-tab>
+              <v-tab value="history">Order History</v-tab>
+            </v-tabs>
 
-            <v-row v-else-if="!holdInvoices.length">
-              <v-col cols="12" class="text-center">
-                <p>No held orders found</p>
-              </v-col>
-            </v-row>
+            <v-window v-model="activeTab" class="mt-4">
+              <!-- Active Orders Tab -->
+              <v-window-item value="active">
+                <v-row v-if="loading">
+                  <v-col cols="12" class="text-center">
+                    <v-progress-circular indeterminate></v-progress-circular>
+                  </v-col>
+                </v-row>
 
-            <template v-else>
-              <HeldOrdersFilters
-                :search="search"
-                :selectedType="selectedType"
-                :selectedStatus="selectedStatus"
-                :orderTypes="orderTypes"
-                @update:search="search = $event"
-                @update:selectedType="selectedType = $event"
-                @update:selectedStatus="selectedStatus = $event"
-              />
+                <v-row v-else-if="!activeOrders.length">
+                  <v-col cols="12" class="text-center">
+                    <p>No active orders found</p>
+                  </v-col>
+                </v-row>
 
-              <v-row>
-                <v-col cols="12">
-                  <HeldOrdersTable
-                    :invoices="filteredInvoices"
-                    :loadingOrder="loadingOrder"
-                    :convertingOrder="convertingOrder"
-                    :deletingOrder="deletingOrder"
-                    :getOrderType="getOrderType"
-                    :getOrderTypeColor="getOrderTypeColor"
-                    :formatDate="formatDate"
-                    :formatCurrency="formatCurrency"
-                    @load="handleLoadOrder"
-                    @convert="handleConvertOrder"
-                    @delete="handleDeleteOrder"
+                <template v-else>
+                  <HeldOrdersFilters
+                    :search="search"
+                    :selectedType="selectedType"
+                    :selectedStatus="selectedStatus"
+                    :orderTypes="orderTypes"
+                    @update:search="search = $event"
+                    @update:selectedType="selectedType = $event"
+                    @update:selectedStatus="selectedStatus = $event"
                   />
-                </v-col>
-              </v-row>
-            </template>
+
+                  <v-row>
+                    <v-col cols="12">
+                      <HeldOrdersTable
+                        :invoices="filteredActiveOrders"
+                        :loadingOrder="loadingOrder"
+                        :convertingOrder="convertingOrder"
+                        :deletingOrder="deletingOrder"
+                        :getOrderType="getOrderType"
+                        :getOrderTypeColor="getOrderTypeColor"
+                        :formatDate="formatDate"
+                        :formatCurrency="formatCurrency"
+                        @load="handleLoadOrder"
+                        @convert="handleConvertOrder"
+                        @delete="handleDeleteOrder"
+                      />
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-window-item>
+
+              <!-- Order History Tab -->
+              <v-window-item value="history">
+                <v-row v-if="loading">
+                  <v-col cols="12" class="text-center">
+                    <v-progress-circular indeterminate></v-progress-circular>
+                  </v-col>
+                </v-row>
+
+                <v-row v-else-if="!orderHistory.length">
+                  <v-col cols="12" class="text-center">
+                    <p>No order history found</p>
+                  </v-col>
+                </v-row>
+
+                <template v-else>
+                  <HeldOrdersFilters
+                    :search="historySearch"
+                    :selectedType="historySelectedType"
+                    :selectedStatus="historySelectedStatus"
+                    :orderTypes="orderTypes"
+                    @update:search="historySearch = $event"
+                    @update:selectedType="historySelectedType = $event"
+                    @update:selectedStatus="historySelectedStatus = $event"
+                  />
+
+                  <v-row>
+                    <v-col cols="12">
+                      <HeldOrdersTable
+                        :invoices="filteredHistoryOrders"
+                        :loadingOrder="loadingOrder"
+                        :convertingOrder="convertingOrder"
+                        :deletingOrder="deletingOrder"
+                        :getOrderType="getOrderType"
+                        :getOrderTypeColor="getOrderTypeColor"
+                        :formatDate="formatDate"
+                        :formatCurrency="formatCurrency"
+                        :hideActions="true"
+                      />
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-window-item>
+            </v-window>
           </v-container>
         </v-card-text>
       </v-card>
@@ -88,12 +141,13 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useHeldOrders } from './composables/useHeldOrders'
 import HeldOrdersFilters from './components/HeldOrdersFilters.vue'
 import HeldOrdersTable from './components/HeldOrdersTable.vue'
 import DeleteConfirmationDialog from './components/DeleteConfirmationDialog.vue'
 import PaymentDialog from '../dialogs/PaymentDialog.vue'
+import { PaidStatus } from '../../../../types/order'
 
 const props = defineProps({
   modelValue: {
@@ -111,6 +165,17 @@ const emit = defineEmits(['update:model-value'])
 const deleteDialog = ref(false)
 const isDeleting = ref(false)
 const selectedInvoice = ref(null)
+const activeTab = ref('active')
+
+// Active orders filters
+const search = ref('')
+const selectedType = ref('ALL')
+const selectedStatus = ref('ALL')
+
+// History filters
+const historySearch = ref('')
+const historySelectedType = ref('ALL')
+const historySelectedStatus = ref('ALL')
 
 const updateModelValue = (value) => {
   emit('update:model-value', value)
@@ -121,12 +186,9 @@ const {
   loadingOrder,
   deletingOrder,
   convertingOrder,
-  search,
-  selectedType,
-  selectedStatus,
   orderTypes,
   holdInvoices,
-  filteredInvoices,
+  orderHistory,
   getOrderType,
   getOrderTypeColor,
   formatDate,
@@ -139,6 +201,56 @@ const {
   currentInvoice,
   handlePaymentComplete
 } = useHeldOrders()
+
+// Computed properties for active orders
+const activeOrders = computed(() => 
+  holdInvoices.value.filter(invoice => invoice.paid_status === PaidStatus.UNPAID)
+)
+
+const filteredActiveOrders = computed(() => {
+  let filtered = activeOrders.value
+
+  if (selectedType.value !== 'ALL') {
+    filtered = filtered.filter(invoice => invoice.type === selectedType.value)
+  }
+
+  if (selectedStatus.value !== 'ALL') {
+    filtered = filtered.filter(invoice => invoice.paid_status === selectedStatus.value)
+  }
+
+  if (search.value) {
+    const searchTerm = search.value.toLowerCase()
+    filtered = filtered.filter(invoice => 
+      invoice.description?.toLowerCase().includes(searchTerm) ||
+      invoice.id?.toString().includes(searchTerm)
+    )
+  }
+
+  return filtered
+})
+
+// Computed properties for history orders
+const filteredHistoryOrders = computed(() => {
+  let filtered = orderHistory.value
+
+  if (historySelectedType.value !== 'ALL') {
+    filtered = filtered.filter(invoice => invoice.type === historySelectedType.value)
+  }
+
+  if (historySelectedStatus.value !== 'ALL') {
+    filtered = filtered.filter(invoice => invoice.paid_status === historySelectedStatus.value)
+  }
+
+  if (historySearch.value) {
+    const searchTerm = historySearch.value.toLowerCase()
+    filtered = filtered.filter(invoice => 
+      invoice.description?.toLowerCase().includes(searchTerm) ||
+      invoice.id?.toString().includes(searchTerm)
+    )
+  }
+
+  return filtered
+})
 
 const handleLoadOrder = async (invoice) => {
   const success = await loadOrder(invoice)
