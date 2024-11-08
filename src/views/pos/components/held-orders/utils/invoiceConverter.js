@@ -87,6 +87,10 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       }
     })
 
+    // Format tip value - ensure it's a clean number string
+    const tipValue = invoice.tip ? String(Math.round(Number(invoice.tip))) : "0"
+    console.log('Formatted tip value:', tipValue)
+
     // 3. Prepare invoice data according to API requirements
     console.log('Preparing invoice data')
     const invoiceData = {
@@ -128,10 +132,10 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       discount_val: toCents(invoice.discount_val || 0),
       discount_per_item: settings.discount_per_item || "NO",
 
-      // Tip
-      tip: invoice.tip || "0",
+      // Tip - ensure consistent formatting
+      tip: tipValue,
       tip_type: invoice.tip_type || "fixed",
-      tip_val: toCents(invoice.tip_val || 0),
+      tip_val: invoice.tip_val || 0,
 
       // Status
       status: "SENT",
@@ -170,6 +174,11 @@ export const convertHeldOrderToInvoice = async (invoice) => {
     const createdInvoice = await posApi.invoice.getById(invoiceResponse.invoice.id)
     if (!createdInvoice) {
       throw new Error('Failed to fetch created invoice details')
+    }
+
+    // Normalize tip value in the response to match what we sent
+    if (createdInvoice.tip) {
+      createdInvoice.tip = String(Math.round(Number(createdInvoice.tip)))
     }
 
     // Add hold_invoice_id to the created invoice

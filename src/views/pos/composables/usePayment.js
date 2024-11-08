@@ -53,7 +53,9 @@ export function usePayment() {
    * @param {Object} invoice - The invoice object
    * @param {Array} payments - Array of payment method objects with amounts in backend format (431 for $4.31)
    */
+  
   const createPayment = async (invoice, payments) => {
+    console.log('Creating payment for invoice:', invoice.invoice.due_amount)
     loading.value = true
     error.value = null
 
@@ -84,23 +86,26 @@ export function usePayment() {
       }
 
       // Calculate total payment amount including fees
+      console.log('Payments:', payments)
       const totalPayment = payments.reduce((sum, payment) => sum + payment.amount, 0)
-      const totalFees = payments.reduce((sum, payment) => sum + (payment.fees || 0), 0)
+//      const totalFees = payments.reduce((sum, payment) => sum + (payment.fees || 0), 0)
 
       // Validate full payment is made
-      if (totalPayment !== invoice.total) {
+      console.log('Total payment:', totalPayment)
+      console.log('Invoice total:', invoice.total)
+      if (totalPayment !== invoice.invoice.due_amount) {
         throw new Error('Full payment is required.')
       }
 
       // Format payment data according to API requirements
       const paymentData = {
         amount: totalPayment, // Amount already in backend format
-        invoice_id: invoice.id,
+        invoice_id: invoice.invoice.id,
         is_multiple: true,
         payment_date: new Date().toISOString().split('T')[0],
         paymentNumAttribute: nextNumberResponse.nextNumber,
         paymentPrefix: nextNumberResponse.prefix,
-        payment_number: `${nextNumberResponse.prefix}${nextNumberResponse.nextNumber}`,
+        payment_number: `${nextNumberResponse.prefix}-${nextNumberResponse.nextNumber}`,
         payment_methods: payments.map(payment => {
           const method = getPaymentMethod(payment.method_id)
           return {
@@ -113,8 +118,8 @@ export function usePayment() {
           }
         }),
         status: { value: "Approved", text: "Approved" },
-        user_id: invoice.user_id,
-        notes: `Payment for invoice ${invoice.invoice_number}`
+        user_id: invoice.invoice.user_id,
+        notes: `Payment for invoice ${invoice.invoice.invoice_number}`
       }
 
       // Create payment using the correct endpoint

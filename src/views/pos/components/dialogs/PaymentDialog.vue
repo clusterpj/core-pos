@@ -285,6 +285,7 @@
 import { ref, computed, watch } from 'vue'
 import { usePayment } from '../../composables/usePayment'
 import { useTableManagement } from '../../composables/useTableManagement'
+import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -424,6 +425,8 @@ const getFeeDescription = (methodId, amount) => {
 
 const handleMethodChange = (index) => {
   const payment = payments.value[index]
+  payment.displayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString() // Update to include tip
+  payment.amount = Math.round(Number(payment.displayAmount) * 100)
   payment.displayReceived = payment.displayAmount
   payment.received = payment.amount
   payment.returned = 0
@@ -459,7 +462,7 @@ const validateAmount = (index) => {
   const payment = payments.value[index]
   if (!payment.displayAmount) return
 
-  // Set full payment amount
+  // Set full payment amount including tip
   payment.displayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString()
 
   // Convert display amount to cents
@@ -482,7 +485,7 @@ const addPayment = () => {
   payments.value.push({ 
     method_id: null, 
     amount: 0,
-    displayAmount: ((invoiceTotal.value + tipAmount.value) / 100).toString(),
+    displayAmount: ((invoiceTotal.value + tipAmount.value) / 100).toString(), // Include tip
     received: 0,
     displayReceived: '0',
     returned: 0,
@@ -532,32 +535,78 @@ const processPayment = async () => {
 
   processing.value = true
   try {
+    // First create the invoice with tip included
+    const holdInvoice = { ...props.invoice.invoice }
+    
+    // Calculate the total with tip
+    const totalWithTip = invoiceTotal.value + tipAmount.value
+
+    // Format tip data according to API requirements
+    const tipPercentage = selectedTipPercent.value || Number(customTipPercent.value) || 0
+    holdInvoice.tip = String(Math.round(tipPercentage)) // Ensure clean integer string
+    holdInvoice.tip_type = "percentage"
+    holdInvoice.tip_val = tipAmount.value // Amount in cents
+    holdInvoice.total = totalWithTip // Total in cents including tip
+    holdInvoice.due_amount = totalWithTip // Due amount should match total
+    holdInvoice.sub_total = invoiceTotal.value // Original subtotal without tip
+    
+    // Log tip values for debugging
+    console.log('Tip values:', {
+      percentage: holdInvoice.tip,
+      type: holdInvoice.tip_type,
+      amount: holdInvoice.tip_val,
+      total: holdInvoice.total
+    })
+    
+    // Ensure other required fields are present
+    holdInvoice.is_hold_invoice = false
+    holdInvoice.is_invoice_pos = 1
+    holdInvoice.is_pdf_pos = true
+    holdInvoice.package_bool = false
+    holdInvoice.print_pdf = false
+    holdInvoice.save_as_draft = false
+    holdInvoice.send_email = false
+    holdInvoice.not_charge_automatically = false
+    holdInvoice.avalara_bool = false
+    holdInvoice.banType = true
+
+    // Set dates
+    const currentDate = new Date()
+    holdInvoice.invoice_date = currentDate.toISOString().split('T')[0]
+    const dueDate = new Date(currentDate)
+    dueDate.setDate(dueDate.getDate() + 7) // Default to 7 days
+    holdInvoice.due_date = dueDate.toISOString().split('T')[0]
+
+    // Create invoice with tip included
+    const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
+    
+    if (!invoiceResult.success) {
+      throw new Error('Failed to create invoice')
+    }
+
     // Format payments for API - amounts are already in cents
     const formattedPayments = payments.value.map(payment => ({
       method_id: payment.method_id,
       name: getPaymentMethod(payment.method_id).name,
-      amount: payment.amount,
+      amount: payment.amount, // This should match the total with tip
       received: payment.received,
       returned: payment.returned,
       valid: true
     }))
 
-    // Update invoice data with tip
-    const invoiceData = {
-      ...props.invoice.invoice,
-      tip: selectedTipPercent.value || Number(customTipPercent.value) || 0,
-      tip_type: tipType.value,
-      tip_val: tipAmount.value,
-      total: invoiceTotal.value + tipAmount.value // Update total to include tip
+    // Validate total payment amount matches invoice total
+    const totalPaymentAmount = formattedPayments.reduce((sum, payment) => sum + payment.amount, 0)
+    if (totalPaymentAmount !== totalWithTip) {
+      throw new Error('Payment amount must match invoice total including tip')
     }
 
-    // Create payment
-    const result = await createPayment(invoiceData, formattedPayments)
+    // Create payment using the created invoice
+    const result = await createPayment(invoiceResult.invoice, formattedPayments)
     
     // Release tables if this was a dine-in order
-    if (invoiceData.type === 'DINE_IN' && invoiceData.tables_selected?.length) {
+    if (invoiceResult.invoice.type === 'DINE_IN' && invoiceResult.invoice.tables_selected?.length) {
       try {
-        await releaseTablesAfterPayment(invoiceData.tables_selected)
+        await releaseTablesAfterPayment(invoiceResult.invoice.tables_selected)
       } catch (err) {
         console.error('Failed to release tables:', err)
         // Don't throw error here, as payment was successful
@@ -585,7 +634,7 @@ watch(() => dialog.value, async (newValue) => {
       // Get company settings
       await fetchSettings()
 
-      // Reset state with initial display amount
+      // Reset state with initial display amount including tip
       const initialDisplayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString()
       payments.value = [{
         method_id: null,
