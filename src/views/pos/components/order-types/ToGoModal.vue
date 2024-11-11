@@ -207,16 +207,30 @@ const processOrder = async () => {
     // Format phone number
     const formattedPhone = customerInfo.phone.replace(/\D/g, '')
 
-    // Prepare hold invoice data
-    const holdInvoiceData = cartStore.prepareHoldInvoiceData(
-      selectedStore.value,
-      selectedCashier.value,
-      `TO_GO_${customerInfo.name}`
-    )
+    // Prepare hold invoice data with items
+    const holdInvoiceData = {
+      ...cartStore.prepareHoldInvoiceData(
+        selectedStore.value,
+        selectedCashier.value,
+        `TO_GO_${customerInfo.name}`
+      ),
+      type: OrderType.TO_GO,
+      description: `TO_GO_${customerInfo.name}`,
+      hold_items: cartStore.items.map(item => ({
+        item_id: item.id,
+        name: item.name,
+        description: item.description || '',
+        price: item.price,
+        quantity: item.quantity,
+        unit_name: item.unit_name || 'units',
+        tax: item.tax || 0
+      }))
+    }
 
-    // Add TO-GO specific data
-    holdInvoiceData.type = OrderType.TO_GO
-    holdInvoiceData.description = `TO_GO_${customerInfo.name}`
+    // Validate items exist
+    if (!holdInvoiceData.hold_items?.length) {
+      throw new Error('No items found in cart')
+    }
     holdInvoiceData.notes = JSON.stringify({
       orderType: OrderType.TO_GO,
       orderInfo: {
@@ -254,15 +268,32 @@ const processOrder = async () => {
       responseStructure: Object.keys(result)
     })
 
-    const holdInvoice = result.data || result.hold_invoice
-    if (!holdInvoice || !holdInvoice.id) {
+    // Try multiple paths to get the hold invoice data
+    let holdInvoice = null
+    if (result.data?.id) {
+      holdInvoice = result.data
+    } else if (result.hold_invoice?.id) {
+      holdInvoice = result.hold_invoice
+    } else if (result.data?.hold_invoice?.id) {
+      holdInvoice = result.data.hold_invoice
+    }
+
+    if (!holdInvoice?.id) {
       console.error('ToGoModal: Invalid response structure:', {
         result,
         holdInvoice,
-        hasId: holdInvoice?.id
+        hasId: holdInvoice?.id,
+        resultData: result.data,
+        holdInvoiceData: result.hold_invoice
       })
       logger.error('Invalid hold order response structure:', result)
-      throw new Error('Invalid hold order response structure')
+      throw new Error('Hold invoice data not found in response')
+    }
+
+    // Validate essential fields
+    if (!holdInvoice.total || !holdInvoice.hold_items?.length) {
+      logger.error('Missing required hold invoice fields:', holdInvoice)
+      throw new Error('Invalid hold invoice data: missing total or items')
     }
 
     // Store the hold invoice ID
