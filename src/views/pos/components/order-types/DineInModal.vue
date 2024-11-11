@@ -150,7 +150,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useTableManagement } from '../../composables/useTableManagement'
 import { useOrderType } from '../../composables/useOrderType'
 import { usePosStore } from '../../../../stores/pos-store'
