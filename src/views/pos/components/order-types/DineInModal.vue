@@ -420,27 +420,33 @@ const closeModal = () => {
 }
 
 // Component initialization
-onMounted(async () => {
+onMounted(() => {
   logger.info('[DineInModal] Component mounted')
-  try {
-    // Check if we need to initialize the company store
-    if (!companyStore.isInitialized) {
-      logger.debug('[DineInModal] Initializing company store')
-      await companyStore.initializeStore()
-    }
-
-    logger.info('[DineInModal] Store state after mount:', {
-      store: selectedStore.value,
-      cashier: selectedCashier.value,
-      companyStore: {
-        selectedStore: companyStore.selectedStore,
-        selectedCashier: companyStore.selectedCashier
+  
+  // Initialize store asynchronously but don't block mounting
+  const initializeStores = async () => {
+    try {
+      if (!companyStore.isInitialized) {
+        logger.debug('[DineInModal] Initializing company store')
+        await companyStore.initializeStore()
       }
-    })
-  } catch (err) {
-    logger.error('[DineInModal] Initialization error:', err)
-    error.value = 'Failed to initialize store selections'
+
+      logger.info('[DineInModal] Store state after mount:', {
+        store: selectedStore.value,
+        cashier: selectedCashier.value,
+        companyStore: {
+          selectedStore: companyStore.selectedStore,
+          selectedCashier: companyStore.selectedCashier
+        }
+      })
+    } catch (err) {
+      logger.error('[DineInModal] Initialization error:', err)
+      error.value = 'Failed to initialize store selections'
+    }
   }
+
+  // Start initialization but don't await it
+  initializeStores()
 })
 
 // Watch for dialog open to load tables and set order type
