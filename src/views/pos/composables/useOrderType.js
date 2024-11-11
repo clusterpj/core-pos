@@ -278,11 +278,6 @@ export function useOrderType() {
         
         logger.debug('[useOrderType] TO_GO hold order data prepared:', holdOrderData)
         const holdResult = await posStore.holdOrder(holdOrderData)
-        
-        if (!holdResult?.success || !holdResult?.data) {
-          logger.error('[useOrderType] Failed to create TO_GO order:', holdResult)
-          throw new Error(holdResult?.message || 'Failed to create TO_GO order')
-        }
 
         logger.info('[useOrderType] TO_GO order created successfully:', holdResult.data)
         return {
