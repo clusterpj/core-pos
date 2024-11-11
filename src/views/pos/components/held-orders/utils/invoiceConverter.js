@@ -5,11 +5,17 @@ import { validateInvoiceData, validateInvoiceForConversion } from './validators'
 import { OrderType, PaidStatus } from '../../../../../types/order'
 
 export const convertHeldOrderToInvoice = async (invoice) => {
-  console.log('Starting conversion process for invoice:', {
-    id: invoice?.id,
-    description: invoice?.description,
-    total: invoice?.total,
-    items: invoice?.hold_items?.length
+  if (!invoice?.id) {
+    const error = new Error('Invalid invoice: missing ID')
+    logger.error('[InvoiceConverter] Invalid invoice data:', { invoice })
+    throw error
+  }
+
+  logger.info('[InvoiceConverter] Starting conversion process:', {
+    id: invoice.id,
+    description: invoice.description,
+    total: invoice.total,
+    items: invoice.hold_items?.length
   })
   
   try {

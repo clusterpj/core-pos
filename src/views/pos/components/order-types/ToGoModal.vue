@@ -354,13 +354,17 @@ const processOrder = async () => {
 
     const orderResult = await processOrderType(orderData)
     
-    if (!orderResult?.success) {
-      throw new Error(orderResult?.message || 'Failed to create order')
+    if (!orderResult?.success || !orderResult?.data?.id) {
+      logger.error('[ToGoModal] Invalid order result:', orderResult)
+      throw new Error(orderResult?.message || 'Failed to create order: Invalid response')
     }
 
-    // Ensure we have a data object even if it's empty
-    const resultData = orderResult.data || {}
-    logger.info('[ToGoModal] Hold order created successfully:', resultData)
+    const resultData = orderResult.data
+    logger.info('[ToGoModal] Hold order created successfully:', {
+      id: resultData.id,
+      type: resultData.type,
+      status: resultData.status
+    })
 
     // Get the complete hold invoice data using the API
     const holdInvoiceResult = await posOperations.getHoldInvoice(resultData.id)

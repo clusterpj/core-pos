@@ -45,9 +45,19 @@ export const invoiceOperations = {
   async getHoldInvoice(id) {
     logger.startGroup('POS Operations: Get Hold Invoice')
     try {
+      if (!id) {
+        logger.error('Invalid hold invoice ID:', id)
+        throw new Error('Hold invoice ID is required')
+      }
+
       logger.debug('Requesting hold invoice:', id)
       const response = await api.holdInvoice.getById(id)
       
+      if (!response?.data) {
+        logger.error('Empty response from hold invoice API:', response)
+        throw new Error('Empty response from hold invoice API')
+      }
+
       // Handle nested response structures
       const invoiceData = response.data?.data || response.data?.hold_invoice || response.data
       
