@@ -250,44 +250,28 @@ const processOrder = async () => {
       notes: holdInvoiceData.notes
     })
 
-    // Create hold order and get response
+    // Create hold order
     const result = await posStore.holdOrder(holdInvoiceData)
     
     console.log('ToGoModal: Hold order API response:', result)
     logger.debug('Hold order response:', result)
 
-    // Validate response structure
     if (!result?.success) {
       throw new Error(result?.message || 'Failed to create hold order')
     }
 
-    // Extract hold invoice data, handling different response structures
-    console.log('ToGoModal: Extracting hold invoice from response:', {
-      hasData: !!result.data,
-      hasHoldInvoice: !!result.hold_invoice,
-      responseStructure: Object.keys(result)
-    })
+    // Fetch the latest hold invoices to get our new one
+    await posStore.fetchHoldInvoices()
+    
+    // Find our newly created hold invoice
+    const holdInvoice = posStore.holdInvoices.find(inv => 
+      inv.description === holdInvoiceData.description &&
+      inv.type === OrderType.TO_GO
+    )
 
-    // Try multiple paths to get the hold invoice data
-    let holdInvoice = null
-    if (result.data?.id) {
-      holdInvoice = result.data
-    } else if (result.hold_invoice?.id) {
-      holdInvoice = result.hold_invoice
-    } else if (result.data?.hold_invoice?.id) {
-      holdInvoice = result.data.hold_invoice
-    }
-
-    if (!holdInvoice?.id) {
-      console.error('ToGoModal: Invalid response structure:', {
-        result,
-        holdInvoice,
-        hasId: holdInvoice?.id,
-        resultData: result.data,
-        holdInvoiceData: result.hold_invoice
-      })
-      logger.error('Invalid hold order response structure:', result)
-      throw new Error('Hold invoice data not found in response')
+    if (!holdInvoice) {
+      logger.error('Could not find newly created hold invoice')
+      throw new Error('Failed to retrieve created hold invoice')
     }
 
     // Validate essential fields

@@ -24,7 +24,7 @@ export const invoiceActions = {
 
       // Format items with proper price conversions
       const items = state.items.map(item => {
-        const itemPrice = priceHelpers.toCents(item.price > 100 ? item.price / 100 : item.price)
+        const itemPrice = priceHelpers.toCents(item.price)
         const itemQuantity = parseInt(item.quantity)
         const itemTotal = itemPrice * itemQuantity
 
