@@ -361,11 +361,19 @@ const processOrder = async () => {
     const resultData = orderResult.data || {}
     logger.info('[ToGoModal] Hold order created successfully:', resultData)
 
-    // Convert to invoice
+    // Fetch the created hold invoice to get complete data
+    const holdInvoice = await posStore.getHoldInvoice(resultData.id)
+    if (!holdInvoice) {
+      throw new Error('Failed to fetch created hold invoice')
+    }
+
+    // Convert to invoice with complete hold invoice data
     const invoiceResult = await convertHeldOrderToInvoice({
-      ...orderResult.data,
+      ...holdInvoice,
       store_id: selectedStore.value,
-      cash_register_id: selectedCashier.value
+      cash_register_id: selectedCashier.value,
+      type: ORDER_TYPES.TO_GO,
+      hold_items: holdInvoice.items || []
     })
     
     if (!invoiceResult.success) {
