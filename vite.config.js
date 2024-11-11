@@ -6,7 +6,13 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          sourceMap: true
+        }
+      }
+    }),
     vuetify({ autoImport: true })
   ],
   resolve: {
@@ -60,6 +66,10 @@ export default defineConfig({
       usePolling: true,
       interval: 100
     }
+  },
+  optimizeDeps: {
+    // Add Vue to the include list to ensure proper debugging
+    include: ['vuetify', 'vue']
   },
   define: {
     __API_URL__: JSON.stringify(process.env.VITE_API_URL || 'http://localhost/api'),
