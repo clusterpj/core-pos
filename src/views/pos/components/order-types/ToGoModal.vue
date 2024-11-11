@@ -323,25 +323,31 @@ const processOrder = async () => {
       instructions: customerInfo.instructions.trim()
     })
 
-    // Create hold order with explicit store and cashier IDs
-    const storeId = selectedStore.value
-    const cashierId = selectedCashier.value
-
-    if (!storeId || !cashierId) {
-      throw new Error('Store and cashier selection required')
+    // Validate store and cashier selection
+    if (!selectedStore.value || !selectedCashier.value) {
+      const missing = !selectedStore.value ? 'store' : 'cashier'
+      throw new Error(`${missing} selection required`)
     }
 
     logger.info('[ToGoModal] Processing order with IDs:', {
-      storeId,
-      cashierId,
+      storeId: selectedStore.value,
+      cashierId: selectedCashier.value,
       customerName: customerInfo.name
     })
 
-    const orderResult = await processOrderType({
-      storeId,
-      cashierId,
-      orderName: `TO_GO_${customerInfo.name}`
-    })
+    // Prepare order data
+    const orderData = {
+      storeId: selectedStore.value,
+      cashierId: selectedCashier.value,
+      orderName: `TO_GO_${customerInfo.name}`,
+      customerInfo: {
+        name: customerInfo.name.trim(),
+        phone: formattedPhone,
+        instructions: customerInfo.instructions.trim()
+      }
+    }
+
+    const orderResult = await processOrderType(orderData)
     
     if (!orderResult?.success) {
       throw new Error(orderResult?.message || 'Failed to create order')

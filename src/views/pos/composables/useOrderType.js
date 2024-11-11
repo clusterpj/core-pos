@@ -19,8 +19,6 @@ export function useOrderType() {
   const customerInfo = ref({
     name: '',
     phone: '',
-    address: '', // For delivery
-    pickupTime: '', // For pickup
     instructions: ''
   })
   const customerNotes = ref('')
@@ -235,6 +233,19 @@ export function useOrderType() {
 
       // For TO_GO orders, create a hold invoice ready for immediate conversion
       if (orderType.value === ORDER_TYPES.TO_GO) {
+        if (!options.storeId || !options.cashierId) {
+          throw new Error('Store and cashier IDs are required for TO-GO orders')
+        }
+
+        // Update customer info with provided data
+        if (options.customerInfo) {
+          customerInfo.value = {
+            name: options.customerInfo.name,
+            phone: options.customerInfo.phone,
+            instructions: options.customerInfo.instructions
+          }
+        }
+
         const orderName = options.orderName || `${orderType.value}_${customerInfo.value.name}`
         logger.info('[useOrderType] Processing TO_GO order:', { 
           orderName,
@@ -243,15 +254,22 @@ export function useOrderType() {
           customerInfo: customerInfo.value
         })
 
-        if (!options.storeId || !options.cashierId) {
-          throw new Error('Store and cashier IDs are required for TO-GO orders')
-        }
-
         const holdOrderData = cartStore.prepareHoldInvoiceData(
           options.storeId,
           options.cashierId,
           orderName
         )
+
+        // Ensure only relevant customer info is included
+        const orderInfo = {
+          customer: {
+            name: customerInfo.value.name,
+            phone: customerInfo.value.phone,
+            instructions: customerInfo.value.instructions
+          }
+        }
+        
+        holdOrderData.notes = JSON.stringify({ orderInfo })
 
         // Add flags for immediate conversion
         holdOrderData.is_prepared_data = true
