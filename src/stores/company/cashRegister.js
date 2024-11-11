@@ -6,7 +6,9 @@ export const cashRegisterModule = {
     cashRegisters: [],
     selectedCashier: null,
     loadingCashRegisters: false,
-    cashRegisterError: null
+    cashRegisterError: null,
+    lastFetch: null,
+    fetchPromise: null
   }),
 
   getters: {
@@ -34,46 +36,85 @@ export const cashRegisterModule = {
   },
 
   actions: {
-    async fetchCashRegisters() {
+    async fetchCashRegisters(force = false) {
+      // If there's an existing promise and we're not forcing, return it
+      if (this.fetchPromise && !force) {
+        logger.debug('Using existing cash registers fetch promise')
+        return this.fetchPromise
+      }
+
+      // Check if we need to fetch based on last fetch time (cache for 5 minutes)
+      const now = Date.now()
+      if (!force && 
+          this.lastFetch && 
+          (now - this.lastFetch) < 300000 && 
+          this.cashRegisters.length > 0) {
+        logger.debug('Using cached cash registers data')
+        return Promise.resolve(this.cashRegisters)
+      }
+
+      // If already loading, wait for the existing promise
+      if (this.loadingCashRegisters) {
+        logger.debug('Cash registers fetch already in progress, waiting for completion')
+        return this.fetchPromise
+      }
+
       logger.startGroup('Company Store: Fetch Cash Registers')
       this.loadingCashRegisters = true
       this.cashRegisterError = null
 
-      try {
-        const companyId = localStorage.getItem('companyId')
-        logger.debug('Fetching cash registers for company:', companyId)
+      this.fetchPromise = (async () => {
+        try {
+          const companyId = localStorage.getItem('companyId')
+          logger.debug('Fetching cash registers for company:', companyId)
 
-        const config = {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            company: companyId
+          if (!companyId) {
+            throw new Error('Company ID not available')
           }
-        }
 
-        const response = await apiClient.get('/v1/core-pos/cash-register/getCashRegistersUser', config)
+          const config = {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              company: companyId
+            }
+          }
 
-        if (response.data?.success) {
-          this.cashRegisters = response.data.data || []
-          logger.info(`Loaded ${this.cashRegisters.length} cash registers`)
-        } else {
-          throw new Error(response.data?.message || 'Failed to load cash registers')
+          const response = await apiClient.get('/v1/core-pos/cash-register/getCashRegistersUser', config)
+
+          if (response.data?.success) {
+            this.cashRegisters = response.data.data || []
+            this.lastFetch = now
+            logger.info(`Loaded ${this.cashRegisters.length} cash registers`)
+            return this.cashRegisters
+          } else {
+            throw new Error(response.data?.message || 'Failed to load cash registers')
+          }
+        } catch (error) {
+          logger.error('Failed to fetch cash registers', error)
+          this.cashRegisterError = error.message
+          this.cashRegisters = []
+          throw error
+        } finally {
+          this.loadingCashRegisters = false
+          this.fetchPromise = null
+          logger.endGroup()
         }
-      } catch (error) {
-        logger.error('Failed to fetch cash registers', error)
-        this.cashRegisterError = error.message
-        this.cashRegisters = []
-      } finally {
-        this.loadingCashRegisters = false
-        logger.endGroup()
-      }
+      })()
+
+      return this.fetchPromise
     },
 
     async setSelectedCashier(registerId) {
       logger.info('Setting selected cash register:', registerId)
       
-      const register = this.cashRegisters.find(r => r.id === registerId)
+      // Ensure cash registers are loaded
+      if (this.cashRegisters.length === 0) {
+        await this.fetchCashRegisters()
+      }
+      
+      const register = this.cashRegisters.find(r => r.id === Number(registerId))
       if (!register) {
         logger.warn('Cash register not found for ID:', registerId)
         return {
@@ -82,7 +123,7 @@ export const cashRegisterModule = {
         }
       }
 
-      this.selectedCashier = registerId
+      this.selectedCashier = Number(registerId)
       localStorage.setItem('selectedCashier', registerId)
 
       return {
@@ -94,7 +135,6 @@ export const cashRegisterModule = {
 
     clearCashierSelection() {
       this.selectedCashier = null
-      this.cashRegisters = []
       localStorage.removeItem('selectedCashier')
     }
   }

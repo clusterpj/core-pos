@@ -6,7 +6,9 @@ export const customerModule = {
     customers: [],
     selectedCustomer: null,
     loading: false,
-    error: null
+    error: null,
+    lastFetch: null,
+    fetchPromise: null
   }),
 
   getters: {
@@ -33,39 +35,70 @@ export const customerModule = {
   },
 
   actions: {
-    async fetchCustomers() {
+    async fetchCustomers(force = false) {
+      // If there's an existing promise and we're not forcing, return it
+      if (this.fetchPromise && !force) {
+        logger.debug('Using existing fetch promise')
+        return this.fetchPromise
+      }
+
+      // Check if we need to fetch based on last fetch time (cache for 5 minutes)
+      const now = Date.now()
+      if (!force && 
+          this.lastFetch && 
+          (now - this.lastFetch) < 300000 && 
+          this.customers.length > 0) {
+        logger.debug('Using cached customers data')
+        return Promise.resolve(this.customers)
+      }
+
+      // If already loading, wait for the existing promise
       if (this.loading) {
-        logger.warn('Customer fetch already in progress, skipping')
-        return
+        logger.debug('Fetch already in progress, waiting for completion')
+        return this.fetchPromise
       }
 
       logger.startGroup('Company Store: Fetch Customers')
       this.loading = true
       this.error = null
 
-      try {
-        const response = await apiClient.get('customers', {
-          params: { limit: 'all' }
-        })
-        
-        if (response.data?.customers?.data) {
-          this.customers = response.data.customers.data
-          logger.info(`Loaded ${this.customers.length} customers`)
-        } else {
-          throw new Error('Invalid response format: missing customers data')
+      // Create and store the fetch promise
+      this.fetchPromise = (async () => {
+        try {
+          const response = await apiClient.get('customers', {
+            params: { limit: 'all' }
+          })
+          
+          if (response.data?.customers?.data) {
+            this.customers = response.data.customers.data
+            this.lastFetch = now
+            logger.info(`Loaded ${this.customers.length} customers`)
+            return this.customers
+          } else {
+            throw new Error('Invalid response format: missing customers data')
+          }
+        } catch (error) {
+          logger.error('Failed to fetch customers', error)
+          this.error = error.message
+          this.customers = []
+          throw error
+        } finally {
+          this.loading = false
+          this.fetchPromise = null
+          logger.endGroup()
         }
-      } catch (error) {
-        logger.error('Failed to fetch customers', error)
-        this.error = error.message
-        this.customers = []
-      } finally {
-        this.loading = false
-        logger.endGroup()
-      }
+      })()
+
+      return this.fetchPromise
     },
 
     async setSelectedCustomer(customerId) {
       logger.info('Manual customer selection:', customerId)
+      
+      // Ensure customers are loaded
+      if (this.customers.length === 0) {
+        await this.fetchCustomers()
+      }
       
       const customer = this.customers.find(c => c.id === customerId)
       if (customer) {

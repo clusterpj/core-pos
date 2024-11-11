@@ -85,15 +85,15 @@
             <v-row>
               <v-col cols="12" class="text-center">
                 <v-btn
-                  color="primary"
-                  size="large"
-                  block
-                  @click="processOrder"
-                  :loading="processing"
-                  :disabled="processing"
-                >
-                  Create To Go Order
-                </v-btn>
+                color="primary"
+                size="large"
+                block
+                @click="processOrder"
+                :loading="processing"
+                :disabled="!canProcessOrder || processing"
+              >
+                {{ getButtonText }}
+              </v-btn>
               </v-col>
             </v-row>
           </template>
@@ -111,15 +111,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, reactive } from 'vue'
+import { ref, computed, watch, reactive, onMounted } from 'vue'
 import { useOrderType } from '../../composables/useOrderType'
 import { usePosStore } from '@/stores/pos-store'
 import { useCartStore } from '@/stores/cart-store'
+import { useCompanyStore } from '@/stores/company'
 import { logger } from '@/utils/logger'
 import PaymentDialog from '../dialogs/PaymentDialog.vue'
 import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
-
-logger.info('[ToGoModal] Initializing TO-GO modal component')
 
 // Props
 const props = defineProps({
@@ -132,6 +131,7 @@ const props = defineProps({
 // Store access
 const posStore = usePosStore()
 const cartStore = useCartStore()
+const companyStore = useCompanyStore()
 
 // Composables
 const { 
@@ -141,6 +141,10 @@ const {
   error: orderError,
   setCustomerInfo
 } = useOrderType()
+
+// Computed properties for store and cashier state
+const selectedStore = computed(() => companyStore.selectedStore)
+const selectedCashier = computed(() => companyStore.selectedCashier)
 
 // Local state
 const dialog = ref(false)
@@ -163,6 +167,42 @@ const validationErrors = reactive({
   phone: ''
 })
 
+// Computed properties
+const canProcessOrder = computed(() => {
+  const hasStore = !!selectedStore.value
+  const hasCashier = !!selectedCashier.value
+  const hasItems = !cartStore.isEmpty
+  
+  logger.debug('[ToGoModal] Order prerequisites:', {
+    hasStore,
+    hasCashier,
+    hasItems,
+    selectedStore: selectedStore.value,
+    selectedCashier: selectedCashier.value,
+    companyStoreState: {
+      store: companyStore.selectedStore,
+      cashier: companyStore.selectedCashier
+    }
+  })
+  
+  return hasStore && hasCashier && hasItems
+})
+
+const getButtonText = computed(() => {
+  if (!selectedStore.value) return 'Store Not Selected'
+  if (!selectedCashier.value) return 'Cashier Not Selected'
+  if (cartStore.isEmpty) return 'Cart Empty'
+  return 'Create To Go Order'
+})
+
+// Watch for store/cashier changes
+watch([selectedStore, selectedCashier], ([newStore, newCashier], [oldStore, oldCashier]) => {
+  logger.debug('[ToGoModal] Store/Cashier state changed:', {
+    store: { old: oldStore, new: newStore },
+    cashier: { old: oldCashier, new: newCashier }
+  })
+})
+
 // Watch for dialog open to set order type
 watch(dialog, (newValue) => {
   logger.debug('[ToGoModal] Dialog state changed:', { newValue })
@@ -171,7 +211,6 @@ watch(dialog, (newValue) => {
     setOrderType(ORDER_TYPES.TO_GO)
   } else {
     logger.debug('[ToGoModal] Closing TO-GO modal, resetting form')
-    // Reset form when dialog closes
     customerInfo.name = ''
     customerInfo.phone = ''
     customerInfo.instructions = ''
@@ -179,7 +218,31 @@ watch(dialog, (newValue) => {
   }
 })
 
-// Validation helper
+// Initialization
+onMounted(async () => {
+  logger.info('[ToGoModal] Component mounted')
+  try {
+    // Check if we need to initialize the company store
+    if (!companyStore.isInitialized) {
+      logger.debug('[ToGoModal] Initializing company store')
+      await companyStore.initializeStore()
+    }
+
+    logger.info('[ToGoModal] Store state after mount:', {
+      store: selectedStore.value,
+      cashier: selectedCashier.value,
+      companyStore: {
+        selectedStore: companyStore.selectedStore,
+        selectedCashier: companyStore.selectedCashier
+      }
+    })
+  } catch (err) {
+    logger.error('[ToGoModal] Initialization error:', err)
+    error.value = 'Failed to initialize store selections'
+  }
+})
+
+// Validation methods
 const validateForm = () => {
   logger.debug('[ToGoModal] Validating form', customerInfo)
   let isValid = true
@@ -195,13 +258,19 @@ const validateForm = () => {
     logger.warn('[ToGoModal] Validation failed: Phone number required')
     validationErrors.phone = 'Phone number is required'
     isValid = false
+  } else {
+    // Basic phone number validation (can be enhanced based on requirements)
+    const phoneDigits = customerInfo.phone.replace(/\D/g, '')
+    if (phoneDigits.length !== 10) {
+      validationErrors.phone = 'Please enter a valid 10-digit phone number'
+      isValid = false
+    }
   }
 
   logger.debug('[ToGoModal] Form validation result:', { isValid, validationErrors })
   return isValid
 }
 
-// Clear validation errors
 const clearError = (field) => {
   logger.debug('[ToGoModal] Clearing validation error:', field)
   validationErrors[field] = ''
@@ -214,43 +283,59 @@ const clearAllErrors = () => {
   })
 }
 
-// Process the order
+// Process order
 const processOrder = async () => {
-  logger.info('[ToGoModal] Starting TO-GO order processing', {
+  logger.info('[ToGoModal] Starting order processing', {
     customerInfo,
-    cartItems: cartStore.items?.length
+    storeState: {
+      store: selectedStore.value,
+      cashier: selectedCashier.value
+    },
+    cartState: {
+      items: cartStore.items?.length,
+      total: cartStore.total
+    }
   })
 
+  if (!selectedStore.value || !selectedCashier.value) {
+    const missingSelection = !selectedStore.value ? 'store' : 'cashier'
+    error.value = `Please select a ${missingSelection} first`
+    logger.warn(`[ToGoModal] Missing ${missingSelection} selection`)
+    return
+  }
+
   if (!validateForm()) {
-    logger.warn('[ToGoModal] Form validation failed, aborting order processing')
     return
   }
 
   processing.value = true
 
   try {
-    // Update customer info in the order type composable
-    logger.debug('[ToGoModal] Setting customer info')
+    // Format phone number (remove non-digits)
+    const formattedPhone = customerInfo.phone.replace(/\D/g, '')
+    
+    // Update customer info
     setCustomerInfo({
       name: customerInfo.name.trim(),
-      phone: customerInfo.phone.trim(),
+      phone: formattedPhone,
       instructions: customerInfo.instructions.trim()
     })
 
-    // Process the order first
-    logger.debug('[ToGoModal] Creating hold order')
+    // Create hold order
     const orderResult = await processOrderType()
     
-    if (!orderResult.success) {
-      logger.error('[ToGoModal] Failed to create hold order:', orderResult)
-      throw new Error('Failed to create order')
+    if (!orderResult?.success) {
+      throw new Error(orderResult?.message || 'Failed to create order')
     }
 
     logger.info('[ToGoModal] Hold order created successfully:', orderResult.data)
 
-    // Convert to invoice immediately for TO-GO orders
-    logger.debug('[ToGoModal] Converting hold order to invoice')
-    const invoiceResult = await convertHeldOrderToInvoice(orderResult.data)
+    // Convert to invoice
+    const invoiceResult = await convertHeldOrderToInvoice({
+      ...orderResult.data,
+      store_id: selectedStore.value,
+      cash_register_id: selectedCashier.value
+    })
     
     if (!invoiceResult.success) {
       logger.error('[ToGoModal] Failed to create invoice:', invoiceResult)
@@ -265,21 +350,19 @@ const processOrder = async () => {
     // Set current invoice and show payment dialog
     currentInvoice.value = invoiceResult
     showPaymentDialog.value = true
-    logger.debug('[ToGoModal] Opening payment dialog')
     
     // Close the TO-GO modal
     dialog.value = false
-    logger.debug('[ToGoModal] Closing TO-GO modal')
-  } catch (err) {
-    logger.error('[ToGoModal] Order processing failed:', {
-      error: err,
-      customerInfo,
-      cartItems: cartStore.items?.length
+    
+    logger.info('[ToGoModal] Order processed successfully', {
+      orderId: orderResult.data.id,
+      invoiceId: invoiceResult.invoice?.id
     })
+  } catch (err) {
+    logger.error('[ToGoModal] Order processing failed:', err)
     error.value = err.message || 'Failed to create to-go order'
   } finally {
     processing.value = false
-    logger.debug('[ToGoModal] Order processing completed')
   }
 }
 

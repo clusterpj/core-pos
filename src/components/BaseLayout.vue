@@ -141,6 +141,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useCompanyStore } from '../stores/company'
 import { useRouter } from 'vue-router'
+import { logger } from '../utils/logger'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -170,17 +171,45 @@ const navItems = computed(() => [
 // Handle selection changes
 const handleCustomerChange = async (value) => {
   if (!value) return
-  await companyStore.setSelectedCustomer(value)
+
+  try {
+    await companyStore.setSelectedCustomer(Number(value))
+    
+    // Clear downstream selections
+    companyStore.clearStoreSelection()
+    companyStore.clearCashierSelection()
+    
+    // Fetch stores for new customer
+    await companyStore.fetchStores()
+  } catch (error) {
+    console.error('Failed to handle customer change:', error)
+  }
 }
 
 const handleStoreChange = async (value) => {
   if (!value) return
-  await companyStore.setSelectedStore(value)
+
+  try {
+    await companyStore.setSelectedStore(Number(value))
+    
+    // Clear cashier selection
+    companyStore.clearCashierSelection()
+    
+    // Fetch cash registers for new store
+    await companyStore.fetchCashRegisters()
+  } catch (error) {
+    console.error('Failed to handle store change:', error)
+  }
 }
 
-const handleCashierChange = (value) => {
+const handleCashierChange = async (value) => {
   if (!value) return
-  companyStore.setSelectedCashier(value)
+
+  try {
+    await companyStore.setSelectedCashier(Number(value))
+  } catch (error) {
+    console.error('Failed to handle cashier change:', error)
+  }
 }
 
 const handleLogout = async () => {
@@ -199,42 +228,74 @@ const goToCorebill = () => {
 // Initialize
 onMounted(async () => {
   try {
-    // First fetch customers
-    await companyStore.fetchCustomers()
+    // Always start with rail collapsed
+    rail.value = true
+    localStorage.setItem('navigationRail', 'true')
 
     // Get stored selections
     const storedCustomer = localStorage.getItem('selectedCustomer')
     const storedStore = localStorage.getItem('selectedStore')
     const storedCashier = localStorage.getItem('selectedCashier')
-    
-    // Always start with rail collapsed
-    rail.value = true
-    localStorage.setItem('navigationRail', 'true')
 
-    // Wait for customers to load before setting stored values
+    // Step 1: Fetch customers first
+    await companyStore.fetchCustomers()
+      .catch(error => {
+        console.error('Failed to fetch customers:', error)
+        throw error // Re-throw to prevent further initialization
+      })
+
+    // Step 2: Set customer if valid
     if (companyStore.customers.length > 0) {
-      // If we have a stored customer and it exists in the loaded customers
-      if (storedCustomer && companyStore.customers.find(c => c.id === storedCustomer)) {
-        await companyStore.setSelectedCustomer(storedCustomer)
+      let customerId = null
 
-        // If we have a stored store
-        if (storedStore) {
-          await companyStore.setSelectedStore(storedStore)
+      if (storedCustomer && companyStore.customers.find(c => c.id === Number(storedCustomer))) {
+        customerId = Number(storedCustomer)
+      } else if (companyStore.customersForDisplay.length === 1) {
+        customerId = companyStore.customersForDisplay[0].value
+      }
 
-          // If we have a stored cashier
-          if (storedCashier) {
-            companyStore.setSelectedCashier(storedCashier)
+      if (customerId) {
+        await companyStore.setSelectedCustomer(customerId)
+          .catch(error => {
+            console.error('Failed to set customer:', error)
+            throw error
+          })
+
+        // Step 3: Fetch stores after customer is set
+        await companyStore.fetchStores()
+          .catch(error => {
+            console.error('Failed to fetch stores:', error)
+            throw error
+          })
+
+        // Step 4: Set store if valid
+        if (storedStore && companyStore.stores.find(s => s.id === Number(storedStore))) {
+          await companyStore.setSelectedStore(Number(storedStore))
+            .catch(error => {
+              console.error('Failed to set store:', error)
+            })
+
+          // Step 5: Fetch cash registers after store is set
+          await companyStore.fetchCashRegisters()
+            .catch(error => {
+              console.error('Failed to fetch cash registers:', error)
+            })
+
+          // Step 6: Set cash register if valid
+          if (storedCashier && companyStore.cashRegisters.find(r => r.id === Number(storedCashier))) {
+            await companyStore.setSelectedCashier(Number(storedCashier))
+              .catch(error => {
+                console.error('Failed to set cash register:', error)
+              })
           }
         }
       }
-      // If no stored customer but only one available, select it
-      else if (companyStore.customersForDisplay.length === 1) {
-        const customer = companyStore.customersForDisplay[0]
-        await handleCustomerChange(customer.value)
-      }
     }
+
+    logger.info('Initialization completed successfully')
   } catch (error) {
-    console.error('Failed to initialize selections:', error)
+    console.error('Failed to initialize:', error)
+    // Optionally show error to user via toast or alert
   }
 })
 </script>
