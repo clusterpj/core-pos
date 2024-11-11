@@ -369,32 +369,6 @@ const processOrder = async () => {
       is_prepared_data: true
     })
     
-    logger.info('[ToGoModal] Retrieved complete hold invoice data:', {
-      id: completeHoldInvoice.id,
-      type: completeHoldInvoice.type,
-      items: completeHoldInvoice.items?.length
-    })
-
-    // Convert to invoice with complete hold invoice data
-    const invoiceResult = await convertHeldOrderToInvoice({
-      ...completeHoldInvoice,
-      store_id: selectedStore.value,
-      cash_register_id: selectedCashier.value,
-      type: ORDER_TYPES.TO_GO,
-      hold_items: completeHoldInvoice.items || [],
-      description: `TO_GO_${customerInfo.name}`,
-      notes: JSON.stringify({
-        orderType: ORDER_TYPES.TO_GO,
-        orderInfo: {
-          customer: {
-            name: customerInfo.name.trim(),
-            phone: formattedPhone,
-            instructions: customerInfo.instructions.trim()
-          }
-        }
-      })
-    })
-    
     if (!invoiceResult.success) {
       logger.error('[ToGoModal] Failed to create invoice:', invoiceResult)
       throw new Error('Failed to create invoice')
