@@ -101,6 +101,12 @@
     </v-card>
   </v-dialog>
 
+  <!-- Payment Dialog -->
+  <PaymentDialog
+    v-model="showPaymentDialog"
+    :invoice="currentInvoice"
+    @payment-complete="handlePaymentComplete"
+  />
 </template>
 
 <script setup>
@@ -110,6 +116,7 @@ import { useCompanyStore } from '../../../../stores/company'
 import { logger } from '../../../../utils/logger'
 import { OrderType } from '../../../../types/order'
 import { usePosStore } from '../../../../stores/pos-store'
+import PaymentDialog from '../dialogs/PaymentDialog.vue'
 
 // Props
 defineProps({
@@ -129,6 +136,8 @@ const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
 const error = ref(null)
+const currentInvoice = ref(null)
+const showPaymentDialog = ref(false)
 
 // Form state
 const customerInfo = reactive({
@@ -226,16 +235,26 @@ const processOrder = async () => {
       throw new Error(result?.message || 'Failed to create hold order')
     }
 
-    // Close modal and clear cart
-    dialog.value = false
-    cartStore.clearCart()
-
     logger.info('TO-GO hold order created successfully:', {
       holdInvoiceId: result.data?.id,
       description: result.data?.description
     })
 
-    window.toastr?.['success']('TO-GO order held successfully')
+    // Get the created hold order
+    const holdOrder = await posStore.getHoldInvoice(result.data.id)
+    
+    if (!holdOrder) {
+      throw new Error('Failed to fetch created hold order')
+    }
+
+    // Show payment dialog with the hold order
+    currentInvoice.value = {
+      invoice: holdOrder,
+      invoicePrefix: 'TO-GO',
+      nextInvoiceNumber: result.data.id
+    }
+    showPaymentDialog.value = true
+    dialog.value = false
   } catch (err) {
     error.value = err.message || 'Failed to process order'
     logger.error('Failed to process TO-GO order:', err)
@@ -244,12 +263,19 @@ const processOrder = async () => {
   }
 }
 
-const handlePaymentComplete = (result) => {
+const handlePaymentComplete = async (result) => {
   if (result?.success) {
+    // Clear the cart and reset state
     cartStore.clearCart()
+    currentInvoice.value = null
+    showPaymentDialog.value = false
     window.toastr?.['success']('TO-GO order processed successfully')
+
+    // Refresh hold orders list
+    await posStore.fetchHoldInvoices()
+  } else {
+    window.toastr?.['error']('Failed to process payment')
   }
-  currentInvoice.value = null
 }
 
 const closeModal = () => {
