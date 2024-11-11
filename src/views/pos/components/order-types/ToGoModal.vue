@@ -358,16 +358,29 @@ const processOrder = async () => {
       })
     }
 
-    // Create and convert the invoice in one step
-    const invoiceResult = await convertHeldOrderToInvoice({
-      ...cartStore.prepareHoldInvoiceData(
-        selectedStore.value,
-        selectedCashier.value,
-        `TO_GO_${customerInfo.name}`
-      ),
-      ...invoiceData,
-      is_prepared_data: true
+    // First create a hold invoice
+    const holdInvoiceData = cartStore.prepareHoldInvoiceData(
+      selectedStore.value,
+      selectedCashier.value,
+      `TO_GO_${customerInfo.name}`
+    )
+
+    // Add the TO-GO specific data
+    holdInvoiceData.type = ORDER_TYPES.TO_GO
+    holdInvoiceData.description = `TO_GO_${customerInfo.name}`
+    holdInvoiceData.notes = JSON.stringify({
+      orderType: ORDER_TYPES.TO_GO,
+      orderInfo: {
+        customer: {
+          name: customerInfo.name.trim(),
+          phone: formattedPhone,
+          instructions: customerInfo.instructions.trim()
+        }
+      }
     })
+
+    // Create and convert the invoice
+    const invoiceResult = await convertHeldOrderToInvoice(holdInvoiceData)
     
     if (!invoiceResult.success) {
       logger.error('[ToGoModal] Failed to create invoice:', invoiceResult)
