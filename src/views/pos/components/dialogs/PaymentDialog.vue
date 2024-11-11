@@ -531,15 +531,40 @@ const confirmTip = () => {
 }
 
 const processPayment = async () => {
-  if (!isValid.value || processing.value) return
+  console.log('PaymentDialog: Starting payment processing', {
+    isValid: isValid.value,
+    processing: processing.value,
+    invoiceTotal: invoiceTotal.value,
+    tipAmount: tipAmount.value,
+    payments: payments.value
+  })
+
+  if (!isValid.value || processing.value) {
+    console.log('PaymentDialog: Cannot process - validation failed or already processing')
+    return
+  }
 
   processing.value = true
   try {
+    console.log('PaymentDialog: Starting invoice creation with props:', {
+      invoice: props.invoice,
+      hasInvoiceData: !!props.invoice?.invoice,
+      invoiceTotal: invoiceTotal.value,
+      tipAmount: tipAmount.value
+    })
+
     // First create the invoice with tip included
     const holdInvoice = { ...props.invoice.invoice }
     
     // Calculate the total with tip
     const totalWithTip = invoiceTotal.value + tipAmount.value
+
+    console.log('PaymentDialog: Prepared hold invoice data:', {
+      id: holdInvoice.id,
+      total: totalWithTip,
+      originalTotal: holdInvoice.total,
+      tipAmount: tipAmount.value
+    })
 
     // Format tip data according to API requirements
     const tipPercentage = selectedTipPercent.value || Number(customTipPercent.value) || 0

@@ -228,9 +228,18 @@ const processOrder = async () => {
       }
     })
 
+    console.log('ToGoModal: About to create hold order with data:', {
+      type: holdInvoiceData.type,
+      description: holdInvoiceData.description,
+      total: holdInvoiceData.total,
+      items: holdInvoiceData.hold_items?.length,
+      notes: holdInvoiceData.notes
+    })
+
     // Create hold order and get response
     const result = await posStore.holdOrder(holdInvoiceData)
     
+    console.log('ToGoModal: Hold order API response:', result)
     logger.debug('Hold order response:', result)
 
     // Validate response structure
@@ -239,8 +248,19 @@ const processOrder = async () => {
     }
 
     // Extract hold invoice data, handling different response structures
+    console.log('ToGoModal: Extracting hold invoice from response:', {
+      hasData: !!result.data,
+      hasHoldInvoice: !!result.hold_invoice,
+      responseStructure: Object.keys(result)
+    })
+
     const holdInvoice = result.data || result.hold_invoice
     if (!holdInvoice || !holdInvoice.id) {
+      console.error('ToGoModal: Invalid response structure:', {
+        result,
+        holdInvoice,
+        hasId: holdInvoice?.id
+      })
       logger.error('Invalid hold order response structure:', result)
       throw new Error('Invalid hold order response structure')
     }
@@ -257,12 +277,21 @@ const processOrder = async () => {
     })
 
     // Show payment dialog with the hold order data
+    console.log('ToGoModal: Setting up payment dialog with invoice:', {
+      holdInvoiceId,
+      description: holdInvoice.description,
+      total: holdInvoice.total,
+      items: holdInvoice.hold_items?.length
+    })
+
     currentInvoice.value = {
       invoice: holdInvoice,
       invoicePrefix: 'TO-GO',
       nextInvoiceNumber: holdInvoiceId,
       description: holdInvoice.description
     }
+
+    console.log('ToGoModal: Current invoice value set:', currentInvoice.value)
 
     // Double check the invoice data is valid
     if (!currentInvoice.value.invoice?.total) {
