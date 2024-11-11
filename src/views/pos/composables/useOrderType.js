@@ -235,11 +235,12 @@ export function useOrderType() {
 
       // For TO_GO orders, create a hold invoice ready for immediate conversion
       if (orderType.value === ORDER_TYPES.TO_GO) {
-        const orderName = `${orderType.value}_${customerInfo.value.name}`
+        const orderName = options.orderName || `${orderType.value}_${customerInfo.value.name}`
         logger.info('[useOrderType] Processing TO_GO order:', { 
           orderName,
           storeId: options.storeId,
-          cashierId: options.cashierId
+          cashierId: options.cashierId,
+          customerInfo: customerInfo.value
         })
 
         if (!options.storeId || !options.cashierId) {

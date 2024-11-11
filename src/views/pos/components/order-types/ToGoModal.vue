@@ -172,20 +172,22 @@ const canProcessOrder = computed(() => {
   const hasStore = !!selectedStore.value
   const hasCashier = !!selectedCashier.value
   const hasItems = !cartStore.isEmpty
+  const hasValidCustomerInfo = customerInfo.name.trim() && customerInfo.phone.trim()
   
   logger.debug('[ToGoModal] Order prerequisites:', {
     hasStore,
     hasCashier,
     hasItems,
-    selectedStore: selectedStore.value,
-    selectedCashier: selectedCashier.value,
-    companyStoreState: {
-      store: companyStore.selectedStore,
-      cashier: companyStore.selectedCashier
+    hasValidCustomerInfo,
+    storeId: selectedStore.value,
+    cashierId: selectedCashier.value,
+    customerInfo: {
+      name: customerInfo.name,
+      phone: customerInfo.phone
     }
   })
   
-  return hasStore && hasCashier && hasItems
+  return hasStore && hasCashier && hasItems && hasValidCustomerInfo
 })
 
 const getButtonText = computed(() => {
@@ -321,10 +323,24 @@ const processOrder = async () => {
       instructions: customerInfo.instructions.trim()
     })
 
-    // Create hold order with store and cashier IDs
+    // Create hold order with explicit store and cashier IDs
+    const storeId = selectedStore.value
+    const cashierId = selectedCashier.value
+
+    if (!storeId || !cashierId) {
+      throw new Error('Store and cashier selection required')
+    }
+
+    logger.info('[ToGoModal] Processing order with IDs:', {
+      storeId,
+      cashierId,
+      customerName: customerInfo.name
+    })
+
     const orderResult = await processOrderType({
-      storeId: selectedStore.value,
-      cashierId: selectedCashier.value
+      storeId,
+      cashierId,
+      orderName: `TO_GO_${customerInfo.name}`
     })
     
     if (!orderResult?.success) {
