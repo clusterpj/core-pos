@@ -49,13 +49,29 @@ export const validateInvoiceData = (data) => {
 
 // Validate invoice for conversion
 export const validateInvoiceForConversion = (invoice) => {
-  if (!invoice?.id) {
-    throw new Error('Invalid invoice: missing ID')
+  if (!invoice?.id && !invoice?.hold_invoice_id) {
+    logger.error('Invalid invoice - missing ID fields:', invoice)
+    throw new Error('Invalid invoice: missing ID fields')
   }
 
-  if (!Array.isArray(invoice.hold_items) || invoice.hold_items.length === 0) {
-    throw new Error('No items found in hold invoice')
+  // Ensure we have items array
+  const items = invoice.hold_items || invoice.items
+  if (!Array.isArray(items) || items.length === 0) {
+    logger.error('Invalid invoice - no items found:', {
+      hasHoldItems: !!invoice.hold_items,
+      hasItems: !!invoice.items,
+      itemsLength: items?.length
+    })
+    throw new Error('No items found in invoice')
   }
+
+  // Validate each item
+  items.forEach((item, index) => {
+    if (!item.item_id || !item.name) {
+      logger.error('Invalid item data at index:', { index, item })
+      throw new Error(`Invalid item data at index ${index}: missing required fields`)
+    }
+  })
 
   invoice.hold_items.forEach((item, index) => {
     if (!item.item_id || !item.name) {

@@ -48,15 +48,22 @@ export const invoiceOperations = {
       logger.debug('Requesting hold invoice:', id)
       const response = await api.holdInvoice.getById(id)
       
-      // Handle both possible response structures
-      const invoiceData = response.data?.data || response.data
+      // Handle nested response structures
+      const invoiceData = response.data?.data || response.data?.hold_invoice || response.data
       
-      if (!invoiceData) {
-        throw new Error('Invalid hold invoice response')
+      if (!invoiceData || (!invoiceData.id && !invoiceData.hold_invoice_id)) {
+        logger.error('Invalid hold invoice response structure:', response.data)
+        throw new Error('Invalid hold invoice response structure')
       }
 
-      // Transform response to include required parameters
+      // Transform and validate response
       const transformedData = transformHoldInvoiceResponse(invoiceData)
+      
+      // Ensure critical fields are present
+      if (!transformedData.id && !transformedData.hold_invoice_id) {
+        logger.error('Missing required ID fields after transform:', transformedData)
+        throw new Error('Missing required invoice ID fields')
+      }
 
       logger.debug('Hold invoice response:', transformedData)
       logger.info('Hold invoice fetched successfully')

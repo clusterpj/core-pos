@@ -13,6 +13,17 @@ export const convertHeldOrderToInvoice = async (invoice) => {
   })
   
   try {
+    // Ensure we have a valid invoice object
+    if (!invoice || typeof invoice !== 'object') {
+      throw new Error('Invalid invoice data provided')
+    }
+
+    logger.debug('Starting invoice conversion with data:', {
+      id: invoice.id,
+      type: invoice.type,
+      items: invoice.hold_items?.length || 0
+    })
+
     validateInvoiceForConversion(invoice)
     
     // 1. Get company settings

@@ -363,9 +363,19 @@ const processOrder = async () => {
     logger.info('[ToGoModal] Hold order created successfully:', resultData)
 
     // Get the complete hold invoice data using the API
-    const { success, data: holdInvoice } = await posOperations.getHoldInvoice(resultData.id)
-    if (!success || !holdInvoice) {
-      throw new Error('Failed to fetch created hold invoice')
+    const holdInvoiceResult = await posOperations.getHoldInvoice(resultData.id)
+    
+    if (!holdInvoiceResult.success) {
+      logger.error('[ToGoModal] Failed to fetch hold invoice:', holdInvoiceResult)
+      throw new Error(holdInvoiceResult.message || 'Failed to fetch created hold invoice')
+    }
+
+    const holdInvoice = holdInvoiceResult.data
+    
+    // Validate hold invoice data
+    if (!holdInvoice || !holdInvoice.id) {
+      logger.error('[ToGoModal] Invalid hold invoice data:', holdInvoice)
+      throw new Error('Invalid hold invoice data received')
     }
 
     // Convert to invoice with complete hold invoice data
