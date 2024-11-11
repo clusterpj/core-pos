@@ -199,7 +199,7 @@ export function useOrderType() {
     updateCustomerNotes(customerInfo.value, notes)
   }
 
-  const processOrder = async () => {
+  const processOrder = async (options = {}) => {
     logger.info('[useOrderType] Starting order processing', {
       orderType: orderType.value,
       customerInfo: customerInfo.value,
@@ -236,11 +236,19 @@ export function useOrderType() {
       // For TO_GO orders, create a hold invoice ready for immediate conversion
       if (orderType.value === ORDER_TYPES.TO_GO) {
         const orderName = `${orderType.value}_${customerInfo.value.name}`
-        logger.info('[useOrderType] Processing TO_GO order:', { orderName })
+        logger.info('[useOrderType] Processing TO_GO order:', { 
+          orderName,
+          storeId: options.storeId,
+          cashierId: options.cashierId
+        })
+
+        if (!options.storeId || !options.cashierId) {
+          throw new Error('Store and cashier IDs are required for TO-GO orders')
+        }
 
         const holdOrderData = cartStore.prepareHoldInvoiceData(
-          posStore.selectedStore,
-          posStore.selectedCashier,
+          options.storeId,
+          options.cashierId,
           orderName
         )
 

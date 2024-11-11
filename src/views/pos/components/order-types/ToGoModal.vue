@@ -321,8 +321,11 @@ const processOrder = async () => {
       instructions: customerInfo.instructions.trim()
     })
 
-    // Create hold order
-    const orderResult = await processOrderType()
+    // Create hold order with store and cashier IDs
+    const orderResult = await processOrderType({
+      storeId: selectedStore.value,
+      cashierId: selectedCashier.value
+    })
     
     if (!orderResult?.success) {
       throw new Error(orderResult?.message || 'Failed to create order')
