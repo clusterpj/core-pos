@@ -119,6 +119,7 @@ import { useCompanyStore } from '@/stores/company'
 import { logger } from '@/utils/logger'
 import PaymentDialog from '../dialogs/PaymentDialog.vue'
 import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
+import { posOperations } from '@/services/api/pos-operations'
 
 // Props
 const props = defineProps({
@@ -361,9 +362,9 @@ const processOrder = async () => {
     const resultData = orderResult.data || {}
     logger.info('[ToGoModal] Hold order created successfully:', resultData)
 
-    // Fetch the created hold invoice to get complete data
-    const holdInvoice = await posStore.getHoldInvoice(resultData.id)
-    if (!holdInvoice) {
+    // Get the complete hold invoice data using the API
+    const { success, data: holdInvoice } = await posOperations.getHoldInvoice(resultData.id)
+    if (!success || !holdInvoice) {
       throw new Error('Failed to fetch created hold invoice')
     }
 
@@ -373,7 +374,18 @@ const processOrder = async () => {
       store_id: selectedStore.value,
       cash_register_id: selectedCashier.value,
       type: ORDER_TYPES.TO_GO,
-      hold_items: holdInvoice.items || []
+      hold_items: holdInvoice.items || [],
+      // Ensure we have the order type and customer info
+      description: `TO_GO_${customerInfo.name}`,
+      notes: JSON.stringify({
+        orderInfo: {
+          customer: {
+            name: customerInfo.name.trim(),
+            phone: formattedPhone,
+            instructions: customerInfo.instructions.trim()
+          }
+        }
+      })
     })
     
     if (!invoiceResult.success) {
