@@ -150,7 +150,11 @@ const selectedCashier = computed(() => companyStore.selectedCashier)
 const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
-const error = computed(() => orderError.value)
+const error = ref(null)
+
+watch(orderError, (newError) => {
+  error.value = newError
+})
 const showPaymentDialog = ref(false)
 const currentInvoice = ref(null)
 
@@ -353,7 +357,9 @@ const processOrder = async () => {
       throw new Error(orderResult?.message || 'Failed to create order')
     }
 
-    logger.info('[ToGoModal] Hold order created successfully:', orderResult.data)
+    // Ensure we have a data object even if it's empty
+    const resultData = orderResult.data || {}
+    logger.info('[ToGoModal] Hold order created successfully:', resultData)
 
     // Convert to invoice
     const invoiceResult = await convertHeldOrderToInvoice({

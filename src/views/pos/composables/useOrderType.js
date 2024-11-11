@@ -301,13 +301,17 @@ export function useOrderType() {
       logger.debug('[useOrderType] Processing regular order:', orderData)
       const result = await posStore.holdOrder(orderData)
       
-      if (!result?.success || !result?.data) {
+      if (!result?.success) {
         logger.error('[useOrderType] Failed to process order:', result)
         throw new Error(result?.message || 'Failed to process order')
       }
 
-      logger.info('[useOrderType] Order processed successfully:', result.data)
-      return result
+      // Even if data is missing, if success is true, consider it successful
+      logger.info('[useOrderType] Order processed successfully:', result)
+      return {
+        success: true,
+        data: result.data || result
+      }
 
     } catch (err) {
       logger.error('[useOrderType] Order processing failed:', {
