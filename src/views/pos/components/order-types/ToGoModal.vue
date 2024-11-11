@@ -231,27 +231,20 @@ const processOrder = async () => {
     // Create hold order
     const result = await posStore.holdOrder(holdInvoiceData)
 
-    if (!result?.success) {
-      throw new Error(result?.message || 'Failed to create hold order')
+    if (!result?.success || !result?.hold_invoice?.id) {
+      throw new Error('Failed to create hold order: Invalid response')
     }
 
     logger.info('TO-GO hold order created successfully:', {
-      holdInvoiceId: result.data?.id,
-      description: result.data?.description
+      holdInvoiceId: result.hold_invoice.id,
+      description: result.hold_invoice.description
     })
-
-    // Get the created hold order
-    const holdOrder = await posStore.getHoldInvoice(result.data.id)
-    
-    if (!holdOrder) {
-      throw new Error('Failed to fetch created hold order')
-    }
 
     // Show payment dialog with the hold order
     currentInvoice.value = {
-      invoice: holdOrder,
+      invoice: result.hold_invoice,
       invoicePrefix: 'TO-GO',
-      nextInvoiceNumber: result.data.id
+      nextInvoiceNumber: result.hold_invoice.id
     }
     showPaymentDialog.value = true
     dialog.value = false
