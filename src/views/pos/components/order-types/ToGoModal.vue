@@ -231,24 +231,43 @@ const processOrder = async () => {
     // Create hold order and get response
     const result = await posStore.holdOrder(holdInvoiceData)
     
-    if (!result?.success || !result?.data?.id) {
-      throw new Error('Failed to create hold order: Invalid response')
+    logger.debug('Hold order response:', result)
+
+    // Validate response structure
+    if (!result?.success) {
+      throw new Error(result?.message || 'Failed to create hold order')
+    }
+
+    // Extract hold invoice data, handling different response structures
+    const holdInvoice = result.data || result.hold_invoice
+    if (!holdInvoice || !holdInvoice.id) {
+      logger.error('Invalid hold order response structure:', result)
+      throw new Error('Invalid hold order response structure')
     }
 
     // Store the hold invoice ID
-    const holdInvoiceId = result.data.id
+    const holdInvoiceId = holdInvoice.id
     cartStore.setHoldInvoiceId(holdInvoiceId)
 
     logger.info('TO-GO hold order created successfully:', {
       holdInvoiceId: holdInvoiceId,
-      description: result.data.description
+      description: holdInvoice.description,
+      total: holdInvoice.total,
+      items: holdInvoice.hold_items?.length
     })
 
-    // Show payment dialog with the hold order data from response
+    // Show payment dialog with the hold order data
     currentInvoice.value = {
-      invoice: result.data,
+      invoice: holdInvoice,
       invoicePrefix: 'TO-GO',
-      nextInvoiceNumber: holdInvoiceId
+      nextInvoiceNumber: holdInvoiceId,
+      description: holdInvoice.description
+    }
+
+    // Double check the invoice data is valid
+    if (!currentInvoice.value.invoice?.total) {
+      logger.error('Invalid invoice data for payment:', currentInvoice.value)
+      throw new Error('Invalid invoice data for payment')
     }
     showPaymentDialog.value = true
     dialog.value = false
