@@ -101,12 +101,6 @@
     </v-card>
   </v-dialog>
 
-  <!-- Payment Dialog -->
-  <PaymentDialog
-    v-model="showPaymentDialog"
-    :invoice="currentInvoice"
-    @payment-complete="handlePaymentComplete"
-  />
 </template>
 
 <script setup>
@@ -115,8 +109,7 @@ import { useCartStore } from '../../../../stores/cart-store'
 import { useCompanyStore } from '../../../../stores/company'
 import { logger } from '../../../../utils/logger'
 import { OrderType } from '../../../../types/order'
-import PaymentDialog from '../dialogs/PaymentDialog.vue'
-import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
+import { usePosStore } from '../../../../stores/pos-store'
 
 // Props
 defineProps({
@@ -129,14 +122,13 @@ defineProps({
 // Store access
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
+const posStore = usePosStore()
 
 // Local state
 const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
 const error = ref(null)
-const showPaymentDialog = ref(false)
-const currentInvoice = ref(null)
 
 // Form state
 const customerInfo = reactive({
@@ -227,22 +219,23 @@ const processOrder = async () => {
       }
     })
 
-    // Convert to invoice immediately
-    const result = await convertHeldOrderToInvoice(holdInvoiceData)
+    // Create hold order
+    const result = await posStore.holdOrder(holdInvoiceData)
 
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to create invoice')
+    if (!result?.success) {
+      throw new Error(result?.message || 'Failed to create hold order')
     }
 
-    // Show payment dialog
-    currentInvoice.value = result.invoice
-    showPaymentDialog.value = true
+    // Close modal and clear cart
     dialog.value = false
+    cartStore.clearCart()
 
-    logger.info('TO-GO order created successfully:', {
-      invoiceId: result.invoice?.id,
-      description: result.invoice?.description
+    logger.info('TO-GO hold order created successfully:', {
+      holdInvoiceId: result.data?.id,
+      description: result.data?.description
     })
+
+    window.toastr?.['success']('TO-GO order held successfully')
   } catch (err) {
     error.value = err.message || 'Failed to process order'
     logger.error('Failed to process TO-GO order:', err)
