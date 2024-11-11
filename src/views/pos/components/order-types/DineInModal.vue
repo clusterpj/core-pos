@@ -166,9 +166,12 @@ const props = defineProps({
   }
 })
 
+import { useCompanyStore } from '@/stores/company'
+
 // Store access
 const posStore = usePosStore()
 const cartStore = useCartStore()
+const companyStore = useCompanyStore()
 
 // Composables
 const {
@@ -177,9 +180,33 @@ const {
   getTables,
   isTableOccupied,
   setTableOccupancy,
-  selectedCashier,
   currentCashRegister
 } = useTableManagement()
+
+// Computed properties for store and cashier state
+const selectedStore = computed(() => companyStore.selectedStore)
+const selectedCashier = computed(() => companyStore.selectedCashier)
+
+// Validation computed
+const canProcessOrder = computed(() => {
+  const hasStore = !!selectedStore.value
+  const hasCashier = !!selectedCashier.value
+  const hasItems = !cartStore.isEmpty
+  
+  logger.debug('[DineInModal] Order prerequisites:', {
+    hasStore,
+    hasCashier,
+    hasItems,
+    selectedStore: selectedStore.value,
+    selectedCashier: selectedCashier.value,
+    companyStoreState: {
+      store: companyStore.selectedStore,
+      cashier: companyStore.selectedCashier
+    }
+  })
+  
+  return hasStore && hasCashier && hasItems
+})
 
 const {
   setOrderType,
@@ -255,7 +282,21 @@ const processOrder = async () => {
     return
   }
 
+  // Validate store and cashier selection
+  if (!selectedStore.value || !selectedCashier.value) {
+    window.toastr?.['error']('Please select both store and cashier')
+    logger.warn('[DineInModal] Missing store or cashier selection', {
+      store: selectedStore.value,
+      cashier: selectedCashier.value
+    })
+    return
+  }
+
   processing.value = true
+  logger.info('[DineInModal] Processing order with store/cashier:', {
+    store: selectedStore.value,
+    cashier: selectedCashier.value
+  })
 
   try {
     // Set order type
@@ -299,7 +340,7 @@ const processOrder = async () => {
     // Create hold invoice data with both tables arrays
     const orderData = {
       ...cartStore.prepareHoldInvoiceData(
-        posStore.selectedStore,
+        selectedStore.value,
         selectedCashier.value,
         `DINE_IN_Table_${tableNames}`
       ),
@@ -377,6 +418,30 @@ const closeModal = () => {
     selectedTables.value = []
   }
 }
+
+// Component initialization
+onMounted(async () => {
+  logger.info('[DineInModal] Component mounted')
+  try {
+    // Check if we need to initialize the company store
+    if (!companyStore.isInitialized) {
+      logger.debug('[DineInModal] Initializing company store')
+      await companyStore.initializeStore()
+    }
+
+    logger.info('[DineInModal] Store state after mount:', {
+      store: selectedStore.value,
+      cashier: selectedCashier.value,
+      companyStore: {
+        selectedStore: companyStore.selectedStore,
+        selectedCashier: companyStore.selectedCashier
+      }
+    })
+  } catch (err) {
+    logger.error('[DineInModal] Initialization error:', err)
+    error.value = 'Failed to initialize store selections'
+  }
+})
 
 // Watch for dialog open to load tables and set order type
 watch(dialog, async (newValue) => {
