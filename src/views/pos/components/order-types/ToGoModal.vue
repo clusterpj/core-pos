@@ -340,54 +340,34 @@ const processOrder = async () => {
       customerName: customerInfo.name
     })
 
-    // Prepare order data
-    const orderData = {
-      storeId: selectedStore.value,
-      cashierId: selectedCashier.value,
-      orderName: `TO_GO_${customerInfo.name}`,
-      customerInfo: {
-        name: customerInfo.name.trim(),
-        phone: formattedPhone,
-        instructions: customerInfo.instructions.trim()
-      }
+    // Prepare the invoice data directly
+    const invoiceData = {
+      store_id: selectedStore.value,
+      cash_register_id: selectedCashier.value,
+      type: ORDER_TYPES.TO_GO,
+      description: `TO_GO_${customerInfo.name}`,
+      notes: JSON.stringify({
+        orderType: ORDER_TYPES.TO_GO,
+        orderInfo: {
+          customer: {
+            name: customerInfo.name.trim(),
+            phone: formattedPhone,
+            instructions: customerInfo.instructions.trim()
+          }
+        }
+      })
     }
 
-    const orderResult = await processOrderType(orderData)
-    
-    if (!orderResult?.success) {
-      logger.error('[ToGoModal] Order creation failed:', orderResult)
-      throw new Error(orderResult?.message || 'Failed to create order')
-    }
-
-    // Get the latest hold invoices to find our newly created one
-    await posStore.fetchHoldInvoices()
-    
-    // Find our TO-GO order in the hold invoices
-    const holdInvoice = posStore.holdInvoices.find(invoice => 
-      invoice.type === ORDER_TYPES.TO_GO && 
-      invoice.description === `TO_GO_${customerInfo.name}`
-    )
-
-    if (!holdInvoice) {
-      logger.error('[ToGoModal] Could not find created hold invoice')
-      throw new Error('Created hold invoice not found')
-    }
-
-    logger.info('[ToGoModal] Found created hold invoice:', {
-      id: holdInvoice.id,
-      type: holdInvoice.type,
-      description: holdInvoice.description
+    // Create and convert the invoice in one step
+    const invoiceResult = await convertHeldOrderToInvoice({
+      ...cartStore.prepareHoldInvoiceData(
+        selectedStore.value,
+        selectedCashier.value,
+        `TO_GO_${customerInfo.name}`
+      ),
+      ...invoiceData,
+      is_prepared_data: true
     })
-
-    // Get the complete hold invoice data using the API
-    const holdInvoiceResult = await posOperations.getHoldInvoice(holdInvoice.id)
-    
-    if (!holdInvoiceResult?.data) {
-      logger.error('[ToGoModal] Failed to fetch complete hold invoice data:', holdInvoiceResult)
-      throw new Error('Failed to fetch complete hold invoice data')
-    }
-
-    const completeHoldInvoice = holdInvoiceResult.data
     
     logger.info('[ToGoModal] Retrieved complete hold invoice data:', {
       id: completeHoldInvoice.id,
