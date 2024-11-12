@@ -3,7 +3,7 @@
   <v-footer app class="d-flex flex-column pa-6">
     <div class="d-flex justify-space-between w-100">
       <!-- Order Type Actions -->
-      <div class="d-flex gap-6">
+      <div class="d-flex gap-4">
         <held-orders-modal 
           v-model="showHeldOrdersModal"
           :disabled="false" 
@@ -15,7 +15,7 @@
       </div>
 
       <!-- Order Actions -->
-      <div class="d-flex gap-4">
+      <div class="d-flex gap-6">
         <v-btn
           color="info"
           prepend-icon="mdi-printer"
