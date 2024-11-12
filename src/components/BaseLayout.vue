@@ -49,7 +49,7 @@
         <div class="text-subtitle-2 mb-2">Selections</div>
         <v-select
           :model-value="companyStore.selectedCustomerDisplay"
-          :label="rail ? null : 'Customer'"
+          label="Customer"
           :items="companyStore.customersForDisplay"
           :loading="companyStore.loading"
           item-title="title"
@@ -57,7 +57,6 @@
           density="compact"
           hide-details
           class="mb-2"
-          :class="selectClass"
           @update:model-value="handleCustomerChange"
           :return-object="false"
           variant="outlined"
@@ -73,12 +72,10 @@
           density="compact"
           hide-details
           class="mb-2"
-          :class="selectClass"
           :disabled="!companyStore.selectedCustomer"
           @update:model-value="handleStoreChange"
           :return-object="false"
           variant="outlined"
-          :placeholder="rail ? 'Store' : null"
         />
 
         <v-select
@@ -90,12 +87,10 @@
           item-value="value"
           density="compact"
           hide-details
-          :class="selectClass"
           :disabled="!companyStore.selectedStore"
           @update:model-value="handleCashierChange"
           :return-object="false"
           variant="outlined"
-          :placeholder="rail ? 'Cashier' : null"
         />
       </div>
 
