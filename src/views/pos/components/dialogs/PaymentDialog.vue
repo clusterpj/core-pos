@@ -1,6 +1,6 @@
 <!-- src/views/pos/components/dialogs/PaymentDialog.vue -->
 <template>
-  <v-dialog v-model="dialog" max-width="600px" persistent>
+  <v-dialog v-model="dialog" max-width="800px" persistent scrollable>
     <v-card>
       <v-card-title class="text-h5">
         Process Payment
@@ -65,20 +65,50 @@
               </v-col>
             </v-row>
 
-            <!-- Payment Methods -->
+            <!-- Payment Methods Selection -->
             <v-row>
               <v-col cols="12">
-                <div v-for="(payment, index) in payments" :key="index" class="mb-4">
-                  <!-- Payment Method Selection -->
-                  <v-select
-                    v-model="payment.method_id"
-                    :items="paymentMethods"
-                    item-title="formattedNameLabel"
-                    item-value="id"
-                    label="Payment Method"
-                    :rules="[v => !!v || 'Payment method is required']"
-                    @update:model-value="handleMethodChange(index)"
-                  ></v-select>
+                <div class="text-subtitle-1 mb-3">Select Payment Method</div>
+                <v-row>
+                  <v-col v-for="method in paymentMethods" 
+                         :key="method.id" 
+                         cols="12" 
+                         sm="6" 
+                         md="4">
+                    <v-btn
+                      block
+                      :color="isMethodSelected(method.id) ? 'primary' : undefined"
+                      :variant="isMethodSelected(method.id) ? 'flat' : 'outlined'"
+                      class="payment-method-btn"
+                      height="64"
+                      @click="selectPaymentMethod(method.id)"
+                      :disabled="isMethodDisabled(method.id)"
+                    >
+                      <v-icon :icon="getPaymentMethodIcon(method.name)" class="mr-2"></v-icon>
+                      {{ method.name }}
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </v-col>
+            </v-row>
+
+            <!-- Active Payment Methods -->
+            <v-row v-if="payments.length > 0">
+              <v-col cols="12">
+                <div v-for="(payment, index) in payments" :key="index" class="payment-section mb-4">
+                  <v-card variant="outlined" class="pa-4">
+                    <div class="d-flex align-center mb-4">
+                      <v-icon :icon="getPaymentMethodIcon(getPaymentMethod(payment.method_id)?.name)" class="mr-2"></v-icon>
+                      <span class="text-h6">{{ getPaymentMethod(payment.method_id)?.name }}</span>
+                      <v-spacer></v-spacer>
+                      <v-btn
+                        v-if="index > 0"
+                        icon="mdi-close"
+                        variant="text"
+                        density="comfortable"
+                        @click="removePayment(index)"
+                      ></v-btn>
+                    </div>
 
                   <!-- Amount Input -->
                   <v-text-field
@@ -423,15 +453,56 @@ const getFeeDescription = (methodId, amount) => {
   }
 }
 
-const handleMethodChange = (index) => {
-  const payment = payments.value[index]
-  payment.displayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString() // Update to include tip
+const getPaymentMethodIcon = (methodName) => {
+  const icons = {
+    'Cash': 'mdi-cash',
+    'Credit Card': 'mdi-credit-card',
+    'Debit Card': 'mdi-credit-card-outline',
+    'Check': 'mdi-checkbox-marked-circle-outline',
+    'Gift Card': 'mdi-gift',
+    'Mobile Payment': 'mdi-cellphone',
+    'Bank Transfer': 'mdi-bank',
+  }
+  return icons[methodName] || 'mdi-currency-usd'
+}
+
+const isMethodSelected = (methodId) => {
+  return payments.value.some(payment => payment.method_id === methodId)
+}
+
+const isMethodDisabled = (methodId) => {
+  return isMethodSelected(methodId) || payments.value.length >= paymentMethods.value.length
+}
+
+const selectPaymentMethod = (methodId) => {
+  if (isMethodSelected(methodId) || isMethodDisabled(methodId)) return
+  
+  const index = payments.value.findIndex(p => !p.method_id)
+  if (index >= 0) {
+    // Update existing empty payment
+    payments.value[index].method_id = methodId
+  } else {
+    // Add new payment
+    payments.value.push({
+      method_id: methodId,
+      amount: 0,
+      displayAmount: ((invoiceTotal.value + tipAmount.value) / 100).toString(),
+      received: 0,
+      displayReceived: '0',
+      returned: 0,
+      fees: 0
+    })
+  }
+  
+  // Initialize the payment
+  const payment = payments.value[payments.value.length - 1]
+  payment.displayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString()
   payment.amount = Math.round(Number(payment.displayAmount) * 100)
   payment.displayReceived = payment.displayAmount
   payment.received = payment.amount
   payment.returned = 0
   payment.fees = 0
-  validateAmount(index)
+  validateAmount(payments.value.length - 1)
 }
 
 const handleDenominationClick = (money, index) => {
@@ -691,5 +762,44 @@ watch(() => dialog.value, async (newValue) => {
 <style scoped>
 .v-card-text {
   padding-top: 20px;
+}
+
+.payment-method-btn {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.payment-section {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.payment-section:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .v-dialog {
+    margin: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100% !important;
+    border-radius: 0;
+  }
+  
+  .v-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .v-card-text {
+    flex: 1;
+    overflow-y: auto;
+  }
 }
 </style>
