@@ -243,8 +243,8 @@ onMounted(async () => {
 .pos-layout {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding-bottom: 0;
+  height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
   position: relative;
 }
@@ -265,8 +265,7 @@ onMounted(async () => {
 }
 
 .pos-container {
-  height: 100%;
-  max-height: 100%;
+  height: calc(100vh - 88px);
   display: flex;
   flex-direction: column;
   overflow: hidden;

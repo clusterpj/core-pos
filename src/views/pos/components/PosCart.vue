@@ -181,18 +181,20 @@ const editItem = (item, index) => {
 .cart-header {
   background-color: white;
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
 }
 
 .cart-content {
   flex: 1;
-  overflow-y: auto;
   min-height: 0;
+  overflow-y: auto;
   padding: 16px 0;
 }
 
 .cart-summary-wrapper {
   background-color: white;
   border-top: 1px solid rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
 }
 
 /* Mobile Optimizations */

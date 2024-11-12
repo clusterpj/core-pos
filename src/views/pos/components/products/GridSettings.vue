@@ -197,6 +197,8 @@ const resetToDefaults = () => {
   flex-direction: column;
   gap: 16px;
   width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .grid-select {
