@@ -1,7 +1,7 @@
 <!-- src/views/pos/components/cart/CartItemList.vue -->
 <template>
-  <div class="cart-items mb-4">
-    <v-table density="compact">
+  <div class="cart-items">
+    <v-table density="compact" class="cart-table">
       <thead>
         <tr>
           <th>Products</th>
@@ -79,8 +79,24 @@ const formatPrice = (price) => {
 </script>
 
 <style scoped>
-.v-table {
+.cart-items {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  position: relative;
+}
+
+.cart-table {
   width: 100%;
+  height: 100%;
+}
+
+.v-table {
+  background: transparent !important;
+}
+
+.v-table > .v-table__wrapper {
+  overflow-y: auto;
 }
 
 .gap-1 {
