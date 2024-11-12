@@ -111,7 +111,7 @@
     <!-- Main Content -->
     <template v-if="companyStore.isConfigured">
       <v-main class="pos-main">
-        <v-container fluid class="fill-height pa-0">
+        <v-container fluid class="fill-height pa-0 pos-container">
           <v-row no-gutters class="fill-height">
             <!-- Left Side - Cart -->
             <v-col 
@@ -239,31 +239,49 @@ onMounted(async () => {
 .pos-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   padding-bottom: 0;
   overflow: hidden;
   position: relative;
 }
 
 .mobile-layout {
-  padding-bottom: 120px; /* Increased padding for mobile footer */
+  padding-bottom: 88px;
 }
 
 :deep(.v-main) {
   flex: 1 1 auto;
-  height: calc(100vh - 88px); /* Subtract footer height */
+  height: calc(100% - 88px);
   overflow: hidden;
-  margin-bottom: 88px; /* Add margin for footer */
+  margin-bottom: 88px;
 }
 
 :deep(.v-main > .v-main__wrap) {
   height: 100%;
 }
 
+.pos-container {
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 @media (max-width: 600px) {
   :deep(.v-main) {
-    height: calc(100vh - 120px);
-    margin-bottom: 120px; /* Larger margin for mobile footer */
+    height: calc(100% - 88px);
+    margin-bottom: 88px;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 960px) {
+  .pos-cart, .pos-products {
+    height: calc(100% - 88px);
+    max-height: none;
+  }
+  
+  :deep(.v-main) {
+    height: calc(100% - 88px);
+    margin-bottom: 88px;
   }
 }
 
