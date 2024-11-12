@@ -190,6 +190,7 @@
                   </v-btn>
 
                   <v-divider v-if="index < payments.length - 1" class="my-4"></v-divider>
+                  </v-card>
                 </div>
 
                 <!-- Add Payment Method Button -->
