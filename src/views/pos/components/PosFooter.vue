@@ -248,6 +248,8 @@ defineEmits(['print-order', 'submit-order'])
   right: 0;
   z-index: 100;
   background: white;
+  height: 88px;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
 }
 
 @media (max-width: 600px) {

@@ -240,8 +240,9 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  padding-bottom: 88px; /* Height of footer + padding */
+  padding-bottom: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .mobile-layout {
@@ -250,8 +251,9 @@ onMounted(async () => {
 
 :deep(.v-main) {
   flex: 1 1 auto;
-  height: calc(100vh - 88px);
+  height: calc(100vh - 88px); /* Subtract footer height */
   overflow: hidden;
+  margin-bottom: 88px; /* Add margin for footer */
 }
 
 :deep(.v-main > .v-main__wrap) {
@@ -261,6 +263,7 @@ onMounted(async () => {
 @media (max-width: 600px) {
   :deep(.v-main) {
     height: calc(100vh - 120px);
+    margin-bottom: 120px; /* Larger margin for mobile footer */
   }
 }
 
