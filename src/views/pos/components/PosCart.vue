@@ -4,13 +4,14 @@
     <div class="cart-header px-4 pt-4 pb-2">
       <div class="d-flex justify-space-between align-center">
         <div>
-          <h2 class="text-h6">Current Order:</h2>
+          <h2 class="text-h6 font-weight-medium">Current Order</h2>
           <div class="d-flex align-center gap-2">
             <template v-if="cartStore.isHoldOrder">
               <v-chip
                 color="warning"
                 size="small"
-                class="mt-1"
+                variant="elevated"
+                class="mt-1 font-weight-medium"
                 prepend-icon="mdi-clock-outline"
               >
                 Held Order: {{ cartStore.holdOrderDescription || 'No Description' }}
@@ -18,7 +19,8 @@
               <v-btn
                 color="warning"
                 size="small"
-                class="mt-1"
+                variant="tonal"
+                class="mt-1 text-none"
                 :loading="updating"
                 @click="updateOrder"
                 prepend-icon="mdi-content-save"
@@ -30,12 +32,14 @@
         </div>
         <v-btn
           color="error"
-          variant="text"
+          variant="tonal"
           density="comfortable"
           :disabled="cartStore.isEmpty"
           @click="clearOrder"
+          prepend-icon="mdi-delete-outline"
+          class="text-none"
         >
-          Clear Order
+          Clear Cart
         </v-btn>
       </div>
     </div>
@@ -45,9 +49,14 @@
       <v-alert
         v-if="cartStore.isEmpty"
         type="info"
+        variant="tonal"
         class="mx-4 mb-4"
+        border="start"
+        density="comfortable"
+        prepend-icon="mdi-cart-outline"
       >
-        Cart is empty. Add items from the product list.
+        <div class="text-subtitle-1 font-weight-medium">Cart is Empty</div>
+        <div class="text-body-2">Add items from the product list to get started.</div>
       </v-alert>
 
       <!-- Cart Items -->
@@ -65,7 +74,7 @@
     <order-notes v-if="!cartStore.isEmpty" />
 
     <!-- Order Summary - Always visible at bottom -->
-    <div class="cart-summary-wrapper px-4 pb-4">
+    <div class="cart-summary-wrapper px-4 pb-4 elevation-1">
       <cart-summary
         :subtotal="cartStore.subtotal"
         :discount-amount="cartStore.discountAmount"
@@ -124,7 +133,9 @@ const editItem = (item, index) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: white;
+  background-color: rgb(250, 250, 250);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .cart-header {
