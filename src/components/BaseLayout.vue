@@ -5,12 +5,20 @@
       <v-btn
         v-show="!drawer"
         icon="mdi-menu"
-        size="small"
-        variant="tonal"
+        size="large"
+        variant="elevated"
         color="primary"
         @click="drawer = true"
         class="menu-toggle"
-      />
+      >
+        <v-tooltip
+          activator="parent"
+          location="right"
+          open-delay="500"
+        >
+          Open Menu
+        </v-tooltip>
+      </v-btn>
     </v-fade-transition>
 
     <v-navigation-drawer 
