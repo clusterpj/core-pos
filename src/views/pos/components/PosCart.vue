@@ -89,7 +89,47 @@
       v-model="showEditDialog"
       :item="editingItem"
       :index="editingIndex"
-    />
+      max-width="500"
+      transition="dialog-bottom-transition"
+      persistent
+    >
+      <template #default>
+        <v-card>
+          <v-card-title class="text-h6 pa-4">
+            Edit Item
+            <v-btn
+              icon="mdi-close"
+              variant="text"
+              size="small"
+              @click="showEditDialog = false"
+              class="float-right"
+            />
+          </v-card-title>
+          <v-card-text class="pa-4">
+            <!-- Edit form content here -->
+          </v-card-text>
+          <v-card-actions class="pa-4">
+            <v-spacer />
+            <v-btn
+              color="grey-darken-1"
+              variant="text"
+              @click="showEditDialog = false"
+              class="text-none"
+            >
+              Cancel
+            </v-btn>
+            <v-btn
+              color="primary"
+              @click="saveChanges"
+              class="text-none"
+              :loading="saving"
+            >
+              Save Changes
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </template>
+    </edit-item-dialog>
 
     <!-- Loading Overlay -->
     <v-overlay
