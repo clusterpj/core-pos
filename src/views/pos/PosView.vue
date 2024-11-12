@@ -123,7 +123,9 @@
               class="pos-cart border-r"
               :class="{'pos-cart-mobile': $vuetify.display.smAndDown}"
             >
-              <pos-cart />
+              <div class="cart-container">
+                <pos-cart />
+              </div>
             </v-col>
 
             <!-- Right Side - Products -->
@@ -136,7 +138,9 @@
               class="pos-products"
               :class="{'pos-products-mobile': $vuetify.display.smAndDown}"
             >
-              <pos-products />
+              <div class="products-container">
+                <pos-products />
+              </div>
             </v-col>
           </v-row>
         </v-container>
@@ -264,52 +268,56 @@ onMounted(async () => {
   max-height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-@media (max-width: 600px) {
-  :deep(.v-main) {
-    height: calc(100% - 88px);
-    margin-bottom: 88px;
-  }
-}
-
-@media (min-width: 601px) and (max-width: 960px) {
-  .pos-cart, .pos-products {
-    height: calc(100% - 88px);
-    max-height: none;
-  }
-  
-  :deep(.v-main) {
-    height: calc(100% - 88px);
-    margin-bottom: 88px;
-  }
-}
-
-@media (max-width: 600px) {
-  .pos-cart-mobile, .pos-products-mobile {
-    height: calc(50vh - 60px); /* Adjust for mobile header */
-    max-height: none;
-    overflow-y: auto;
-  }
+  overflow: hidden;
 }
 
 .pos-main {
   flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-container, .products-container {
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
 }
 
 .pos-cart, .pos-products {
   height: 100%;
-  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-.pos-cart-mobile {
-  height: 50vh;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+@media (max-width: 600px) {
+  :deep(.v-main) {
+    height: calc(100% - 88px);
+    margin-bottom: 88px;
+  }
+
+  .pos-cart-mobile .cart-container, 
+  .pos-products-mobile .products-container {
+    height: calc(50vh - 88px);
+    overflow-y: auto;
+  }
+
+  .pos-cart-mobile {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
 }
 
-.pos-products-mobile {
-  height: 50vh;
+@media (min-width: 601px) and (max-width: 960px) {
+  :deep(.v-main) {
+    height: calc(100% - 88px);
+    margin-bottom: 88px;
+  }
+
+  .cart-container, .products-container {
+    height: calc(100vh - 176px);
+    overflow-y: auto;
+  }
 }
 
 .border-r {
