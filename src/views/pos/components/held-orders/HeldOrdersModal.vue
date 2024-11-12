@@ -145,15 +145,17 @@
                 </v-row>
 
                 <template v-else>
-                  <HeldOrdersFilters
-                    :search="historySearch"
-                    :selectedType="historySelectedType"
-                    :selectedStatus="historySelectedStatus"
-                    :orderTypes="orderTypes"
-                    @update:search="historySearch = $event"
-                    @update:selectedType="historySelectedType = $event"
-                    @update:selectedStatus="historySelectedStatus = $event"
-                  />
+                  <v-container class="px-2 pb-2">
+                    <HeldOrdersFilters
+                      :search="historySearch"
+                      :selectedType="historySelectedType"
+                      :selectedStatus="historySelectedStatus"
+                      :orderTypes="orderTypes"
+                      @update:search="historySearch = $event"
+                      @update:selectedType="historySelectedType = $event"
+                      @update:selectedStatus="historySelectedStatus = $event"
+                    />
+                  </v-container>
 
                   <v-row>
                     <v-col cols="12">
