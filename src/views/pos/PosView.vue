@@ -258,12 +258,12 @@ onMounted(async () => {
 }
 
 .mobile-layout {
-  padding-bottom: 88px;
+  padding-bottom: 64px;
 }
 
 :deep(.v-main) {
   flex: 1 1 auto;
-  height: calc(100% - 88px);
+  height: calc(100% - 64px);
   overflow: hidden;
   padding-bottom: 0 !important;
 }

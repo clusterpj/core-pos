@@ -1,6 +1,6 @@
 <!-- src/views/pos/components/PosFooter.vue -->
 <template>
-  <v-footer app class="d-flex flex-column pa-6">
+  <v-footer app class="d-flex flex-column pos-footer">
     <div class="d-flex justify-space-between w-100">
       <!-- Order Type Actions -->
       <div class="d-flex gap-4">
@@ -240,7 +240,7 @@ defineEmits(['print-order', 'submit-order'])
 </script>
 
 <style scoped>
-.v-footer {
+.pos-footer {
   border-top: 1px solid rgba(0, 0, 0, 0.12);
   position: fixed;
   bottom: 0;
@@ -248,18 +248,20 @@ defineEmits(['print-order', 'submit-order'])
   right: 0;
   z-index: 100;
   background: white;
-  height: 88px;
+  height: 64px;
   box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+  padding: 0 24px !important;
 }
 
 @media (max-width: 600px) {
-  .v-footer {
-    padding: 12px !important;
+  .pos-footer {
+    padding: 8px 12px !important;
+    height: 88px;
   }
   
   .d-flex {
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
   
   .gap-4 {

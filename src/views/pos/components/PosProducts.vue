@@ -196,7 +196,7 @@ const quickAdd = (product) => {
 
 @media (max-width: 600px) {
   .pos-products-container {
-    max-height: calc(100vh - 120px); /* Account for mobile footer */
+    max-height: calc(100vh - 96px); /* Account for mobile footer */
   }
   
   .products-header .v-container {

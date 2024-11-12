@@ -218,7 +218,7 @@ const editItem = (item, index) => {
 /* Tablet and Desktop */
 @media (min-width: 601px) {
   .pos-cart-container {
-    height: calc(100vh - 88px); /* Account for main padding and footer */
+    height: calc(100vh - 64px); /* Account for main padding and footer */
   }
 }
 </style>
