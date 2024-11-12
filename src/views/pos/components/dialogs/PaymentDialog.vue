@@ -144,7 +144,6 @@
                       <span class="text-h6">{{ getPaymentMethod(payment.method_id)?.name }}</span>
                       <v-spacer></v-spacer>
                       <v-btn
-                        v-if="index > 0"
                         icon="mdi-close"
                         variant="text"
                         density="comfortable"
@@ -221,7 +220,6 @@
 
                   <!-- Remove Payment Button -->
                   <v-btn
-                    v-if="index > 0"
                     color="error"
                     variant="outlined"
                     size="small"
@@ -787,7 +785,7 @@ watch(() => dialog.value, async (newValue) => {
   flex-direction: column;
   height: 100%;
   border-radius: 16px;
-  background: linear-gradient(145deg, var(--v-surface-variant) 0%, var(--v-surface-base) 100%);
+  background: var(--v-surface-base);
 }
 
 .payment-dialog-toolbar {
@@ -842,17 +840,17 @@ watch(() => dialog.value, async (newValue) => {
 
 /* Responsive Typography */
 .text-h5 {
-  font-size: clamp(1.5rem, 4vw, 1.8rem) !important;
+  font-size: clamp(1.2rem, 3vw, 1.4rem) !important;
   font-weight: 500;
 }
 
 .text-h6 {
-  font-size: clamp(1.2rem, 3vw, 1.5rem) !important;
+  font-size: clamp(1rem, 2.5vw, 1.2rem) !important;
   font-weight: 500;
 }
 
 .text-subtitle-1 {
-  font-size: clamp(1.1rem, 2.5vw, 1.4rem) !important;
+  font-size: clamp(0.9rem, 2vw, 1.1rem) !important;
 }
 
 /* Touch Targets */
@@ -883,32 +881,32 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .v-card-title {
-  font-size: 1.8rem !important;
-  padding: 20px 24px !important;
+  font-size: 1.2rem !important;
+  padding: 16px 20px !important;
 }
 
 .text-h5 {
-  font-size: 1.8rem !important;
+  font-size: 1.2rem !important;
 }
 
 .text-h6 {
-  font-size: 1.5rem !important;
+  font-size: 1.1rem !important;
 }
 
 .text-subtitle-1 {
-  font-size: 1.4rem !important;
+  font-size: 1rem !important;
   font-weight: 500;
 }
 
 .text-subtitle-2 {
-  font-size: 1.3rem !important;
+  font-size: 0.9rem !important;
 }
 
 .payment-method-btn {
   text-transform: none;
   letter-spacing: normal;
-  font-size: 1.3rem;
-  height: 80px !important;
+  font-size: 1rem;
+  height: 60px !important;
 }
 
 .payment-method-btn .v-icon {
