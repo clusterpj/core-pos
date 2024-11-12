@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialog" max-width="1200">
+  <v-dialog v-model="dialog" max-width="1200" scrollable>
     <template v-slot:activator="{ props: dialogProps }">
       <v-btn
         color="primary"
@@ -7,19 +7,24 @@
         prepend-icon="mdi-table-furniture"
         :loading="loading"
         :disabled="disabled || cartStore.isEmpty"
+        class="px-6 text-none text-subtitle-1"
+        rounded="lg"
+        elevation="2"
       >
-        DINE IN
+        Dine In
       </v-btn>
     </template>
 
-    <v-card>
-      <v-card-title class="d-flex align-center pa-4">
-        <span class="text-h5">Table Selection</span>
+    <v-card class="rounded-lg">
+      <v-toolbar color="primary" class="text-white rounded-t-lg">
+        <v-toolbar-title class="text-h6 font-weight-medium">
+          Table Selection
+        </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn icon @click="closeModal">
+        <v-btn icon variant="text" @click="closeModal">
           <v-icon>mdi-close</v-icon>
         </v-btn>
-      </v-card-title>
+      </v-toolbar>
 
       <v-card-text>
         <v-container>
@@ -71,16 +76,24 @@
                 ]"
                 variant="outlined"
                 @click="handleTableClick(table)"
+                elevation="2"
+                class="rounded-lg transition-swing"
               >
-                <v-card-title class="d-flex justify-space-between align-center">
-                  <span>{{ table.name }}</span>
-                  <v-chip
-                    :color="isTableAvailable(table) ? 'success' : 'error'"
-                    size="small"
-                  >
-                    {{ isTableAvailable(table) ? 'Available' : 'In Use' }}
-                  </v-chip>
-                </v-card-title>
+                <v-card-item>
+                  <div class="d-flex justify-space-between align-center mb-2">
+                    <v-card-title class="text-h6 font-weight-bold pa-0">
+                      {{ table.name }}
+                    </v-card-title>
+                    <v-chip
+                      :color="isTableAvailable(table) ? 'success' : 'error'"
+                      size="small"
+                      class="font-weight-medium"
+                      variant="elevated"
+                    >
+                      {{ isTableAvailable(table) ? 'Available' : 'In Use' }}
+                    </v-chip>
+                  </div>
+                </v-card-item>
 
                 <v-card-text>
                   <!-- Selected Table View -->
@@ -472,26 +485,48 @@ defineExpose({
 
 <style scoped>
 .table-card {
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   min-height: 180px;
+  border-width: 2px !important;
+}
+
+.table-card:hover:not(.occupied) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
 }
 
 .table-card.available {
-  border: 2px solid rgb(var(--v-theme-success));
+  border-color: rgb(var(--v-theme-success)) !important;
 }
 
 .table-card.occupied {
-  border: 2px solid rgb(var(--v-theme-error));
+  border-color: rgb(var(--v-theme-error)) !important;
   cursor: not-allowed;
+  opacity: 0.8;
 }
 
 .table-card.selected {
-  border: 2px solid rgb(var(--v-theme-primary));
-  background-color: rgb(var(--v-theme-primary), 0.1);
+  border-color: rgb(var(--v-theme-primary)) !important;
+  background-color: rgb(var(--v-theme-primary), 0.05);
+}
+
+.table-card.selected:hover {
+  background-color: rgb(var(--v-theme-primary), 0.08);
 }
 
 .v-card-text {
   padding-top: 16px;
+}
+
+.transition-swing {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .table-card {
+    min-height: 160px;
+  }
 }
 </style>
