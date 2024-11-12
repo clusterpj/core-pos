@@ -192,12 +192,23 @@ export function useHeldOrders() {
         throw new Error('Invalid invoice: missing items')
       }
 
-      invoice.hold_items.forEach(item => {
+      for (const item of invoice.hold_items) {
         if (!item.item_id || !item.name) {
           throw new Error('Invalid item data: missing required fields')
         }
 
-        cartStore.addItem(
+        logger.info('Adding item to cart:', {
+          product: {
+            id: item.item_id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            unit_name: item.unit_name
+          },
+          quantity: item.quantity
+        })
+
+        await cartStore.addItem(
           {
             id: item.item_id,
             name: item.name,
@@ -207,18 +218,18 @@ export function useHeldOrders() {
           },
           Number(item.quantity)
         )
-      })
+      }
 
       // Set other cart properties
       if (invoice.discount_type && invoice.discount) {
-        cartStore.setDiscount(
+        await cartStore.setDiscount(
           invoice.discount_type,
           Number(invoice.discount)
         )
       }
       
       if (invoice.tip_type && invoice.tip) {
-        cartStore.setTip(
+        await cartStore.setTip(
           invoice.tip_type,
           Number(invoice.tip)
         )
@@ -226,7 +237,7 @@ export function useHeldOrders() {
 
       // Set order type directly
       if (invoice.type) {
-        cartStore.setType(invoice.type)
+        await cartStore.setType(invoice.type)
       }
 
       // Parse customer notes from notes field
@@ -244,10 +255,10 @@ export function useHeldOrders() {
           }
 
           // Set the notes in cart store
-          cartStore.setNotes(JSON.stringify(newNotes))
+          await cartStore.setNotes(JSON.stringify(newNotes))
         } catch (e) {
           logger.warn('Failed to parse notes, setting as is:', e)
-          cartStore.setNotes(invoice.notes)
+          await cartStore.setNotes(invoice.notes)
         }
       }
 
