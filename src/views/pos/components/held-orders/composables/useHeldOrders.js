@@ -182,97 +182,134 @@ export function useHeldOrders() {
       }
 
       loadingOrder.value = invoice.id
-      logger.debug('Loading order:', invoice)
+      logger.startGroup('Loading held order')
+      logger.debug('Loading order details:', {
+        id: invoice.id,
+        description: invoice.description,
+        type: invoice.type,
+        itemCount: invoice.hold_items?.length
+      })
       
-      // Clear current cart
-      cartStore.clearCart()
+      // Clear current cart first
+      await cartStore.clearCart()
+      logger.debug('Cart cleared successfully')
       
-      // Add each hold item to cart
+      // Validate items array
       if (!Array.isArray(invoice.hold_items)) {
-        throw new Error('Invalid invoice: missing items')
+        throw new Error('Invalid invoice: missing items array')
       }
 
+      // Load items into cart
+      logger.debug(`Processing ${invoice.hold_items.length} items`)
       for (const item of invoice.hold_items) {
+        // Validate item data
         if (!item.item_id || !item.name) {
-          throw new Error('Invalid item data: missing required fields')
+          logger.error('Invalid item data:', item)
+          throw new Error(`Invalid item data: missing required fields for item ${item.name || 'unknown'}`)
         }
 
-        logger.info('Adding item to cart:', {
-          product: {
-            id: item.item_id,
-            name: item.name,
-            description: item.description,
-            price: item.price,
-            unit_name: item.unit_name
-          },
+        const product = {
+          id: item.item_id,
+          name: item.name,
+          description: item.description,
+          price: item.price,
+          unit_name: item.unit_name
+        }
+
+        logger.debug('Adding item to cart:', {
+          productId: product.id,
+          name: product.name,
           quantity: item.quantity
         })
 
-        await cartStore.addItem(
-          {
-            id: item.item_id,
-            name: item.name,
-            description: item.description,
-            price: item.price,
-            unit_name: item.unit_name
-          },
-          Number(item.quantity)
-        )
-      }
-
-      // Set other cart properties
-      if (invoice.discount_type && invoice.discount) {
-        await cartStore.setDiscount(
-          invoice.discount_type,
-          Number(invoice.discount)
-        )
-      }
-      
-      if (invoice.tip_type && invoice.tip) {
-        await cartStore.setTip(
-          invoice.tip_type,
-          Number(invoice.tip)
-        )
-      }
-
-      // Set order type directly
-      if (invoice.type) {
-        await cartStore.setType(invoice.type)
-      }
-
-      // Parse customer notes from notes field
-      if (invoice.notes) {
         try {
-          const notesObj = JSON.parse(invoice.notes)
-          const customerNotes = parseOrderNotes(invoice.notes)
-
-          // Create new notes object with only customer info and notes
-          const newNotes = {
-            orderInfo: {
-              customer: notesObj.orderInfo?.customer || notesObj.customer || {}
-            },
-            customerNotes: customerNotes
-          }
-
-          // Set the notes in cart store
-          await cartStore.setNotes(JSON.stringify(newNotes))
-        } catch (e) {
-          logger.warn('Failed to parse notes, setting as is:', e)
-          await cartStore.setNotes(invoice.notes)
+          await cartStore.addItem(product, Number(item.quantity))
+        } catch (error) {
+          logger.error('Failed to add item to cart:', {
+            error: error.message,
+            item: product
+          })
+          throw new Error(`Failed to add item ${product.name} to cart: ${error.message}`)
         }
       }
 
-      // Store the original invoice data for updates
-      cartStore.setHoldInvoiceId(invoice.id)
-      cartStore.setHoldInvoiceDescription(invoice.description)
+      // Set cart properties
+      logger.debug('Setting cart properties')
       
-      logger.info('Order loaded successfully:', {
-        id: invoice.id,
-        description: invoice.description,
-        type: invoice.type
-      })
+      try {
+        // Set discount if present
+        if (invoice.discount_type && invoice.discount) {
+          logger.debug('Setting discount:', {
+            type: invoice.discount_type,
+            amount: invoice.discount
+          })
+          await cartStore.setDiscount(
+            invoice.discount_type,
+            Number(invoice.discount)
+          )
+        }
+        
+        // Set tip if present
+        if (invoice.tip_type && invoice.tip) {
+          logger.debug('Setting tip:', {
+            type: invoice.tip_type,
+            amount: invoice.tip
+          })
+          await cartStore.setTip(
+            invoice.tip_type,
+            Number(invoice.tip)
+          )
+        }
 
-      return true
+        // Set order type
+        if (invoice.type) {
+          logger.debug('Setting order type:', invoice.type)
+          await cartStore.setType(invoice.type)
+        }
+
+        // Handle notes
+        if (invoice.notes) {
+          logger.debug('Processing order notes')
+          try {
+            const notesObj = JSON.parse(invoice.notes)
+            const customerNotes = parseOrderNotes(invoice.notes)
+
+            const newNotes = {
+              orderInfo: {
+                customer: notesObj.orderInfo?.customer || notesObj.customer || {}
+              },
+              customerNotes: customerNotes
+            }
+
+            logger.debug('Setting parsed notes:', newNotes)
+            await cartStore.setNotes(JSON.stringify(newNotes))
+          } catch (e) {
+            logger.warn('Failed to parse notes, using raw value:', e)
+            await cartStore.setNotes(invoice.notes)
+          }
+        }
+
+        // Set hold invoice ID and description last
+        logger.debug('Setting hold invoice reference:', {
+          id: invoice.id,
+          description: invoice.description
+        })
+        
+        await cartStore.setHoldInvoiceId(invoice.id)
+        await cartStore.setHoldInvoiceDescription(invoice.description)
+        
+        logger.info('Order loaded successfully:', {
+          id: invoice.id,
+          description: invoice.description,
+          type: invoice.type,
+          itemCount: invoice.hold_items.length
+        })
+        
+        return true
+      } catch (error) {
+        logger.error('Failed to set cart properties:', error)
+        throw new Error(`Failed to set cart properties: ${error.message}`)
+      }
     } catch (error) {
       logger.error('Failed to load order:', error)
       window.toastr?.['error'](error.message || 'Failed to load order')
