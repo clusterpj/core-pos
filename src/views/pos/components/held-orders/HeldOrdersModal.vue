@@ -12,7 +12,7 @@
       size="large"
       :block="$vuetify.display.mobile"
     >
-      <span class="text-subtitle-1 font-weight-medium">Orders</span>
+      <span class="text-subtitle-1 font-weight-medium">ORDERS</span>
     </v-btn>
 
     <v-dialog
