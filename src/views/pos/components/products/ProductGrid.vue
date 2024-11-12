@@ -6,7 +6,7 @@
         <v-col
           v-for="item in displayedProducts"
           :key="item.id"
-          :cols="12 / gridSettings.columns"
+          :cols="gridSettings.layout === 'list' ? 12 : 12 / gridSettings.columns"
           class="product-grid-item"
         >
           <v-card
@@ -15,29 +15,47 @@
             :class="gridSettings.layout"
             @click="$emit('select', item)"
           >
-            <v-img
-              :src="getImageUrl(item)"
-              :height="getImageHeight"
-              cover
-              class="bg-grey-lighten-2"
-            >
-              <template v-slot:placeholder>
-                <div class="d-flex align-center justify-center fill-height">
-                  <v-progress-circular
-                    color="grey-lighten-4"
-                    indeterminate
-                    size="20"
-                  />
+            <template v-if="gridSettings.layout !== 'list'">
+              <v-img
+                :src="getImageUrl(item)"
+                :height="getImageHeight"
+                cover
+                class="bg-grey-lighten-2"
+              >
+                <template v-slot:placeholder>
+                  <div class="d-flex align-center justify-center fill-height">
+                    <v-progress-circular
+                      color="grey-lighten-4"
+                      indeterminate
+                      size="20"
+                    />
+                  </div>
+                </template>
+              </v-img>
+                
+              <div class="product-info">
+                <div class="product-title px-3 pt-3">{{ item.name }}</div>
+                <div class="price-wrapper px-3 pb-3">
+                  <span class="text-primary price-text">${{ formatPrice(item.sale_price || item.price) }}</span>
                 </div>
-              </template>
-            </v-img>
-              
-            <div class="product-info">
-              <div class="product-title px-3 pt-3">{{ item.name }}</div>
-              <div class="price-wrapper px-3 pb-3">
-                <span class="text-primary price-text">${{ formatPrice(item.sale_price || item.price) }}</span>
               </div>
-            </div>
+            </template>
+
+            <template v-else>
+              <div class="d-flex align-center pa-3">
+                <div class="flex-grow-1">
+                  <div class="product-title mb-1">{{ item.name }}</div>
+                  <div class="text-primary price-text">${{ formatPrice(item.sale_price || item.price) }}</div>
+                </div>
+                <v-btn
+                  icon="mdi-plus"
+                  variant="text"
+                  size="small"
+                  color="primary"
+                  class="ms-2"
+                />
+              </div>
+            </template>
           </v-card>
         </v-col>
       </v-row>
@@ -162,6 +180,17 @@ const getImageUrl = (item) => {
 
 .product-card.compact {
   height: v-bind(getCardHeight);
+}
+
+.product-card.list {
+  height: auto;
+  margin-bottom: 4px;
+}
+
+.product-card.list .product-title {
+  height: auto;
+  font-size: 0.95rem;
+  -webkit-line-clamp: 1;
 }
 
 .product-card:not(:disabled):hover {

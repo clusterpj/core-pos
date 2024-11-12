@@ -87,6 +87,16 @@
                 <span class="d-none d-sm-inline">Compact</span>
                 <v-icon class="d-sm-none">mdi-view-grid-compact</v-icon>
               </v-btn>
+              <v-btn
+                value="list"
+                size="small"
+                prepend-icon="mdi-view-list"
+                class="grid-btn"
+                :ripple="false"
+              >
+                <span class="d-none d-sm-inline">List</span>
+                <v-icon class="d-sm-none">mdi-view-list</v-icon>
+              </v-btn>
             </v-btn-toggle>
           </template>
         </v-tooltip>
