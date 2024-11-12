@@ -98,7 +98,7 @@
                 </v-row>
 
                 <template v-else>
-                  <v-container class="px-4">
+                  <v-container class="px-2">
                     <HeldOrdersFilters
                       :search="search"
                       :selectedType="selectedType"
