@@ -11,30 +11,42 @@
     </v-alert>
 
     <template v-else>
-      <div class="products-header px-2 pt-2">
-        <!-- Search and Grid Settings Row -->
-        <div class="d-flex align-center mb-2">
-          <div class="search-field me-6">
-            <product-search @search="handleSearch" />
-          </div>
-          <div class="ms-auto">
-            <grid-settings v-model="gridSettings" />
-          </div>
-        </div>
+      <div class="products-header">
+        <v-container fluid class="pa-4">
+          <!-- Search and Grid Settings Row -->
+          <v-row no-gutters align="center" class="mb-4">
+            <v-col cols="12" sm="8" md="7" lg="8">
+              <div class="search-field">
+                <product-search @search="handleSearch" />
+              </div>
+            </v-col>
+            <v-col cols="12" sm="4" md="5" lg="4" class="d-flex justify-end">
+              <div class="grid-settings-wrapper">
+                <grid-settings v-model="gridSettings" />
+              </div>
+            </v-col>
+          </v-row>
 
-        <!-- Categories Row -->
-        <div class="mb-2">
-          <category-tabs
-            :categories="posStore.categoriesForDisplay"
-            @change="handleCategoryChange"
-          />
-        </div>
+          <!-- Categories Row -->
+          <v-row no-gutters>
+            <v-col cols="12">
+              <category-tabs
+                :categories="posStore.categoriesForDisplay"
+                @change="handleCategoryChange"
+              />
+            </v-col>
+          </v-row>
+        </v-container>
       </div>
 
-      <div class="products-content">
+      <v-container fluid class="products-content pa-0">
         <!-- Loading State -->
-        <div v-if="posStore.loading.products" class="d-flex justify-center ma-4">
-          <v-progress-circular indeterminate color="primary" />
+        <div v-if="posStore.loading.products" class="d-flex justify-center align-center" style="min-height: 200px;">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+            size="32"
+          />
         </div>
 
         <!-- Products Grid -->
@@ -50,12 +62,16 @@
           <v-alert
             v-else
             type="info"
-            class="ma-2"
+            variant="tonal"
+            class="mx-4"
           >
+            <template v-slot:prepend>
+              <v-icon icon="mdi-information" />
+            </template>
             No items found
           </v-alert>
         </template>
-      </div>
+      </v-container>
     </template>
   </div>
 </template>
@@ -135,17 +151,25 @@ const quickAdd = (product) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: white;
+  background-color: rgb(250, 250, 250);
 }
 
 .products-header {
   background-color: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  z-index: 1;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .search-field {
-  width: 600px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.grid-settings-wrapper {
+  padding-left: 16px;
 }
 
 .products-content {
@@ -153,29 +177,29 @@ const quickAdd = (product) => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding: 16px 0;
+}
+
+/* Tablet Optimizations */
+@media (max-width: 960px) {
+  .products-header {
+    padding: 8px 0;
+  }
+
+  .grid-settings-wrapper {
+    padding-left: 0;
+    margin-top: 16px;
+  }
 }
 
 /* Mobile Optimizations */
 @media (max-width: 600px) {
-  .products-header {
-    position: sticky;
-    top: 0;
+  .products-header .v-container {
+    padding: 8px 12px;
   }
   
   .search-field {
-    width: 200px;
-  }
-}
-
-/* Tablet Optimizations */
-@media (min-width: 601px) and (max-width: 960px) {
-  .products-header {
-    position: sticky;
-    top: 0;
-  }
-  
-  .search-field {
-    width: 400px;
+    max-width: 100%;
   }
 }
 </style>
