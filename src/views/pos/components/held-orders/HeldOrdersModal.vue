@@ -1,48 +1,93 @@
 <!-- src/views/pos/components/held-orders/HeldOrdersModal.vue -->
 <template>
-  <div>
+  <div class="held-orders-container">
     <v-btn
       color="primary"
       prepend-icon="mdi-clipboard-list"
       @click="updateModelValue(true)"
       :disabled="disabled"
-      class="text-none px-6"
+      class="text-none px-6 text-capitalize"
       rounded="pill"
-      elevation="2"
+      :elevation="$vuetify.display.mobile ? 1 : 2"
       size="large"
+      :block="$vuetify.display.mobile"
     >
-      ORDERS
+      <span class="text-subtitle-1 font-weight-medium">Orders</span>
     </v-btn>
 
     <v-dialog
       :model-value="modelValue"
       @update:model-value="updateModelValue"
-      max-width="1200"
+      :fullscreen="$vuetify.display.mobile"
+      :max-width="$vuetify.display.mobile ? undefined : '1400'"
+      transition="dialog-bottom-transition"
+      class="orders-dialog"
     >
-      <v-card>
-        <v-card-title class="text-h5">
-          Orders
+      <v-card class="h-100">
+        <v-toolbar
+          color="primary"
+          :elevation="1"
+          prominent
+        >
+          <v-toolbar-title class="text-h6 font-weight-medium">
+            Orders Management
+          </v-toolbar-title>
           <v-spacer></v-spacer>
-          <v-btn icon @click="updateModelValue(false)">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </v-card-title>
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            @click="updateModelValue(false)"
+            class="ml-2"
+          ></v-btn>
+        </v-toolbar>
 
-        <v-card-text>
-          <v-container>
-            <v-tabs v-model="activeTab">
-              <v-tab value="active">Active Orders</v-tab>
-              <v-tab value="history">Order History</v-tab>
+        <v-card-text class="pa-0">
+          <v-container fluid class="pa-0">
+            <v-tabs
+              v-model="activeTab"
+              color="primary"
+              grow
+              show-arrows
+              class="v-tabs-sticky"
+              :height="$vuetify.display.mobile ? 48 : 64"
+            >
+              <v-tab
+                value="active"
+                class="text-subtitle-1"
+                :class="{ 'px-6': !$vuetify.display.mobile }"
+              >
+                <v-icon
+                  start
+                  :icon="activeTab === 'active' ? 'mdi-clipboard-list' : 'mdi-clipboard-list-outline'"
+                  class="mr-2"
+                ></v-icon>
+                Active Orders
+              </v-tab>
+              <v-tab
+                value="history"
+                class="text-subtitle-1"
+                :class="{ 'px-6': !$vuetify.display.mobile }"
+              >
+                <v-icon
+                  start
+                  :icon="activeTab === 'history' ? 'mdi-history' : 'mdi-history-outline'"
+                  class="mr-2"
+                ></v-icon>
+                Order History
+              </v-tab>
             </v-tabs>
 
-            <v-window v-model="activeTab" class="mt-4">
+            <v-window v-model="activeTab" class="mt-2">
               <!-- Active Orders Tab -->
               <v-window-item value="active">
-                <v-row v-if="loading">
-                  <v-col cols="12" class="text-center">
-                    <v-progress-circular indeterminate></v-progress-circular>
-                  </v-col>
-                </v-row>
+                <v-fade-transition>
+                  <v-sheet v-if="loading" class="pa-4">
+                    <v-skeleton-loader
+                      type="table-heading, table-row-divider, table-row@6"
+                      class="mx-auto"
+                    ></v-skeleton-loader>
+                  </v-sheet>
+                </v-fade-transition>
 
                 <v-row v-else-if="!activeOrders.length">
                   <v-col cols="12" class="text-center">
