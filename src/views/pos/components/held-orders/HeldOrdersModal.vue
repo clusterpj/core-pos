@@ -6,8 +6,12 @@
       prepend-icon="mdi-clipboard-list"
       @click="updateModelValue(true)"
       :disabled="disabled"
+      class="text-none px-6"
+      rounded="pill"
+      elevation="2"
+      size="large"
     >
-      Orders
+      ORDERS
     </v-btn>
 
     <v-dialog
