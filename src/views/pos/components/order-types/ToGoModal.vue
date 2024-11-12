@@ -1,5 +1,11 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600">
+  <v-dialog
+    v-model="dialog"
+    max-width="600"
+    :scrim="true"
+    transition="dialog-bottom-transition"
+    class="rounded-lg"
+  >
     <template v-slot:activator="{ props: dialogProps }">
       <v-btn
         color="primary"
@@ -7,95 +13,129 @@
         prepend-icon="mdi-shopping"
         :loading="loading"
         :disabled="disabled || cartStore.isEmpty"
+        class="text-none px-6"
+        rounded="pill"
+        elevation="2"
+        size="large"
       >
         TO GO
       </v-btn>
     </template>
 
-    <v-card>
-      <v-card-title class="d-flex align-center pa-4">
-        <span class="text-h5">To Go Order</span>
+    <v-card class="rounded-lg">
+      <v-toolbar
+        color="primary"
+        density="comfortable"
+      >
+        <v-toolbar-title class="text-h6 font-weight-medium">
+          To Go Order
+        </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn icon @click="closeModal">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
+        <v-btn
+          icon="mdi-close"
+          variant="text"
+          @click="closeModal"
+        />
+      </v-toolbar>
 
-      <v-card-text>
-        <v-container>
-          <!-- Loading State -->
-          <v-row v-if="loading">
-            <v-col cols="12" class="text-center">
-              <v-progress-circular indeterminate></v-progress-circular>
-            </v-col>
-          </v-row>
-
-          <!-- Error State -->
-          <v-row v-else-if="error">
-            <v-col cols="12">
-              <v-alert type="error" variant="tonal">
-                {{ error }}
-              </v-alert>
-            </v-col>
-          </v-row>
-
-          <!-- Customer Information Form -->
-          <template v-else>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="customerInfo.name"
-                  label="Customer Name"
-                  variant="outlined"
-                  density="comfortable"
-                  :error-messages="validationErrors.name"
-                  @input="clearError('name')"
-                  required
-                ></v-text-field>
-              </v-col>
-            </v-row>
-
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="customerInfo.phone"
-                  label="Phone Number"
-                  variant="outlined"
-                  density="comfortable"
-                  :error-messages="validationErrors.phone"
-                  @input="clearError('phone')"
-                  required
-                ></v-text-field>
-              </v-col>
-            </v-row>
-
-            <v-row>
-              <v-col cols="12">
-                <v-textarea
-                  v-model="customerInfo.instructions"
-                  label="Special Instructions (Optional)"
-                  variant="outlined"
-                  density="comfortable"
-                  rows="3"
-                ></v-textarea>
-              </v-col>
-            </v-row>
-
-            <v-row>
-              <v-col cols="12">
-                <v-btn
+      <v-card-text class="pa-4">
+        <v-container class="px-0">
+          <v-fade-transition>
+            <!-- Loading State -->
+            <v-row v-if="loading">
+              <v-col cols="12" class="d-flex justify-center align-center pa-8">
+                <v-progress-circular
+                  indeterminate
                   color="primary"
-                  size="large"
-                  block
-                  @click="processOrder"
-                  :loading="processing"
-                  :disabled="!canProcessOrder || processing"
-                >
-                  Process Order
-                </v-btn>
+                  size="64"
+                ></v-progress-circular>
               </v-col>
             </v-row>
-          </template>
+
+            <!-- Error State -->
+            <v-row v-else-if="error">
+              <v-col cols="12">
+                <v-alert
+                  type="error"
+                  variant="tonal"
+                  border="start"
+                  elevation="2"
+                  closable
+                >
+                  {{ error }}
+                </v-alert>
+              </v-col>
+            </v-row>
+
+            <!-- Customer Information Form -->
+            <v-form
+              v-else
+              @submit.prevent="processOrder"
+              class="px-2"
+            >
+              <v-row>
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="customerInfo.name"
+                    label="Customer Name"
+                    variant="outlined"
+                    density="comfortable"
+                    :error-messages="validationErrors.name"
+                    @input="clearError('name')"
+                    required
+                    prepend-inner-icon="mdi-account"
+                    placeholder="Enter customer name"
+                    hide-details="auto"
+                    class="mb-4"
+                  ></v-text-field>
+
+                  <v-text-field
+                    v-model="customerInfo.phone"
+                    label="Phone Number"
+                    variant="outlined"
+                    density="comfortable"
+                    :error-messages="validationErrors.phone"
+                    @input="clearError('phone')"
+                    required
+                    prepend-inner-icon="mdi-phone"
+                    placeholder="Enter phone number"
+                    hide-details="auto"
+                    class="mb-4"
+                  ></v-text-field>
+
+                  <v-textarea
+                    v-model="customerInfo.instructions"
+                    label="Special Instructions"
+                    variant="outlined"
+                    density="comfortable"
+                    rows="3"
+                    prepend-inner-icon="mdi-note-text"
+                    placeholder="Add any special instructions here"
+                    hide-details="auto"
+                    class="mb-6"
+                  ></v-textarea>
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12">
+                  <v-btn
+                    color="primary"
+                    size="large"
+                    block
+                    height="56"
+                    @click="processOrder"
+                    :loading="processing"
+                    :disabled="!canProcessOrder || processing"
+                    elevation="2"
+                  >
+                    <v-icon start>mdi-check-circle</v-icon>
+                    Process Order
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-fade-transition>
         </v-container>
       </v-card-text>
     </v-card>
