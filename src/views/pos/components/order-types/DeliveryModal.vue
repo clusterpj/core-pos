@@ -7,6 +7,10 @@
         prepend-icon="mdi-truck-delivery"
         :loading="loading"
         :disabled="disabled"
+        class="text-none px-6"
+        rounded="pill"
+        elevation="2"
+        size="large"
       >
         DELIVERY
       </v-btn>
