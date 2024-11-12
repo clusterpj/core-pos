@@ -470,35 +470,20 @@ const isMethodDisabled = (methodId) => {
 const selectPaymentMethod = (methodId) => {
   if (isMethodSelected(methodId) || isMethodDisabled(methodId)) return
   
-  const index = payments.value.findIndex(p => !p.method_id)
-  if (index >= 0) {
-    // Update existing empty payment
-    payments.value[index].method_id = methodId
-  } else {
-    // Add new payment
-    payments.value.push({
-      method_id: methodId,
-      amount: 0,
-      displayAmount: ((invoiceTotal.value + tipAmount.value) / 100).toString(),
-      received: 0,
-      displayReceived: '0',
-      returned: 0,
-      fees: 0
-    })
-  }
+  // Add new payment with remaining amount
+  const remaining = remainingAmount.value
+  const displayAmount = (remaining / 100).toString()
   
-  // Initialize the payment
-  const payment = payments.value[payments.value.length - 1]
-  const newAmount = Math.min(
-    Math.round(Number(payment.displayAmount) * 100),
-    remainingAmount.value
-  )
-  payment.amount = newAmount
-  payment.displayAmount = (newAmount / 100).toString()
-  payment.displayReceived = payment.displayAmount
-  payment.received = payment.amount
-  payment.returned = 0
-  payment.fees = 0
+  payments.value.push({
+    method_id: methodId,
+    amount: remaining,
+    displayAmount,
+    received: remaining,
+    displayReceived: displayAmount,
+    returned: 0,
+    fees: 0
+  })
+  
   validateAmount(payments.value.length - 1)
 }
 
