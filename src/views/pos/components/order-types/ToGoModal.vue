@@ -207,13 +207,16 @@ const processOrder = async () => {
     // Format phone number
     const formattedPhone = customerInfo.phone.replace(/\D/g, '')
 
-    // Prepare hold invoice data with items
+    // Get base invoice data
+    const baseInvoiceData = cartStore.prepareHoldInvoiceData(
+      selectedStore.value,
+      selectedCashier.value,
+      `TO_GO_${customerInfo.name}`
+    )
+
+    // Create hold invoice data without tip fields
     const holdInvoiceData = {
-      ...cartStore.prepareHoldInvoiceData(
-        selectedStore.value,
-        selectedCashier.value,
-        `TO_GO_${customerInfo.name}`
-      ),
+      ...baseInvoiceData,
       type: OrderType.TO_GO,
       description: `TO_GO_${customerInfo.name}`,
       hold_items: cartStore.items.map(item => ({
@@ -226,6 +229,11 @@ const processOrder = async () => {
         tax: item.tax || 0
       }))
     }
+
+    // Remove tip-related fields that aren't supported for hold invoices
+    delete holdInvoiceData.tip
+    delete holdInvoiceData.tip_type
+    delete holdInvoiceData.tip_val
 
     // Validate items exist
     if (!holdInvoiceData.hold_items?.length) {
