@@ -19,7 +19,7 @@
               class="grid-select me-3 mb-2"
               @update:model-value="updateColumns"
               bg-color="white"
-              menu-props="{ maxHeight: 200 }"
+              :menu-props="{ maxHeight: 200 }"
             >
               <template v-slot:prepend-inner>
                 <v-icon size="small" color="primary">mdi-view-grid-outline</v-icon>
@@ -44,7 +44,7 @@
               class="grid-select me-3 mb-2"
               @update:model-value="updateRows"
               bg-color="white"
-              menu-props="{ maxHeight: 200 }"
+              :menu-props="{ maxHeight: 200 }"
             >
               <template v-slot:prepend-inner>
                 <v-icon size="small" color="primary">mdi-view-sequential</v-icon>
