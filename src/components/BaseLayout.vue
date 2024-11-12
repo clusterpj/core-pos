@@ -34,6 +34,64 @@
         </div>
       </v-list>
 
+      <v-divider class="my-4"></v-divider>
+
+      <!-- Selection Controls Section -->
+      <div class="px-3">
+        <div class="text-subtitle-2 mb-2" v-if="!rail">Selections</div>
+        <v-select
+          :model-value="companyStore.selectedCustomerDisplay"
+          :label="rail ? null : 'Customer'"
+          :items="companyStore.customersForDisplay"
+          :loading="companyStore.loading"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          class="mb-2"
+          :class="selectClass"
+          @update:model-value="handleCustomerChange"
+          :return-object="false"
+          variant="outlined"
+          :placeholder="rail ? 'Customer' : null"
+        />
+
+        <v-select
+          :model-value="companyStore.selectedStoreDisplay"
+          :label="rail ? null : 'Store'"
+          :items="companyStore.storesForDisplay"
+          :loading="companyStore.loadingStores"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          class="mb-2"
+          :class="selectClass"
+          :disabled="!companyStore.selectedCustomer"
+          @update:model-value="handleStoreChange"
+          :return-object="false"
+          variant="outlined"
+          :placeholder="rail ? 'Store' : null"
+        />
+
+        <v-select
+          :model-value="companyStore.selectedCashierDisplay"
+          :label="rail ? null : 'Cash Register'"
+          :items="companyStore.cashRegistersForDisplay"
+          :loading="companyStore.loadingCashRegisters"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          :class="selectClass"
+          :disabled="!companyStore.selectedStore"
+          @update:model-value="handleCashierChange"
+          :return-object="false"
+          variant="outlined"
+          :placeholder="rail ? 'Cashier' : null"
+        />
+      </div>
+
       <!-- Corebill Button -->
       <template v-slot:append>
         <v-divider></v-divider>
@@ -72,59 +130,6 @@
       </template>
     </v-navigation-drawer>
 
-    <v-app-bar>
-      <v-app-bar-title class="mr-4">{{ appTitle }}</v-app-bar-title>
-      
-      <!-- Selection Controls -->
-      <div class="d-flex align-center selection-controls">
-        <v-select
-          :model-value="companyStore.selectedCustomerDisplay"
-          label="Customer"
-          :items="companyStore.customersForDisplay"
-          :loading="companyStore.loading"
-          item-title="title"
-          item-value="value"
-          density="compact"
-          hide-details
-          class="selection-field mr-2"
-          @update:model-value="handleCustomerChange"
-          :return-object="false"
-          variant="outlined"
-        />
-
-        <v-select
-          :model-value="companyStore.selectedStoreDisplay"
-          label="Store"
-          :items="companyStore.storesForDisplay"
-          :loading="companyStore.loadingStores"
-          item-title="title"
-          item-value="value"
-          density="compact"
-          hide-details
-          class="selection-field mr-2"
-          :disabled="!companyStore.selectedCustomer"
-          @update:model-value="handleStoreChange"
-          :return-object="false"
-          variant="outlined"
-        />
-
-        <v-select
-          :model-value="companyStore.selectedCashierDisplay"
-          label="Cash Register"
-          :items="companyStore.cashRegistersForDisplay"
-          :loading="companyStore.loadingCashRegisters"
-          item-title="title"
-          item-value="value"
-          density="compact"
-          hide-details
-          class="selection-field"
-          :disabled="!companyStore.selectedStore"
-          @update:model-value="handleCashierChange"
-          :return-object="false"
-          variant="outlined"
-        />
-      </div>
-    </v-app-bar>
 
     <v-main>
       <router-view v-slot="{ Component }">
@@ -148,7 +153,9 @@ const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const drawer = ref(true)
 const rail = ref(true) // Set to true by default to keep sidebar collapsed
-const appTitle = ref('CorePOS')
+const selectClass = computed(() => ({
+  'rail-select': rail.value
+}))
 
 // Save rail state to localStorage
 watch(rail, (newValue) => {
@@ -313,17 +320,17 @@ onMounted(async () => {
 }
 
 /* Selection controls styles */
-.selection-controls {
-  flex: 1;
-  max-width: 800px;
+:deep(.v-select .v-field) {
+  --v-field-padding-top: 8px !important;
+  --v-field-padding-bottom: 8px !important;
 }
 
-.selection-field {
-  width: 200px;
+:deep(.v-select) {
+  transition: all 0.3s ease;
 }
 
-:deep(.v-field) {
-  background-color: white !important;
+.rail-select {
+  width: 56px;
 }
 
 /* Navigation styles */
