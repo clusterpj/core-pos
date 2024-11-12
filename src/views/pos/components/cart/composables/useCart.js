@@ -24,12 +24,21 @@ export function useCart() {
   const updateOrder = async () => {
     try {
       const description = cartStore.holdOrderDescription
+      logger.debug('Attempting to update order:', {
+        description,
+        hasDescription: !!description,
+        cartState: {
+          items: cartStore.items?.length,
+          total: cartStore.total,
+          holdInvoiceId: cartStore.holdInvoiceId
+        }
+      })
+
       if (!description) {
         throw new Error('No order description found')
       }
 
       updating.value = true
-      logger.debug('Updating order with description:', description)
 
       // Prepare the order data from the current cart state
       const orderData = cartStore.prepareHoldInvoiceData(

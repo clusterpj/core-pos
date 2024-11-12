@@ -202,55 +202,79 @@ export function useHeldOrders() {
   }
 
   const processCartProperties = async (invoice) => {
-    // Set discount
-    if (invoice.discount_type && invoice.discount) {
-      logger.debug('Setting discount:', {
-        type: invoice.discount_type,
-        amount: invoice.discount
-      })
-      await cartStore.setDiscount(
-        invoice.discount_type,
-        Number(invoice.discount)
-      )
-    }
-    
-    // Set tip
-    if (invoice.tip_type && invoice.tip) {
-      logger.debug('Setting tip:', {
-        type: invoice.tip_type,
-        amount: invoice.tip
-      })
-      await cartStore.setTip(
-        invoice.tip_type,
-        Number(invoice.tip)
-      )
-    }
-
-    // Set order type
-    await cartStore.setType(invoice.type)
-
-    // Process notes
-    if (invoice.notes) {
-      logger.debug('Processing order notes')
-      try {
-        const notesObj = JSON.parse(invoice.notes)
-        const customerNotes = parseOrderNotes(invoice.notes)
-        const newNotes = {
-          orderInfo: {
-            customer: notesObj.orderInfo?.customer || notesObj.customer || {}
-          },
-          customerNotes: customerNotes
-        }
-        await cartStore.setNotes(JSON.stringify(newNotes))
-      } catch (e) {
-        logger.warn('Failed to parse notes, using raw value:', e)
-        await cartStore.setNotes(invoice.notes)
+    logger.startGroup('Processing cart properties')
+    try {
+      // Set discount
+      if (invoice.discount_type && invoice.discount) {
+        logger.debug('Setting discount:', {
+          type: invoice.discount_type,
+          amount: invoice.discount
+        })
+        await cartStore.setDiscount(
+          invoice.discount_type,
+          Number(invoice.discount)
+        )
       }
-    }
+      
+      // Set tip
+      if (invoice.tip_type && invoice.tip) {
+        logger.debug('Setting tip:', {
+          type: invoice.tip_type,
+          amount: invoice.tip
+        })
+        await cartStore.setTip(
+          invoice.tip_type,
+          Number(invoice.tip)
+        )
+      }
 
-    // Set reference information
-    await cartStore.setHoldInvoiceId(invoice.id)
-    await cartStore.setHoldInvoiceDescription(invoice.description)
+      // Set order type
+      logger.debug('Setting order type:', invoice.type)
+      await cartStore.setType(invoice.type)
+
+      // Process notes
+      if (invoice.notes) {
+        logger.debug('Processing order notes')
+        try {
+          const notesObj = JSON.parse(invoice.notes)
+          const customerNotes = parseOrderNotes(invoice.notes)
+          const newNotes = {
+            orderInfo: {
+              customer: notesObj.orderInfo?.customer || notesObj.customer || {}
+            },
+            customerNotes: customerNotes
+          }
+          await cartStore.setNotes(JSON.stringify(newNotes))
+        } catch (e) {
+          logger.warn('Failed to parse notes, using raw value:', e)
+          await cartStore.setNotes(invoice.notes)
+        }
+      }
+
+      // Set reference information
+      logger.debug('Setting reference information:', {
+        id: invoice.id,
+        description: invoice.description
+      })
+      
+      // Check if methods exist before calling
+      if (typeof cartStore.setHoldInvoiceId !== 'function') {
+        throw new Error('setHoldInvoiceId is not defined in cart store')
+      }
+      if (typeof cartStore.setHoldInvoiceDescription !== 'function') {
+        throw new Error('setHoldInvoiceDescription is not defined in cart store')
+      }
+
+      await cartStore.setHoldInvoiceId(invoice.id)
+      await cartStore.setHoldInvoiceDescription(invoice.description)
+      
+      logger.debug('Cart properties processed successfully')
+    } catch (error) {
+      logger.error('Failed to process cart properties:', error)
+      throw error
+    } finally {
+      logger.endGroup()
+    }
   }
 
   const loadOrder = async (invoice) => {
@@ -305,17 +329,31 @@ export function useHeldOrders() {
         id: invoice.id,
         description: invoice.description,
         type: invoice.type,
-        itemCount: invoice.hold_items.length
+        itemCount: invoice.hold_items.length,
+        cartState: {
+          items: cartStore.items?.length,
+          total: cartStore.total,
+          holdInvoiceId: cartStore.holdInvoiceId
+        }
       })
       
       return true
     } catch (error) {
       logger.error('Failed to load order:', {
         error: error.message,
+        errorStack: error.stack,
         invoice: {
           id: invoice?.id,
           type: invoice?.type,
           itemCount: invoice?.hold_items?.length
+        },
+        cartStore: {
+          methods: Object.keys(cartStore),
+          state: {
+            items: cartStore.items?.length,
+            total: cartStore.total,
+            holdInvoiceId: cartStore.holdInvoiceId
+          }
         }
       })
       window.toastr?.['error'](error.message || 'Failed to load order')
