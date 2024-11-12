@@ -7,9 +7,9 @@
         prepend-icon="mdi-table-furniture"
         :loading="loading"
         :disabled="disabled || cartStore.isEmpty"
-        class="px-6 text-none text-subtitle-1"
-        rounded="lg"
-        elevation="2"
+        class="px-6 text-none text-subtitle-1 text-capitalize"
+        rounded="pill"
+        elevation="1"
       >
         Dine In
       </v-btn>
