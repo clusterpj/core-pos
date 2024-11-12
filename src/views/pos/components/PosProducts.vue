@@ -21,9 +21,41 @@
               </div>
             </v-col>
             <v-col cols="12" sm="5" md="4" lg="3" class="d-flex justify-end align-center">
-              <div class="grid-settings-wrapper">
-                <grid-settings v-model="gridSettings" />
-              </div>
+              <v-btn
+                prepend-icon="mdi-cog"
+                variant="outlined"
+                color="primary"
+                size="small"
+                class="grid-settings-btn"
+                @click="showGridSettings = true"
+              >
+                Grid Settings
+              </v-btn>
+
+              <v-dialog
+                v-model="showGridSettings"
+                max-width="500"
+                transition="dialog-bottom-transition"
+              >
+                <v-card>
+                  <v-card-title class="d-flex justify-space-between align-center pa-4">
+                    <span>Grid Display Settings</span>
+                    <v-btn
+                      icon="mdi-close"
+                      variant="text"
+                      size="small"
+                      @click="showGridSettings = false"
+                    />
+                  </v-card-title>
+                  
+                  <v-card-text class="pa-4">
+                    <grid-settings
+                      v-model="gridSettings"
+                      @update:model-value="updateGridSettings"
+                    />
+                  </v-card-text>
+                </v-card>
+              </v-dialog>
             </v-col>
           </v-row>
 
@@ -78,6 +110,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+const showGridSettings = ref(false)
 import { usePosStore } from '../../../stores/pos-store'
 import { useCartStore } from '../../../stores/cart-store'
 import { logger } from '../../../utils/logger'
@@ -100,6 +133,12 @@ const gridSettings = ref(
 )
 
 // Save grid settings to localStorage when they change
+const updateGridSettings = (newSettings) => {
+  gridSettings.value = newSettings
+  localStorage.setItem('gridSettings', JSON.stringify(newSettings))
+  showGridSettings.value = false
+}
+
 watch(gridSettings, (newSettings) => {
   localStorage.setItem('gridSettings', JSON.stringify(newSettings))
 }, { deep: true })
@@ -168,9 +207,8 @@ const quickAdd = (product) => {
   max-width: 800px;
 }
 
-.grid-settings-wrapper {
-  width: 100%;
-  padding-left: 8px;
+.grid-settings-btn {
+  min-width: 135px;
 }
 
 
