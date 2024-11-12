@@ -6,8 +6,7 @@
         <tr>
           <th>Products</th>
           <th class="text-center">Qty</th>
-          <th class="text-right">Price</th>
-          <th class="text-right">Subtotal</th>
+          <th class="text-right">Total</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -33,7 +32,6 @@
               />
             </div>
           </td>
-          <td class="text-right">${{ formatPrice(item.price) }}</td>
           <td class="text-right">${{ formatPrice(item.price * item.quantity) }}</td>
           <td>
             <div class="d-flex gap-1">
