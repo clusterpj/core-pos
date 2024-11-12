@@ -1,9 +1,9 @@
 <!-- src/views/pos/components/PosFooter.vue -->
 <template>
-  <v-footer app class="d-flex flex-column pa-4">
-    <div class="d-flex gap-2 justify-space-between w-100">
+  <v-footer app class="d-flex flex-column pa-6">
+    <div class="d-flex justify-space-between w-100">
       <!-- Order Type Actions -->
-      <div class="d-flex gap-4">
+      <div class="d-flex gap-6">
         <held-orders-modal 
           v-model="showHeldOrdersModal"
           :disabled="false" 
@@ -15,7 +15,7 @@
       </div>
 
       <!-- Order Actions -->
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-4">
         <v-btn
           color="info"
           prepend-icon="mdi-printer"
