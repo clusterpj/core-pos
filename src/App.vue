@@ -45,4 +45,23 @@ html, body {
 #app {
   height: 100%;
 }
+
+.v-main--pos {
+  padding-bottom: 0 !important;
+}
+
+.v-main--pos .v-main__wrap {
+  padding: 0 !important;
+}
+
+.pos-layout .v-main {
+  flex: 1 1 auto;
+  height: calc(100% - 88px);
+  overflow: hidden;
+}
+
+.pos-layout .v-main > .v-main__wrap {
+  height: 100%;
+  padding: 0 !important;
+}
 </style>
