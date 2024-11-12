@@ -12,7 +12,7 @@
         elevation="2"
         size="large"
       >
-        Dine In
+        DINE IN
       </v-btn>
     </template>
 
