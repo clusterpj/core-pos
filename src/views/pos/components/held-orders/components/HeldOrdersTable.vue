@@ -1,7 +1,7 @@
 <!-- src/views/pos/components/held-orders/components/HeldOrdersTable.vue -->
 <template>
-  <v-container class="px-0">
-    <v-table fixed-header height="600px" class="elevation-1">
+  <v-container class="px-2">
+    <v-table fixed-header height="600px" class="elevation-1 w-100">
     <thead>
       <tr>
         <th class="text-left" style="min-width: 100px">Type</th>
