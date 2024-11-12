@@ -21,10 +21,10 @@
           <v-btn
             variant="text"
             icon="mdi-format-list-bulleted"
-            @click.stop="rail = !rail"
+            @click.stop="drawer = !drawer"
           />
         </template>
-        <v-list-item-title v-if="!rail">
+        <v-list-item-title>
           Menu
         </v-list-item-title>
       </v-list-item>
@@ -36,7 +36,7 @@
           <v-list-item
             :to="item.to"
             :prepend-icon="item.icon"
-            :title="rail ? '' : item.title"
+            :title="item.title"
             :value="item.title"
           />
         </div>
@@ -46,7 +46,7 @@
 
       <!-- Selection Controls Section -->
       <div class="px-3">
-        <div class="text-subtitle-2 mb-2" v-if="!rail">Selections</div>
+        <div class="text-subtitle-2 mb-2">Selections</div>
         <v-select
           :model-value="companyStore.selectedCustomerDisplay"
           :label="rail ? null : 'Customer'"
@@ -106,33 +106,25 @@
         <div class="nav-item-container pa-2">
           <v-btn
             block
-            :icon="rail"
             color="error"
             variant="tonal"
             prepend-icon="mdi-logout"
             @click="handleLogout"
           >
-            <template v-if="!rail">
-              Logout
-            </template>
+            Logout
           </v-btn>
-          <div v-if="rail" class="icon-reference text-caption text-center">Logout</div>
         </div>
         <!-- Corebill Button -->
         <div class="nav-item-container pa-2">
           <v-btn
             block
-            :icon="rail"
             color="primary"
             variant="tonal"
             prepend-icon="mdi-arrow-left-circle"
             @click="goToCorebill"
           >
-            <template v-if="!rail">
-              Back to Corebill
-            </template>
+            Back to Corebill
           </v-btn>
-          <div v-if="rail" class="icon-reference text-caption text-center">Corebill</div>
         </div>
       </template>
     </v-navigation-drawer>
@@ -159,7 +151,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const drawer = ref(false) // Start with drawer closed
-const selectClass = computed(() => ({}))
 
 // Save drawer state to localStorage
 watch(drawer, (newValue) => {
@@ -335,9 +326,6 @@ onMounted(async () => {
   transition: all 0.3s ease;
 }
 
-.rail-select {
-  width: 56px;
-}
 
 .menu-toggle {
   position: fixed;
