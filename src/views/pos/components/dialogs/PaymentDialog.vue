@@ -1,21 +1,42 @@
 <!-- src/views/pos/components/dialogs/PaymentDialog.vue -->
 <template>
-  <v-dialog v-model="dialog" max-width="800px" persistent scrollable>
-    <v-card>
-      <v-card-title class="text-h5">
-        Process Payment
+  <v-dialog 
+    v-model="dialog" 
+    :fullscreen="$vuetify.display.mobile"
+    :max-width="$vuetify.display.mobile ? '100%' : '800px'"
+    persistent
+    scrollable
+    transition="dialog-bottom-transition"
+  >
+    <v-card class="payment-dialog-card">
+      <v-toolbar 
+        color="primary" 
+        class="payment-dialog-toolbar"
+        :elevation="2"
+      >
+        <v-toolbar-title class="text-h5 font-weight-medium">
+          Process Payment
+        </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn icon @click="closeDialog">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
+        <v-btn
+          icon="mdi-close"
+          variant="text"
+          @click="closeDialog"
+          class="ml-2"
+        ></v-btn>
+      </v-toolbar>
 
       <v-card-text>
         <v-container>
           <!-- Loading State -->
           <v-row v-if="loading">
-            <v-col cols="12" class="text-center">
-              <v-progress-circular indeterminate></v-progress-circular>
+            <v-col cols="12">
+              <v-sheet class="pa-3">
+                <v-skeleton-loader
+                  type="article, actions"
+                  class="mx-auto"
+                ></v-skeleton-loader>
+              </v-sheet>
             </v-col>
           </v-row>
 
@@ -23,8 +44,26 @@
             <!-- Invoice Summary -->
             <v-row>
               <v-col cols="12">
-                <v-card variant="outlined">
-                  <v-card-text>
+                <v-card
+                  variant="elevated"
+                  class="invoice-summary-card mb-4"
+                  elevation="2"
+                >
+                  <v-card-item>
+                    <template v-slot:prepend>
+                      <v-icon
+                        icon="mdi-receipt"
+                        size="large"
+                        color="primary"
+                        class="mr-4"
+                      ></v-icon>
+                    </template>
+                    <v-card-title class="text-h6 pb-2">
+                      Invoice Summary
+                    </v-card-title>
+                  </v-card-item>
+                  <v-divider></v-divider>
+                  <v-card-text class="py-4">
                     <div class="d-flex justify-space-between mb-2">
                       <span>Invoice Number:</span>
                       <strong>{{ invoiceNumber }}</strong>
@@ -733,9 +772,84 @@ watch(() => dialog.value, async (newValue) => {
 </script>
 
 <style scoped>
+.payment-dialog-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 0;
+}
+
+.payment-dialog-toolbar {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.invoice-summary-card {
+  background: linear-gradient(145deg, var(--v-surface-variant) 0%, var(--v-surface-base) 100%);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.invoice-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.payment-method-btn {
+  min-height: 64px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.payment-method-btn:hover {
+  transform: translateY(-2px);
+}
+
 .v-card-text {
-  padding-top: 24px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+/* Responsive Typography */
+.text-h5 {
+  font-size: clamp(1.5rem, 4vw, 1.8rem) !important;
+  font-weight: 500;
+}
+
+.text-h6 {
+  font-size: clamp(1.2rem, 3vw, 1.5rem) !important;
+  font-weight: 500;
+}
+
+.text-subtitle-1 {
+  font-size: clamp(1.1rem, 2.5vw, 1.4rem) !important;
+}
+
+/* Touch Targets */
+@media (max-width: 600px) {
+  .payment-method-btn {
+    min-height: 56px;
+    width: 100%;
+  }
+  
+  .v-btn {
+    min-height: 48px;
+  }
+  
+  .v-text-field :deep(input) {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+}
+
+/* Transitions */
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
 }
 
 .v-card-title {
