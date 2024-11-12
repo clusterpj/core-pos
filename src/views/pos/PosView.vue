@@ -265,6 +265,7 @@ onMounted(async () => {
 }
 
 .pos-container {
+  height: 100%;
   max-height: 100%;
   display: flex;
   flex-direction: column;
@@ -276,6 +277,7 @@ onMounted(async () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .cart-container, .products-container {
@@ -299,7 +301,8 @@ onMounted(async () => {
 
   .pos-cart-mobile .cart-container, 
   .pos-products-mobile .products-container {
-    height: calc(50vh - 88px);
+    height: 50vh;
+    max-height: calc(100vh - 176px);
     overflow-y: auto;
   }
 
@@ -315,7 +318,7 @@ onMounted(async () => {
   }
 
   .cart-container, .products-container {
-    height: calc(100vh - 176px);
+    height: 100%;
     overflow-y: auto;
   }
 }

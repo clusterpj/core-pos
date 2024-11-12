@@ -191,7 +191,7 @@ const quickAdd = (product) => {
   display: flex;
   flex-direction: column;
   background-color: rgb(250, 250, 250);
-  max-height: calc(100vh - 88px); /* Account for footer */
+  overflow: hidden;
 }
 
 @media (max-width: 600px) {
@@ -230,7 +230,7 @@ const quickAdd = (product) => {
 
 .products-content {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding: 16px 0;
