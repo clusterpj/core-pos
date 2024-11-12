@@ -1,20 +1,22 @@
 <!-- src/components/BaseLayout.vue -->
 <template>
   <v-app>
-    <v-btn
-      v-show="!drawer"
-      icon="mdi-menu"
-      size="small"
-      variant="text"
-      @click="drawer = true"
-      class="menu-toggle"
-    />
+    <v-fade-transition>
+      <v-btn
+        v-show="!drawer"
+        icon="mdi-menu"
+        size="small"
+        variant="tonal"
+        color="primary"
+        @click="drawer = true"
+        class="menu-toggle"
+      />
+    </v-fade-transition>
 
     <v-navigation-drawer 
       v-model="drawer"
-      :temporary="true"
-      :rail="false"
-      :permanent="false"
+      :temporary="drawerBehavior.temporary"
+      :permanent="drawerBehavior.permanent"
     >
       <v-list-item>
         <template v-slot:prepend>
@@ -137,6 +139,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useAuthStore } from '../stores/auth'
 import { useCompanyStore } from '../stores/company'
 import { useRouter } from 'vue-router'
@@ -145,12 +148,23 @@ import { logger } from '../utils/logger'
 const router = useRouter()
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
-const drawer = ref(false) // Start with drawer closed
+const drawer = ref(false)
+const { mobile, mdAndUp } = useDisplay()
 
-// Save drawer state to localStorage
-watch(drawer, (newValue) => {
+// Computed property for drawer behavior
+const drawerBehavior = computed(() => ({
+  temporary: mobile.value,
+  permanent: mdAndUp.value && drawer.value,
+}))
+
+// Update drawer state management
+const handleDrawerState = (newValue) => {
+  drawer.value = newValue
   localStorage.setItem('navigationDrawer', newValue.toString())
-})
+}
+
+// Watch for drawer changes
+watch(drawer, handleDrawerState)
 
 const navItems = computed(() => [
   {
@@ -324,9 +338,34 @@ onMounted(async () => {
 
 .menu-toggle {
   position: fixed;
-  top: 8px;
-  left: 8px;
-  z-index: 100;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.menu-toggle:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 600px) {
+  .menu-toggle {
+    top: 8px;
+    left: 8px;
+  }
+}
+
+.v-fade-transition-enter-active,
+.v-fade-transition-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.v-fade-transition-enter-from,
+.v-fade-transition-leave-to {
+  opacity: 0;
 }
 
 /* Navigation styles */
