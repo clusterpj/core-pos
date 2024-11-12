@@ -3,7 +3,7 @@
   <v-dialog 
     v-model="dialog" 
     :fullscreen="$vuetify.display.mobile"
-    :max-width="$vuetify.display.mobile ? '100%' : '900px'"
+    :max-width="$vuetify.display.mobile ? '100%' : '800px'"
     persistent
     scrollable
     transition="dialog-bottom-transition"
@@ -15,8 +15,8 @@
         class="payment-dialog-toolbar"
         :elevation="2"
       >
-        <v-toolbar-title class="text-h4 font-weight-medium">
-          <v-icon icon="mdi-cash-register" size="x-large" class="mr-3"></v-icon>
+        <v-toolbar-title class="text-h6 font-weight-medium">
+          <v-icon icon="mdi-cash-register" size="large" class="mr-2"></v-icon>
           Process Payment
         </v-toolbar-title>
         <v-spacer></v-spacer>
@@ -793,7 +793,7 @@ watch(() => dialog.value, async (newValue) => {
   border-top-right-radius: 16px;
   background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
   backdrop-filter: blur(10px);
-  height: 80px !important;
+  height: 64px !important;
 }
 
 .invoice-summary-card {
@@ -810,7 +810,7 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .payment-method-btn {
-  min-height: 72px;
+  min-height: 56px;
   border-radius: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 1.1rem;
@@ -840,17 +840,17 @@ watch(() => dialog.value, async (newValue) => {
 
 /* Responsive Typography */
 .text-h5 {
-  font-size: clamp(1.2rem, 3vw, 1.4rem) !important;
+  font-size: 1.1rem !important;
   font-weight: 500;
 }
 
 .text-h6 {
-  font-size: clamp(1rem, 2.5vw, 1.2rem) !important;
+  font-size: 1rem !important;
   font-weight: 500;
 }
 
 .text-subtitle-1 {
-  font-size: clamp(0.9rem, 2vw, 1.1rem) !important;
+  font-size: 0.9rem !important;
 }
 
 /* Touch Targets */
@@ -925,26 +925,26 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .v-text-field {
-  font-size: 1.3rem;
+  font-size: 1rem;
 }
 
 .v-text-field :deep(input) {
-  font-size: 1.4rem !important;
+  font-size: 1rem !important;
 }
 
 .v-text-field :deep(label) {
-  font-size: 1.3rem !important;
+  font-size: 0.9rem !important;
 }
 
 .v-btn {
-  font-size: 1.2rem;
-  padding: 0 24px;
-  height: 48px;
+  font-size: 0.9rem;
+  padding: 0 16px;
+  height: 36px;
 }
 
 .v-btn--size-small {
-  height: 40px;
-  font-size: 1.1rem;
+  height: 32px;
+  font-size: 0.85rem;
 }
 
 /* Responsive adjustments */
@@ -974,30 +974,30 @@ watch(() => dialog.value, async (newValue) => {
 
 /* Additional spacing improvements */
 .v-container {
-  padding: 24px;
+  padding: 16px;
 }
 
 .v-row {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .v-col {
-  padding: 12px;
+  padding: 8px;
 }
 
 .mb-2 {
-  margin-bottom: 12px !important;
+  margin-bottom: 8px !important;
 }
 
 .mb-4 {
-  margin-bottom: 24px !important;
+  margin-bottom: 16px !important;
 }
 
 .mr-2 {
-  margin-right: 12px !important;
+  margin-right: 8px !important;
 }
 
 .pa-4 {
-  padding: 24px !important;
+  padding: 16px !important;
 }
 </style>
