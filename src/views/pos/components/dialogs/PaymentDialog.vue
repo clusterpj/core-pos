@@ -352,15 +352,7 @@ const loading = computed(() => paymentLoading.value || tableLoading.value)
 const error = computed(() => paymentError.value || tableError.value)
 
 const processing = ref(false)
-const payments = ref([{ 
-  method_id: null, 
-  amount: 0,
-  displayAmount: '0',
-  received: 0,
-  displayReceived: '0',
-  returned: 0,
-  fees: 0 
-}])
+const payments = ref([])
 
 // Tip related state
 const showTipDialog = ref(false)
@@ -497,8 +489,12 @@ const selectPaymentMethod = (methodId) => {
   
   // Initialize the payment
   const payment = payments.value[payments.value.length - 1]
-  payment.displayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString()
-  payment.amount = Math.round(Number(payment.displayAmount) * 100)
+  const newAmount = Math.min(
+    Math.round(Number(payment.displayAmount) * 100),
+    remainingAmount.value
+  )
+  payment.amount = newAmount
+  payment.displayAmount = (newAmount / 100).toString()
   payment.displayReceived = payment.displayAmount
   payment.received = payment.amount
   payment.returned = 0
@@ -731,17 +727,8 @@ watch(() => dialog.value, async (newValue) => {
       // Get company settings
       await fetchSettings()
 
-      // Reset state with initial display amount including tip
-      const initialDisplayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString()
-      payments.value = [{
-        method_id: null,
-        amount: 0,
-        displayAmount: initialDisplayAmount,
-        received: 0,
-        displayReceived: '0',
-        returned: 0,
-        fees: 0
-      }]
+      // Reset payments array
+      payments.value = []
       processing.value = false
       
       // Reset tip state
