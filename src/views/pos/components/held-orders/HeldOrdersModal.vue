@@ -253,9 +253,18 @@ const filteredHistoryOrders = computed(() => {
 })
 
 const handleLoadOrder = async (invoice) => {
+  logger.info('Loading order:', {
+    id: invoice.id,
+    description: invoice.description,
+    type: invoice.type
+  })
+  
   const success = await loadOrder(invoice)
   if (success) {
+    window.toastr?.['success']('Order loaded successfully')
     updateModelValue(false)
+  } else {
+    window.toastr?.['error']('Failed to load order')
   }
 }
 

@@ -251,7 +251,16 @@ export function useHeldOrders() {
         }
       }
 
-      // Set the hold invoice ID and description in cart store
+      // Store the original invoice data for updates
+      cartStore.setHoldInvoiceId(invoice.id)
+      cartStore.setHoldInvoiceDescription(invoice.description)
+      
+      logger.info('Order loaded successfully:', {
+        id: invoice.id,
+        description: invoice.description,
+        type: invoice.type
+      })
+
       return true
     } catch (error) {
       logger.error('Failed to load order:', error)

@@ -68,7 +68,7 @@
               :disabled="convertingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
             >
               <v-icon size="small" class="mr-1">mdi-cart-arrow-down</v-icon>
-              Load
+              {{ loadingOrder === invoice.id ? 'Loading...' : 'Load' }}
             </v-btn>
             <v-btn
               size="small"
