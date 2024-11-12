@@ -256,13 +256,22 @@ const resetToDefaults = () => {
 
 /* Mobile Optimizations */
 @media (max-width: 600px) {
+  .grid-settings {
+    justify-content: flex-start;
+  }
+
   .grid-select {
-    width: 100px;
+    width: 95px;
+    margin-right: 4px;
   }
 
   .grid-btn {
     min-width: 40px !important;
     padding: 0 4px !important;
+  }
+
+  :deep(.v-select .v-field__input) {
+    font-size: 13px;
   }
 }
 

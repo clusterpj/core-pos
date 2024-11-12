@@ -14,8 +14,8 @@
       <div class="products-header">
         <v-container fluid class="pa-4">
           <!-- Search and Grid Settings Row -->
-          <v-row no-gutters align="center" class="mb-4">
-            <v-col cols="12" sm="7" md="8" lg="9" class="pe-4">
+          <v-row no-gutters align="center" class="mb-4 flex-column flex-sm-row">
+            <v-col cols="12" sm="7" md="8" lg="9" class="pe-sm-4 mb-3 mb-sm-0">
               <div class="search-field">
                 <product-search @search="handleSearch" />
               </div>
@@ -186,11 +186,6 @@ const quickAdd = (product) => {
 @media (max-width: 960px) {
   .products-header {
     padding: 8px 0;
-  }
-
-  .grid-settings-wrapper {
-    padding-left: 0;
-    margin-top: 16px;
   }
 }
 
