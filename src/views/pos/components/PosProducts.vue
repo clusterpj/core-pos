@@ -216,6 +216,7 @@ const quickAdd = (product) => {
   position: sticky;
   top: 0;
   z-index: 2;
+  flex-shrink: 0;
 }
 
 .search-field {
@@ -230,6 +231,7 @@ const quickAdd = (product) => {
 
 .products-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
