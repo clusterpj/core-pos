@@ -357,15 +357,21 @@ onMounted(async () => {
   z-index: 1001;
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  width: 56px;
-  height: 56px;
+  width: 44px; /* Smaller, more compact size */
+  height: 44px; /* Maintain perfect circle */
+  min-width: 44px !important; /* Ensure button doesn't expand */
+  min-height: 44px !important; /* Ensure button doesn't expand */
   transition: all 0.2s ease;
-  padding: 0;
+  padding: 0 !important; /* Force remove padding */
+  display: flex !important; /* Ensure proper centering */
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .menu-toggle :deep(.v-icon) {
-  margin: 0;
-  padding: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 20px !important; /* Slightly smaller icon */
 }
 
 .menu-toggle:hover {
@@ -381,12 +387,14 @@ onMounted(async () => {
   .menu-toggle {
     bottom: 88px;
     left: 12px;
-    width: 48px;
-    height: 48px;
+    width: 40px; /* Even smaller on mobile */
+    height: 40px;
+    min-width: 40px !important;
+    min-height: 40px !important;
   }
   
   .menu-toggle :deep(.v-icon) {
-    font-size: 22px;
+    font-size: 18px !important; /* Smaller icon for mobile */
   }
 }
 
