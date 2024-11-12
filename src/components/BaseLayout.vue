@@ -1,11 +1,20 @@
 <!-- src/components/BaseLayout.vue -->
 <template>
   <v-app>
+    <v-btn
+      v-show="!drawer"
+      icon="mdi-menu"
+      size="small"
+      variant="text"
+      @click="drawer = true"
+      class="menu-toggle"
+    />
+
     <v-navigation-drawer 
-      v-model="drawer" 
-      :rail="rail"
-      permanent
-      @click="rail = false"
+      v-model="drawer"
+      :temporary="true"
+      :rail="false"
+      :permanent="false"
     >
       <v-list-item>
         <template v-slot:prepend>
@@ -30,7 +39,6 @@
             :title="rail ? '' : item.title"
             :value="item.title"
           />
-          <div v-if="rail" class="icon-reference text-caption text-center">{{ item.title }}</div>
         </div>
       </v-list>
 
@@ -58,7 +66,7 @@
 
         <v-select
           :model-value="companyStore.selectedStoreDisplay"
-          :label="rail ? null : 'Store'"
+          label="Store"
           :items="companyStore.storesForDisplay"
           :loading="companyStore.loadingStores"
           item-title="title"
@@ -76,7 +84,7 @@
 
         <v-select
           :model-value="companyStore.selectedCashierDisplay"
-          :label="rail ? null : 'Cash Register'"
+          label="Cash Register"
           :items="companyStore.cashRegistersForDisplay"
           :loading="companyStore.loadingCashRegisters"
           item-title="title"
@@ -151,15 +159,12 @@ import { logger } from '../utils/logger'
 const router = useRouter()
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
-const drawer = ref(true)
-const rail = ref(true) // Set to true by default to keep sidebar collapsed
-const selectClass = computed(() => ({
-  'rail-select': rail.value
-}))
+const drawer = ref(false) // Start with drawer closed
+const selectClass = computed(() => ({}))
 
-// Save rail state to localStorage
-watch(rail, (newValue) => {
-  localStorage.setItem('navigationRail', newValue.toString())
+// Save drawer state to localStorage
+watch(drawer, (newValue) => {
+  localStorage.setItem('navigationDrawer', newValue.toString())
 })
 
 const navItems = computed(() => [
@@ -235,9 +240,11 @@ const goToCorebill = () => {
 // Initialize
 onMounted(async () => {
   try {
-    // Always start with rail collapsed
-    rail.value = true
-    localStorage.setItem('navigationRail', 'true')
+    // Initialize drawer state from localStorage
+    const savedState = localStorage.getItem('navigationDrawer')
+    if (savedState !== null) {
+      drawer.value = savedState === 'true'
+    }
 
     // Get stored selections
     const storedCustomer = localStorage.getItem('selectedCustomer')
@@ -333,22 +340,16 @@ onMounted(async () => {
   width: 56px;
 }
 
+.menu-toggle {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+}
+
 /* Navigation styles */
 .nav-item-container {
   position: relative;
   margin-bottom: 8px;
-}
-
-.icon-reference {
-  font-size: 10px;
-  color: rgba(0, 0, 0, 0.6);
-  padding: 0 4px;
-  margin-top: -8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 56px;
-  margin-left: auto;
-  margin-right: auto;
 }
 </style>
