@@ -80,14 +80,16 @@
             <v-window v-model="activeTab" class="mt-2">
               <!-- Active Orders Tab -->
               <v-window-item value="active">
-                <v-fade-transition>
-                  <v-sheet v-if="loading" class="pa-4">
-                    <v-skeleton-loader
-                      type="table-heading, table-row-divider, table-row@6"
-                      class="mx-auto"
-                    ></v-skeleton-loader>
-                  </v-sheet>
-                </v-fade-transition>
+                <template v-if="loading">
+                  <v-fade-transition>
+                    <v-sheet class="pa-4">
+                      <v-skeleton-loader
+                        type="table-heading, table-row-divider, table-row@6"
+                        class="mx-auto"
+                      ></v-skeleton-loader>
+                    </v-sheet>
+                  </v-fade-transition>
+                </template>
 
                 <v-row v-else-if="!activeOrders.length">
                   <v-col cols="12" class="text-center">
