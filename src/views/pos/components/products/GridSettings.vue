@@ -200,7 +200,7 @@ const resetToDefaults = () => {
 }
 
 .grid-select {
-  width: 110px;
+  width: 140px;
   transition: all 0.3s ease;
   margin-right: 6px;
 }
@@ -211,7 +211,7 @@ const resetToDefaults = () => {
 }
 
 .grid-btn {
-  min-width: 90px !important;
+  min-width: 120px !important;
   padding: 0 8px !important;
   transition: all 0.2s ease;
 }

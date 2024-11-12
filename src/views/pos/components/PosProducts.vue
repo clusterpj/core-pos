@@ -34,7 +34,7 @@
 
               <v-dialog
                 v-model="showGridSettings"
-                max-width="500"
+                max-width="700"
                 transition="dialog-bottom-transition"
               >
                 <v-card>
@@ -48,7 +48,7 @@
                     />
                   </v-card-title>
                   
-                  <v-card-text class="pa-4">
+                  <v-card-text class="pa-6">
                     <grid-settings
                       v-model="gridSettings"
                       @update:model-value="updateGridSettings"
