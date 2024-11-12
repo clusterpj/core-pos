@@ -1,6 +1,7 @@
 <!-- src/views/pos/components/held-orders/components/HeldOrdersTable.vue -->
 <template>
-  <v-table fixed-header height="500px">
+  <v-container class="px-4">
+    <v-table fixed-header height="500px" class="elevation-1">
     <thead>
       <tr>
         <th class="text-left" style="min-width: 100px">Type</th>
@@ -97,6 +98,7 @@
       </tr>
     </tbody>
   </v-table>
+  </v-container>
 </template>
 
 <script setup>

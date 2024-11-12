@@ -77,7 +77,7 @@
               </v-tab>
             </v-tabs>
 
-            <v-window v-model="activeTab" class="mt-2">
+            <v-window v-model="activeTab" class="mt-6">
               <!-- Active Orders Tab -->
               <v-window-item value="active">
                 <template v-if="loading">
@@ -98,15 +98,17 @@
                 </v-row>
 
                 <template v-else>
-                  <HeldOrdersFilters
-                    :search="search"
-                    :selectedType="selectedType"
-                    :selectedStatus="selectedStatus"
-                    :orderTypes="orderTypes"
-                    @update:search="search = $event"
-                    @update:selectedType="selectedType = $event"
-                    @update:selectedStatus="selectedStatus = $event"
-                  />
+                  <v-container class="px-4">
+                    <HeldOrdersFilters
+                      :search="search"
+                      :selectedType="selectedType"
+                      :selectedStatus="selectedStatus"
+                      :orderTypes="orderTypes"
+                      @update:search="search = $event"
+                      @update:selectedType="selectedType = $event"
+                      @update:selectedStatus="selectedStatus = $event"
+                    />
+                  </v-container>
 
                   <v-row>
                     <v-col cols="12">
