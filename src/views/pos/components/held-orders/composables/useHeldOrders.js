@@ -266,7 +266,7 @@ export function useHeldOrders() {
       }
 
       await cartStore.setHoldInvoiceId(invoice.id)
-      await cartStore.setHoldInvoiceDescription(invoice.description)
+      await cartStore.setHoldOrderDescription(invoice.description)
       
       logger.debug('Cart properties processed successfully')
     } catch (error) {
