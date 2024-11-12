@@ -44,7 +44,7 @@
       </div>
     </div>
 
-    <div class="cart-content">
+    <div class="cart-scrollable-content">
       <!-- Empty Cart State -->
       <v-alert
         v-if="cartStore.isEmpty"
@@ -179,51 +179,46 @@ const editItem = (item, index) => {
 }
 
 .cart-header {
+  flex-shrink: 0;
   background-color: white;
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  flex-shrink: 0;
+  z-index: 2;
 }
 
-.cart-content {
+.cart-scrollable-content {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   padding: 16px 0;
+  /* Calculate height to prevent footer overlap */
+  height: calc(100% - 140px); /* Adjust based on header + summary height */
 }
 
 .cart-summary-wrapper {
+  flex-shrink: 0;
   background-color: white;
   border-top: 1px solid rgba(0, 0, 0, 0.12);
-  flex-shrink: 0;
+  margin-top: auto;
+  z-index: 2;
 }
 
 /* Mobile Optimizations */
 @media (max-width: 600px) {
-  .cart-header {
-    position: sticky;
-    top: 0;
-    z-index: 2;
+  .pos-cart-container {
+    height: calc(50vh - 44px); /* Account for footer height */
   }
 
-  .cart-summary-wrapper {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
+  .cart-scrollable-content {
+    height: calc(100% - 120px); /* Adjust for mobile header + summary */
   }
 }
 
-/* Tablet Optimizations */
-@media (min-width: 601px) and (max-width: 960px) {
-  .cart-header {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-
-  .cart-summary-wrapper {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
+/* Tablet and Desktop */
+@media (min-width: 601px) {
+  .pos-cart-container {
+    height: calc(100vh - 88px); /* Account for main padding and footer */
   }
 }
 </style>
