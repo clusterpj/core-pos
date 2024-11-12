@@ -4,6 +4,9 @@ import { OrderType, PaidStatus } from '../../types/order'
 const STORAGE_KEY = 'core_pos_hold_invoices'
 
 export const createOrdersModule = (state, posApi, posOperations) => {
+  // Add hold invoice tracking properties to state
+  state.currentHoldInvoiceId = null
+  state.currentHoldInvoiceDescription = null
   // Initialize hold invoices from localStorage
   const initializeHoldInvoices = () => {
     try {
