@@ -142,6 +142,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { logger } from '../../../../utils/logger'
 import { useHeldOrders } from './composables/useHeldOrders'
 import HeldOrdersFilters from './components/HeldOrdersFilters.vue'
 import HeldOrdersTable from './components/HeldOrdersTable.vue'

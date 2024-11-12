@@ -63,7 +63,7 @@
               size="small"
               color="info"
               variant="elevated"
-              @click="$emit('load', invoice)"
+              @click.prevent="$emit('load', invoice)"
               :loading="loadingOrder === invoice.id"
               :disabled="convertingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
             >
@@ -74,7 +74,7 @@
               size="small"
               color="success"
               variant="elevated"
-              @click="handleConvert(invoice)"
+              @click.prevent="$emit('convert', invoice)"
               :loading="convertingOrder === invoice.id"
               :disabled="loadingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
             >
