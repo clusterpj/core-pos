@@ -1,17 +1,16 @@
 <!-- src/views/pos/components/products/CategoryTabs.vue -->
 <template>
   <div class="category-tabs-wrapper">
-    <v-slide-x-transition>
-      <v-tabs
-        v-model="selectedTab"
-        density="comfortable"
-        show-arrows
-        slider-color="primary"
-        selected-class="v-tab--selected"
-        class="category-tabs"
-        bg-color="white"
-        @update:model-value="$emit('change', selectedTab)"
-      >
+    <v-tabs
+      v-model="selectedTab"
+      density="comfortable"
+      show-arrows
+      slider-color="primary"
+      selected-class="v-tab--selected"
+      class="category-tabs"
+      bg-color="white"
+      @update:model-value="$emit('change', selectedTab)"
+    >
         <v-tab
           value="all"
           class="category-tab"
@@ -42,8 +41,7 @@
           />
           {{ category.name }}
         </v-tab>
-      </v-tabs>
-    </v-slide-x-transition>
+    </v-tabs>
   </div>
 </template>
 
