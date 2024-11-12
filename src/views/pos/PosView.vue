@@ -249,6 +249,14 @@ onMounted(async () => {
   position: relative;
 }
 
+.v-main--pos {
+  padding-bottom: 0 !important;
+}
+
+.v-main--pos .v-main__wrap {
+  padding: 0 !important;
+}
+
 .mobile-layout {
   padding-bottom: 88px;
 }
@@ -257,11 +265,12 @@ onMounted(async () => {
   flex: 1 1 auto;
   height: calc(100% - 88px);
   overflow: hidden;
-  margin-bottom: 88px;
+  padding-bottom: 0 !important;
 }
 
 :deep(.v-main > .v-main__wrap) {
   height: 100%;
+  padding: 0 !important;
 }
 
 .pos-container {
