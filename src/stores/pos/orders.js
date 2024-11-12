@@ -262,6 +262,19 @@ export const createOrdersModule = (state, posApi, posOperations) => {
     updateHoldInvoice,
     updateHoldInvoicePaidStatus,
     fetchHoldInvoices,
-    deleteHoldInvoice
+    deleteHoldInvoice,
+    
+    setHoldInvoiceId(id) {
+      state.currentHoldInvoiceId = id
+    },
+    
+    setHoldInvoiceDescription(description) {
+      state.currentHoldInvoiceDescription = description  
+    },
+    
+    clearHoldInvoice() {
+      state.currentHoldInvoiceId = null
+      state.currentHoldInvoiceDescription = null
+    }
   }
 }
