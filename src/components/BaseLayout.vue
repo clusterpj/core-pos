@@ -4,13 +4,19 @@
     <v-fade-transition>
       <v-btn
         v-show="!drawer"
-        icon="mdi-menu"
         size="large"
         variant="elevated"
         color="primary"
         @click="drawer = true"
         class="menu-toggle"
       >
+        <v-icon
+          size="24"
+          color="white"
+        >
+          mdi-menu
+        </v-icon>
+        
         <v-tooltip
           activator="parent"
           location="right"
@@ -346,14 +352,20 @@ onMounted(async () => {
 
 .menu-toggle {
   position: fixed;
-  bottom: 24px;
+  bottom: 16px;
   left: 16px;
   z-index: 1001;
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   transition: all 0.2s ease;
+  padding: 0;
+}
+
+.menu-toggle :deep(.v-icon) {
+  margin: 0;
+  padding: 0;
 }
 
 .menu-toggle:hover {
@@ -367,10 +379,14 @@ onMounted(async () => {
 
 @media (max-width: 600px) {
   .menu-toggle {
-    bottom: 96px;
+    bottom: 88px;
     left: 12px;
-    width: 42px;
-    height: 42px;
+    width: 48px;
+    height: 48px;
+  }
+  
+  .menu-toggle :deep(.v-icon) {
+    font-size: 22px;
   }
 }
 
