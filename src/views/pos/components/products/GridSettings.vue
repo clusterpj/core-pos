@@ -1,8 +1,8 @@
 <!-- src/views/pos/components/products/GridSettings.vue -->
 <template>
-  <div class="grid-settings d-flex align-center flex-wrap">
+  <div class="grid-settings">
     <v-slide-x-transition>
-      <div class="d-flex align-center flex-wrap">
+      <div class="d-flex align-center">
         <v-tooltip
           location="top"
           text="Number of items to show in each row"
@@ -183,6 +183,10 @@ const resetToDefaults = () => {
 <style scoped>
 .grid-settings {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .grid-select {

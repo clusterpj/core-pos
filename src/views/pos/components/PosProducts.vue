@@ -15,15 +15,13 @@
         <v-container fluid class="pa-4">
           <!-- Search and Grid Settings Row -->
           <v-row no-gutters align="center" class="mb-4">
-            <v-col cols="12" sm="8" md="7" lg="8">
+            <v-col cols="12" sm="7" md="8" lg="9">
               <div class="search-field">
                 <product-search @search="handleSearch" />
               </div>
             </v-col>
-            <v-col cols="12" sm="4" md="5" lg="4" class="d-flex justify-end">
-              <div class="grid-settings-wrapper">
-                <grid-settings v-model="gridSettings" />
-              </div>
+            <v-col cols="12" sm="5" md="4" lg="3" class="d-flex justify-end align-center">
+              <grid-settings v-model="gridSettings" />
             </v-col>
           </v-row>
 
@@ -168,9 +166,6 @@ const quickAdd = (product) => {
   max-width: 800px;
 }
 
-.grid-settings-wrapper {
-  padding-left: 16px;
-}
 
 .products-content {
   flex: 1;
