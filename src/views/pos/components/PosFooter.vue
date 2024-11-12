@@ -249,4 +249,29 @@ defineEmits(['print-order', 'submit-order'])
   z-index: 100;
   background: white;
 }
+
+@media (max-width: 600px) {
+  .v-footer {
+    padding: 12px !important;
+  }
+  
+  .d-flex {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .gap-4 {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .gap-6 {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .v-btn {
+    padding: 0 16px !important;
+  }
+}
 </style>

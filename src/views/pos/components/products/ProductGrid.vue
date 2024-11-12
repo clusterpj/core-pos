@@ -158,6 +158,23 @@ const getImageUrl = (item) => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
+}
+
+.product-grid-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  .product-grid-container {
+    height: calc(100% - 16px);
+  }
+  
+  .pagination-wrapper {
+    padding: 4px;
+  }
 }
 
 .product-grid-scroll {

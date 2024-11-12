@@ -191,6 +191,22 @@ const quickAdd = (product) => {
   display: flex;
   flex-direction: column;
   background-color: rgb(250, 250, 250);
+  max-height: calc(100vh - 88px); /* Account for footer */
+}
+
+@media (max-width: 600px) {
+  .pos-products-container {
+    max-height: calc(100vh - 120px); /* Account for mobile footer */
+  }
+  
+  .products-header .v-container {
+    padding: 8px;
+  }
+  
+  .grid-settings-btn {
+    min-width: auto;
+    padding: 0 12px;
+  }
 }
 
 .products-header {

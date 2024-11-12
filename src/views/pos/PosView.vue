@@ -1,6 +1,6 @@
 <!-- src/views/pos/PosView.vue -->
 <template>
-  <v-layout class="pos-layout">
+  <v-layout class="pos-layout" :class="{ 'mobile-layout': $vuetify.display.smAndDown }">
     <!-- Error Alert -->
     <v-alert
       v-if="error"
@@ -242,6 +242,18 @@ onMounted(async () => {
   min-height: 100vh;
   padding-bottom: 88px; /* Height of footer + padding */
   overflow-x: hidden;
+}
+
+.mobile-layout {
+  padding-bottom: 120px; /* Increased padding for mobile footer */
+}
+
+@media (max-width: 600px) {
+  .pos-cart-mobile, .pos-products-mobile {
+    height: calc(50vh - 60px); /* Adjust for mobile header */
+    max-height: none;
+    overflow-y: auto;
+  }
 }
 
 .pos-main {
