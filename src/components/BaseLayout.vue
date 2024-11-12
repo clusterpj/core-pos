@@ -338,23 +338,31 @@ onMounted(async () => {
 
 .menu-toggle {
   position: fixed;
-  top: 16px;
+  bottom: 24px;
   left: 16px;
-  z-index: 1000;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 1001;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  width: 48px;
+  height: 48px;
   transition: all 0.2s ease;
 }
 
 .menu-toggle:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transform: translateY(-2px);
+}
+
+.menu-toggle:active {
+  transform: scale(0.95);
 }
 
 @media (max-width: 600px) {
   .menu-toggle {
-    top: 8px;
-    left: 8px;
+    bottom: 96px;
+    left: 12px;
+    width: 42px;
+    height: 42px;
   }
 }
 
