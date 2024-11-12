@@ -4,7 +4,6 @@
     <v-fade-transition>
       <v-text-field
         v-model="searchQuery"
-        prepend-inner-icon="mdi-magnify"
         :placeholder="isMobile ? 'Search...' : 'Search products...'"
         :label="isMobile ? null : 'Search Products'"
         density="comfortable"
