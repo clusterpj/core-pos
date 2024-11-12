@@ -187,6 +187,7 @@ const editItem = (item, index) => {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  padding: 16px 0;
 }
 
 .cart-summary-wrapper {
