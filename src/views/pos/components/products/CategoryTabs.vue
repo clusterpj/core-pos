@@ -12,20 +12,6 @@
       @update:model-value="$emit('change', selectedTab)"
     >
         <v-tab
-          value="all"
-          class="category-tab"
-          :ripple="false"
-        >
-          <v-icon
-            start
-            icon="mdi-view-grid-outline"
-            size="18"
-            class="me-1"
-          />
-          All Categories
-        </v-tab>
-        
-        <v-tab
           v-for="category in categories"
           :key="category.id"
           :value="category.id"
