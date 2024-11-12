@@ -1,6 +1,6 @@
 <!-- src/views/pos/PosView.vue -->
 <template>
-  <v-layout class="pos-layout" :class="{ 'mobile-layout': $vuetify.display.smAndDown }">
+  <v-layout class="pos-layout fill-height" :class="{ 'mobile-layout': $vuetify.display.smAndDown }">
     <!-- Error Alert -->
     <v-alert
       v-if="error"
@@ -239,13 +239,29 @@ onMounted(async () => {
 .pos-layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   padding-bottom: 88px; /* Height of footer + padding */
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .mobile-layout {
   padding-bottom: 120px; /* Increased padding for mobile footer */
+}
+
+:deep(.v-main) {
+  flex: 1 1 auto;
+  height: calc(100vh - 88px);
+  overflow: hidden;
+}
+
+:deep(.v-main > .v-main__wrap) {
+  height: 100%;
+}
+
+@media (max-width: 600px) {
+  :deep(.v-main) {
+    height: calc(100vh - 120px);
+  }
 }
 
 @media (max-width: 600px) {
