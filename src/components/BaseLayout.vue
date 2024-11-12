@@ -32,12 +32,36 @@
       :temporary="drawerBehavior.temporary"
       :permanent="drawerBehavior.permanent"
     >
+      <!-- Top Actions -->
+      <div class="d-flex flex-column pa-2 gap-2">
+        <v-btn
+          block
+          color="error"
+          variant="tonal"
+          prepend-icon="mdi-logout"
+          @click="handleLogout"
+        >
+          Logout
+        </v-btn>
+        <v-btn
+          block
+          color="primary"
+          variant="tonal"
+          prepend-icon="mdi-arrow-left-circle"
+          @click="goToCorebill"
+        >
+          Back to Corebill
+        </v-btn>
+      </div>
+
+      <v-divider class="my-2"></v-divider>
+
       <v-list-item>
         <template v-slot:prepend>
           <v-btn
             variant="text"
-            icon="mdi-format-list-bulleted"
-            @click.stop="drawer = !drawer"
+            icon="mdi-close"
+            @click.stop="drawer = false"
           />
         </template>
         <v-list-item-title>
@@ -110,34 +134,6 @@
         />
       </div>
 
-      <!-- Corebill Button -->
-      <template v-slot:append>
-        <v-divider></v-divider>
-        <!-- Logout Button -->
-        <div class="nav-item-container pa-2">
-          <v-btn
-            block
-            color="error"
-            variant="tonal"
-            prepend-icon="mdi-logout"
-            @click="handleLogout"
-          >
-            Logout
-          </v-btn>
-        </div>
-        <!-- Corebill Button -->
-        <div class="nav-item-container pa-2">
-          <v-btn
-            block
-            color="primary"
-            variant="tonal"
-            prepend-icon="mdi-arrow-left-circle"
-            @click="goToCorebill"
-          >
-            Back to Corebill
-          </v-btn>
-        </div>
-      </template>
     </v-navigation-drawer>
 
 
