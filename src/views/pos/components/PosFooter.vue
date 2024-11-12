@@ -21,8 +21,12 @@
           prepend-icon="mdi-printer"
           @click="$emit('print-order')"
           :disabled="isDisabled"
+          class="text-none px-6"
+          rounded="pill"
+          elevation="2"
+          size="large"
         >
-          Print
+          PRINT
         </v-btn>
         
         <v-btn
@@ -31,8 +35,12 @@
           @click="handlePayment"
           :disabled="!canPay"
           :loading="isProcessingPayment"
+          class="text-none px-6"
+          rounded="pill"
+          elevation="2"
+          size="large"
         >
-          Pay {{ formatCurrency(cartStore.total) }}
+          PAY {{ formatCurrency(cartStore.total) }}
         </v-btn>
       </div>
     </div>
