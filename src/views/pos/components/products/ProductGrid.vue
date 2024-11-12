@@ -10,9 +10,9 @@
           class="product-grid-item"
         >
           <v-card
-            elevation="2"
+            elevation="0"
             class="product-card"
-            :class="gridSettings.layout"
+            :class="[gridSettings.layout, 'rounded-lg']"
             @click="$emit('select', item)"
           >
             <template v-if="gridSettings.layout !== 'list'">
@@ -35,8 +35,16 @@
                 
               <div class="product-info">
                 <div class="product-title px-3 pt-3">{{ item.name }}</div>
-                <div class="price-wrapper px-3 pb-3">
+                <div class="d-flex align-center justify-space-between px-3 pb-3">
                   <span class="text-primary price-text">${{ formatPrice(item.sale_price || item.price) }}</span>
+                  <v-btn
+                    density="comfortable"
+                    variant="tonal"
+                    color="primary"
+                    size="small"
+                    icon="mdi-plus"
+                    class="add-btn"
+                  />
                 </div>
               </div>
             </template>
@@ -48,11 +56,12 @@
                   <div class="text-primary price-text">${{ formatPrice(item.sale_price || item.price) }}</div>
                 </div>
                 <v-btn
-                  icon="mdi-plus"
-                  variant="text"
-                  size="small"
+                  density="comfortable"
+                  variant="tonal"
                   color="primary"
-                  class="ms-2"
+                  size="small"
+                  icon="mdi-plus"
+                  class="add-btn ms-2"
                 />
               </div>
             </template>
@@ -169,9 +178,17 @@ const getImageUrl = (item) => {
 
 .product-card {
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: white;
+}
+
+.product-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px);
 }
 
 .product-card.comfortable {
@@ -193,8 +210,18 @@ const getImageUrl = (item) => {
   -webkit-line-clamp: 1;
 }
 
-.product-card:not(:disabled):hover {
-  transform: translateY(-2px);
+.add-btn {
+  opacity: 0.9;
+  transition: all 0.2s ease;
+}
+
+.product-card:hover .add-btn {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.add-btn:hover {
+  transform: scale(1.1) !important;
 }
 
 .product-info {
