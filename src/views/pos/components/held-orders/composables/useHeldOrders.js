@@ -261,8 +261,8 @@ export function useHeldOrders() {
       if (typeof cartStore.setHoldInvoiceId !== 'function') {
         throw new Error('setHoldInvoiceId is not defined in cart store')
       }
-      if (typeof cartStore.setHoldInvoiceDescription !== 'function') {
-        throw new Error('setHoldInvoiceDescription is not defined in cart store')
+      if (typeof cartStore.setHoldOrderDescription !== 'function') {
+        throw new Error('setHoldOrderDescription is not defined in cart store')
       }
 
       await cartStore.setHoldInvoiceId(invoice.id)
