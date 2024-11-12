@@ -11,36 +11,37 @@
       bg-color="white"
       @update:model-value="$emit('change', selectedTab)"
     >
-        <v-tab
-          value="all"
-          class="category-tab"
-          :ripple="false"
-        >
-          <v-icon
-            start
-            icon="mdi-view-grid-outline"
-            size="18"
-            class="me-1"
-          />
-          All Items
-        </v-tab>
-        
-        <v-tab
-          v-for="category in categories"
-          :key="category.id"
-          :value="category.id"
-          class="category-tab"
-          :ripple="false"
-        >
-          <v-icon
-            v-if="category.icon"
-            start
-            :icon="category.icon"
-            size="18"
-            class="me-1"
-          />
-          {{ category.name }}
-        </v-tab>
+        <template v-for="(category, index) in categories" :key="index">
+          <v-tab
+            v-if="index === 0"
+            value="all"
+            class="category-tab"
+            :ripple="false"
+          >
+            <v-icon
+              start
+              icon="mdi-view-grid-outline"
+              size="18"
+              class="me-1"
+            />
+            All Items
+          </v-tab>
+          
+          <v-tab
+            :value="category.id"
+            class="category-tab"
+            :ripple="false"
+          >
+            <v-icon
+              v-if="category.icon"
+              start
+              :icon="category.icon"
+              size="18"
+              class="me-1"
+            />
+            {{ category.name }}
+          </v-tab>
+        </template>
     </v-tabs>
   </div>
 </template>
