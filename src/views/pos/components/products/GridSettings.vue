@@ -190,9 +190,9 @@ const resetToDefaults = () => {
 }
 
 .grid-select {
-  width: 120px;
+  width: 110px;
   transition: all 0.3s ease;
-  margin-right: 8px;
+  margin-right: 6px;
 }
 
 .grid-toggle {
