@@ -28,7 +28,7 @@
           size="large"
           @click="$emit('update:modelValue', false)"
         >
-          HELD ORDERS
+          ORDERS
         </v-btn>
       </v-app-bar>
 
