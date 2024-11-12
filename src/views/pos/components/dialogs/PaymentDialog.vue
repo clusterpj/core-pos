@@ -734,21 +734,75 @@ watch(() => dialog.value, async (newValue) => {
 
 <style scoped>
 .v-card-text {
-  padding-top: 20px;
+  padding-top: 24px;
+  font-size: 1.2rem;
+}
+
+.v-card-title {
+  font-size: 1.8rem !important;
+  padding: 20px 24px !important;
+}
+
+.text-h5 {
+  font-size: 1.8rem !important;
+}
+
+.text-h6 {
+  font-size: 1.5rem !important;
+}
+
+.text-subtitle-1 {
+  font-size: 1.4rem !important;
+  font-weight: 500;
+}
+
+.text-subtitle-2 {
+  font-size: 1.3rem !important;
 }
 
 .payment-method-btn {
   text-transform: none;
   letter-spacing: normal;
+  font-size: 1.3rem;
+  height: 80px !important;
+}
+
+.payment-method-btn .v-icon {
+  font-size: 1.8rem;
+  margin-right: 12px;
 }
 
 .payment-section {
-  border-radius: 8px;
+  border-radius: 12px;
   transition: all 0.3s ease;
+  margin-bottom: 24px !important;
 }
 
 .payment-section:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.v-text-field {
+  font-size: 1.3rem;
+}
+
+.v-text-field :deep(input) {
+  font-size: 1.4rem !important;
+}
+
+.v-text-field :deep(label) {
+  font-size: 1.3rem !important;
+}
+
+.v-btn {
+  font-size: 1.2rem;
+  padding: 0 24px;
+  height: 48px;
+}
+
+.v-btn--size-small {
+  height: 40px;
+  font-size: 1.1rem;
 }
 
 /* Responsive adjustments */
@@ -774,5 +828,34 @@ watch(() => dialog.value, async (newValue) => {
     flex: 1;
     overflow-y: auto;
   }
+}
+
+/* Additional spacing improvements */
+.v-container {
+  padding: 24px;
+}
+
+.v-row {
+  margin-bottom: 20px;
+}
+
+.v-col {
+  padding: 12px;
+}
+
+.mb-2 {
+  margin-bottom: 12px !important;
+}
+
+.mb-4 {
+  margin-bottom: 24px !important;
+}
+
+.mr-2 {
+  margin-right: 12px !important;
+}
+
+.pa-4 {
+  padding: 24px !important;
 }
 </style>
