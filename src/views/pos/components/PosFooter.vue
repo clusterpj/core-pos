@@ -1,9 +1,9 @@
 <!-- src/views/pos/components/PosFooter.vue -->
 <template>
   <v-footer app class="d-flex flex-column pos-footer">
-    <div class="d-flex justify-space-between w-100">
+    <div class="footer-content">
       <!-- Order Type Actions -->
-      <div class="d-flex gap-4">
+      <div class="d-flex gap-4 justify-center">
         <held-orders-modal 
           v-model="showHeldOrdersModal"
           :disabled="false" 
@@ -15,13 +15,13 @@
       </div>
 
       <!-- Order Actions -->
-      <div class="d-flex gap-6">
+      <div class="d-flex gap-6 justify-center">
         <v-btn
           color="info"
           prepend-icon="mdi-printer"
           @click="$emit('print-order')"
           :disabled="isDisabled"
-          class="text-none px-6"
+          class="text-none"
           rounded="pill"
           elevation="2"
           size="large"
@@ -35,7 +35,7 @@
           @click="handlePayment"
           :disabled="!canPay"
           :loading="isProcessingPayment"
-          class="text-none px-6"
+          class="text-none"
           rounded="pill"
           elevation="2"
           size="large"
@@ -250,17 +250,31 @@ defineEmits(['print-order', 'submit-order'])
   background: white;
   height: 64px;
   box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
-  padding: 0 24px !important;
+  padding: 0 !important;
+}
+
+.footer-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
 }
 
 @media (max-width: 600px) {
   .pos-footer {
-    padding: 8px 12px !important;
     height: 88px;
+    padding: 8px 12px !important;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 8px;
   }
   
   .d-flex {
-    flex-direction: column;
+    width: 100%;
     gap: 8px;
   }
   
@@ -270,8 +284,7 @@ defineEmits(['print-order', 'submit-order'])
   }
   
   .gap-6 {
-    width: 100%;
-    justify-content: space-between;
+    justify-content: center;
   }
   
   .v-btn {
