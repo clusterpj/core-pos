@@ -3,10 +3,11 @@
   <v-dialog 
     v-model="dialog" 
     :fullscreen="$vuetify.display.mobile"
-    :max-width="$vuetify.display.mobile ? '100%' : '800px'"
+    :max-width="$vuetify.display.mobile ? '100%' : '900px'"
     persistent
     scrollable
     transition="dialog-bottom-transition"
+    class="payment-dialog"
   >
     <v-card class="payment-dialog-card">
       <v-toolbar 
@@ -14,7 +15,8 @@
         class="payment-dialog-toolbar"
         :elevation="2"
       >
-        <v-toolbar-title class="text-h5 font-weight-medium">
+        <v-toolbar-title class="text-h4 font-weight-medium">
+          <v-icon icon="mdi-cash-register" size="x-large" class="mr-3"></v-icon>
           Process Payment
         </v-toolbar-title>
         <v-spacer></v-spacer>
@@ -23,6 +25,7 @@
           variant="text"
           @click="closeDialog"
           class="ml-2"
+          size="large"
         ></v-btn>
       </v-toolbar>
 
@@ -772,22 +775,35 @@ watch(() => dialog.value, async (newValue) => {
 </script>
 
 <style scoped>
+.payment-dialog {
+  .v-dialog {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+}
+
 .payment-dialog-card {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border-radius: 0;
+  border-radius: 16px;
+  background: linear-gradient(145deg, var(--v-surface-variant) 0%, var(--v-surface-base) 100%);
 }
 
 .payment-dialog-toolbar {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
+  backdrop-filter: blur(10px);
+  height: 80px !important;
 }
 
 .invoice-summary-card {
   background: linear-gradient(145deg, var(--v-surface-variant) 0%, var(--v-surface-base) 100%);
-  border-radius: 16px;
+  border-radius: 24px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(var(--v-border-color), 0.05);
+  backdrop-filter: blur(10px);
 }
 
 .invoice-summary-card:hover {
@@ -796,9 +812,23 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .payment-method-btn {
-  min-height: 64px;
-  border-radius: 12px;
+  min-height: 72px;
+  border-radius: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(var(--v-border-color), 0.05);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+  
+  &.v-btn--active {
+    background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
+    color: white;
+    border: none;
+  }
 }
 
 .payment-method-btn:hover {
