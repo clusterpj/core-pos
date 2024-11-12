@@ -20,11 +20,16 @@
         </v-app-bar-title>
         <v-spacer />
         <v-btn
-          icon="mdi-close"
-          variant="text"
+          color="primary"
+          prepend-icon="mdi-clipboard-list"
+          class="text-none px-6"
+          rounded="pill"
+          elevation="2"
+          size="large"
           @click="$emit('update:modelValue', false)"
-          class="ma-2"
-        />
+        >
+          HELD ORDERS
+        </v-btn>
       </v-app-bar>
 
       <!-- Main Content Area -->
