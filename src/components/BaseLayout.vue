@@ -61,7 +61,6 @@
           @update:model-value="handleCustomerChange"
           :return-object="false"
           variant="outlined"
-          :placeholder="rail ? 'Customer' : null"
         />
 
         <v-select
