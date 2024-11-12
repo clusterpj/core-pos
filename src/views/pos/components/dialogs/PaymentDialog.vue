@@ -785,7 +785,7 @@ watch(() => dialog.value, async (newValue) => {
   flex-direction: column;
   height: 100%;
   border-radius: 16px;
-  background: var(--v-surface-base);
+  background-color: rgb(var(--v-theme-surface));
 }
 
 .payment-dialog-toolbar {
