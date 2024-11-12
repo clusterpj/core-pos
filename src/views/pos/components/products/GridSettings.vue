@@ -16,7 +16,7 @@
               density="compact"
               hide-details
               variant="outlined"
-              class="grid-select me-3 mb-2"
+              class="grid-select"
               @update:model-value="updateColumns"
               bg-color="white"
               :menu-props="{ maxHeight: 200 }"
@@ -102,7 +102,7 @@
               variant="text"
               size="small"
               color="grey-darken-1"
-              class="ms-2 mb-2"
+              class="ms-1"
               @click="resetToDefaults"
             />
           </template>
@@ -186,8 +186,9 @@ const resetToDefaults = () => {
 }
 
 .grid-select {
-  width: 150px;
+  width: 120px;
   transition: all 0.3s ease;
+  margin-right: 8px;
 }
 
 .grid-toggle {
@@ -196,8 +197,8 @@ const resetToDefaults = () => {
 }
 
 .grid-btn {
-  min-width: 110px !important;
-  padding: 0 16px !important;
+  min-width: 90px !important;
+  padding: 0 8px !important;
   transition: all 0.2s ease;
 }
 
@@ -252,12 +253,12 @@ const resetToDefaults = () => {
 /* Mobile Optimizations */
 @media (max-width: 600px) {
   .grid-select {
-    width: 120px;
+    width: 100px;
   }
 
   .grid-btn {
-    min-width: 48px !important;
-    padding: 0 8px !important;
+    min-width: 40px !important;
+    padding: 0 4px !important;
   }
 }
 
