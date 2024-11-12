@@ -1,6 +1,6 @@
 <!-- src/views/pos/PosView.vue -->
 <template>
-  <v-layout class="pos-layout fill-height">
+  <v-layout class="pos-layout">
     <!-- Error Alert -->
     <v-alert
       v-if="error"
@@ -239,8 +239,9 @@ onMounted(async () => {
 .pos-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  padding-bottom: 88px; /* Height of footer + padding */
+  overflow-x: hidden;
 }
 
 .pos-main {
