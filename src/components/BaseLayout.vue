@@ -348,7 +348,7 @@ onMounted(async () => {
 
 .menu-toggle {
   position: fixed;
-  bottom: 16px;
+  bottom: 10px;
   left: 16px;
   z-index: 1001;
   border-radius: 50%;
