@@ -188,14 +188,20 @@ const createCustomer = async () => {
     emit('customer-created', customer)
     resetForm()
     closeDialog()
-    window.toastr?.['success']('Customer created successfully')
+    if (window.toastr) {
+      window.toastr.success('Customer created successfully')
+    }
   } catch (error) {
     console.error('Customer creation error:', error)
-    window.toastr?.['error'](
-      error.response?.data?.message || 
+    const errorMessage = error.response?.data?.message || 
       error.message || 
       'Failed to create customer'
-    )
+    
+    if (window.toastr) {
+      window.toastr.error(errorMessage)
+    } else {
+      console.error(errorMessage)
+    }
   } finally {
     creating.value = false
   }
