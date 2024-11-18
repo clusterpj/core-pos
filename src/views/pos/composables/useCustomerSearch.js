@@ -19,7 +19,7 @@ export function useCustomerSearch() {
     searchError.value = null
 
     try {
-      const response = await apiClient.get('/api/v1/customers', {
+      const response = await apiClient.get('/v1/customers', {
         params: {
           search: query,
           status_customer: 'A',
@@ -47,7 +47,7 @@ export function useCustomerSearch() {
 
   const createCustomer = async (customerData) => {
     try {
-      const response = await apiClient.post('/api/v2/core-pos/customer', customerData)
+      const response = await apiClient.post('/v2/core-pos/customer', customerData)
       return response.data
     } catch (error) {
       logger.error('Customer creation failed:', error)
