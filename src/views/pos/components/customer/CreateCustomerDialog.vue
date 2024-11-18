@@ -105,6 +105,13 @@ const formData = reactive({
   address: '',
 })
 
+const initialFormData = { ...formData }
+
+const resetForm = () => {
+  Object.assign(formData, initialFormData)
+  clearAllErrors()
+}
+
 const errors = reactive({
   name: '',
   phone: '',
@@ -125,10 +132,18 @@ const validateForm = () => {
   if (!formData.phone.trim()) {
     errors.phone = 'Phone number is required'
     isValid = false
+  } else if (!/^\+?[\d\s-]{10,}$/.test(formData.phone.trim())) {
+    errors.phone = 'Please enter a valid phone number'
+    isValid = false
   }
 
   if (!formData.address.trim()) {
     errors.address = 'Address is required'
+    isValid = false
+  }
+
+  if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    errors.email = 'Please enter a valid email address'
     isValid = false
   }
 
@@ -151,31 +166,54 @@ const createCustomer = async () => {
   creating.value = true
 
   try {
-    const customer = await apiCreateCustomer({
+    const customerData = {
       name: formData.name.trim(),
       phone: formData.phone.trim(),
       email: formData.email.trim() || null,
       address_street_1: formData.address.trim(),
       status_customer: 'A'
-    })
+    }
+
+    const response = await apiCreateCustomer(customerData)
+    
+    if (!response?.id) {
+      throw new Error('Invalid response from server')
+    }
+
+    const customer = {
+      id: response.id,
+      ...customerData
+    }
 
     emit('customer-created', customer)
+    resetForm()
     closeDialog()
     window.toastr?.['success']('Customer created successfully')
   } catch (error) {
-    window.toastr?.['error'](error.message || 'Failed to create customer')
+    console.error('Customer creation error:', error)
+    window.toastr?.['error'](
+      error.response?.data?.message || 
+      error.message || 
+      'Failed to create customer'
+    )
   } finally {
     creating.value = false
   }
 }
 
 const closeDialog = () => {
-  if (!creating.value) {
-    dialog.value = false
-    clearAllErrors()
-    Object.keys(formData).forEach(key => {
-      formData[key] = ''
-    })
+  if (creating.value) {
+    return
   }
+  
+  resetForm()
+  dialog.value = false
 }
+
+// Prevent closing dialog while submitting
+watch(() => props.modelValue, (newVal) => {
+  if (!newVal && creating.value) {
+    dialog.value = true
+  }
+})
 </script>

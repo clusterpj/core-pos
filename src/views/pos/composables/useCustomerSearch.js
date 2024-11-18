@@ -7,13 +7,20 @@ export function useCustomerSearch() {
   const searchResults = ref([])
   const isSearching = ref(false)
   const searchError = ref(null)
+  const lastSearchQuery = ref('')
   
   // Debounced search function
   const searchCustomers = debounce(async (query) => {
     if (!query || query.length < 3) {
       searchResults.value = []
+      searchError.value = null
       return
     }
+
+    // Don't search if query hasn't changed
+    if (query === lastSearchQuery.value) return
+    
+    lastSearchQuery.value = query
 
     isSearching.value = true
     searchError.value = null
