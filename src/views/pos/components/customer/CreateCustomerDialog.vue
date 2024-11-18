@@ -127,26 +127,32 @@ const validateForm = () => {
   if (!formData.name.trim()) {
     errors.name = 'Name is required'
     isValid = false
-  }
-
-  if (!formData.phone.trim()) {
-    errors.phone = 'Phone number is required'
+  } else if (formData.name.trim().length < 3) {
+    errors.name = 'Name must be at least 3 characters'
     isValid = false
-  } else if (!/^\+?[\d\s-]{10,}$/.test(formData.phone.trim())) {
-    errors.phone = 'Please enter a valid phone number'
+  } else if (formData.name.trim().length > 100) {
+    errors.name = 'Name must not exceed 100 characters'
     isValid = false
   }
 
-  // Address is only required for delivery orders
-  if (formData.address && !formData.address.trim()) {
-    errors.address = 'If provided, address cannot be empty'
+  if (formData.phone.trim() && (formData.phone.trim().length < 3 || formData.phone.trim().length > 25)) {
+    errors.phone = 'Phone number must be between 3 and 25 characters'
     isValid = false
   }
 
-  // Email is optional, but validate if provided
-  if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-    errors.email = 'Please enter a valid email address'
+  if (formData.address.trim() && (formData.address.trim().length < 3 || formData.address.trim().length > 120)) {
+    errors.address = 'Address must be between 3 and 120 characters'
     isValid = false
+  }
+
+  if (formData.email.trim()) {
+    if (formData.email.trim().length < 5 || formData.email.trim().length > 120) {
+      errors.email = 'Email must be between 5 and 120 characters'
+      isValid = false
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      errors.email = 'Please enter a valid email address'
+      isValid = false
+    }
   }
 
   return isValid
@@ -170,9 +176,9 @@ const createCustomer = async () => {
   try {
     const customerData = {
       name: formData.name.trim(),
-      phone: formData.phone.trim(),
-      email: formData.email.trim() || undefined,
-      address_street_1: formData.address.trim() || undefined,
+      phone: formData.phone.trim() || null,
+      email: formData.email.trim() || null,
+      address_street_1: formData.address.trim() || null,
       status_customer: 'A'
     }
 

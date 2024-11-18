@@ -59,7 +59,8 @@ export function useCustomerSearch() {
       return response.data
     } catch (error) {
       logger.error('Customer creation failed:', error)
-      throw error
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create customer'
+      throw new Error(errorMessage)
     }
   }
 
