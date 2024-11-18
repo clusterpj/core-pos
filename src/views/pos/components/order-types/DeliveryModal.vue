@@ -49,15 +49,39 @@
             <v-row>
               <v-col cols="12">
                 <div class="text-subtitle-1 mb-2">Customer Information</div>
-                <v-text-field
-                  v-model="customerInfo.name"
-                  label="Customer Name"
+                <v-autocomplete
+                  v-model="selectedCustomer"
+                  v-model:search="customerSearch"
+                  :items="searchResults"
+                  :loading="isSearching"
+                  :error-messages="validationErrors.name"
+                  label="Search Customer"
+                  item-title="name"
+                  item-value="id"
                   variant="outlined"
                   density="comfortable"
-                  :error-messages="validationErrors.name"
-                  @input="clearError('name')"
-                  required
-                ></v-text-field>
+                  hide-no-data
+                  hide-selected
+                  return-object
+                  @update:search="onCustomerSearch"
+                  @update:modelValue="onCustomerSelect"
+                >
+                  <template v-slot:append-inner>
+                    <v-icon
+                      v-if="selectedCustomer"
+                      color="error"
+                      @click.stop="clearSelectedCustomer"
+                    >
+                      mdi-close
+                    </v-icon>
+                  </template>
+                  <template v-slot:item="{ props, item }">
+                    <v-list-item v-bind="props">
+                      <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                      <v-list-item-subtitle>{{ item.raw.phone || 'No phone' }}</v-list-item-subtitle>
+                    </v-list-item>
+                  </template>
+                </v-autocomplete>
               </v-col>
             </v-row>
 
@@ -152,6 +176,7 @@
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
 import { useOrderType } from '../../composables/useOrderType'
+import { useCustomerSearch } from '../../composables/useCustomerSearch'
 import { usePosStore } from '../../../../stores/pos-store'
 import { useCartStore } from '../../../../stores/cart-store'
 import { logger } from '../../../../utils/logger'
@@ -177,11 +202,45 @@ const {
   setCustomerInfo
 } = useOrderType()
 
+// Customer search integration
+const { 
+  searchResults,
+  isSearching,
+  searchError,
+  searchCustomers,
+  createCustomer
+} = useCustomerSearch()
+
 // Local state
 const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
-const error = computed(() => orderError.value)
+const error = computed(() => orderError.value || searchError.value)
+const customerSearch = ref('')
+const selectedCustomer = ref(null)
+
+// Customer search handlers
+const onCustomerSearch = (search) => {
+  if (search) {
+    searchCustomers(search)
+  }
+}
+
+const onCustomerSelect = (customer) => {
+  if (customer) {
+    customerInfo.name = customer.name
+    customerInfo.phone = customer.phone || ''
+    customerInfo.address = customer.address || ''
+  }
+}
+
+const clearSelectedCustomer = () => {
+  selectedCustomer.value = null
+  customerSearch.value = ''
+  Object.keys(customerInfo).forEach(key => {
+    customerInfo[key] = ''
+  })
+}
 
 // Form state
 const customerInfo = reactive({
