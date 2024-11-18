@@ -82,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
 
 const props = defineProps({
