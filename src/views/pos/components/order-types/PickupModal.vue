@@ -131,6 +131,7 @@
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
 import { useOrderType } from '../../composables/useOrderType'
+import { useCustomerSearch } from '../../composables/useCustomerSearch'
 import { usePosStore } from '../../../../stores/pos-store'
 import { useCartStore } from '../../../../stores/cart-store'
 import { logger } from '../../../../utils/logger'
@@ -156,11 +157,45 @@ const {
   setCustomerInfo
 } = useOrderType()
 
+// Customer search integration
+const { 
+  searchResults,
+  isSearching,
+  searchError,
+  searchCustomers
+} = useCustomerSearch()
+
 // Local state
 const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
-const error = computed(() => orderError.value)
+const error = computed(() => orderError.value || searchError.value)
+const customerSearch = ref('')
+const selectedCustomer = ref(null)
+
+// Customer search handlers
+const onCustomerSearch = async (search) => {
+  customerSearch.value = search
+  if (search && search.length >= 3) {
+    await searchCustomers(search)
+  }
+}
+
+const onCustomerSelect = (customer) => {
+  if (customer) {
+    customerInfo.name = customer.name
+    customerInfo.phone = customer.phone || ''
+    customerSearch.value = customer.name
+  }
+}
+
+const clearSelectedCustomer = () => {
+  selectedCustomer.value = null
+  customerSearch.value = ''
+  Object.keys(customerInfo).forEach(key => {
+    customerInfo[key] = ''
+  })
+}
 
 // Form state
 const customerInfo = reactive({

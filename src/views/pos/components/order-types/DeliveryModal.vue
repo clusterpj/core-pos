@@ -257,7 +257,9 @@ const onCustomerSelect = (customer) => {
   if (customer) {
     customerInfo.name = customer.name
     customerInfo.phone = customer.phone || ''
-    customerInfo.address = customer.address || ''
+    customerInfo.address = customer.address_street_1 || ''
+    customerInfo.zipCode = customer.zip_code || ''
+    customerInfo.unit = customer.address_street_2 || ''
     // Keep the search value after selection
     customerSearch.value = customer.name
   }
