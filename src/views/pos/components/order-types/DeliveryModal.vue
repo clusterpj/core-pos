@@ -75,6 +75,22 @@
                       mdi-close
                     </v-icon>
                   </template>
+                  <template v-slot:no-data>
+                    <v-list-item>
+                      <v-list-item-title>
+                        No customers found
+                      </v-list-item-title>
+                      <template v-slot:append>
+                        <v-btn
+                          color="primary"
+                          variant="text"
+                          @click="showCreateCustomer = true"
+                        >
+                          Create New
+                        </v-btn>
+                      </template>
+                    </v-list-item>
+                  </template>
                   <template v-slot:item="{ props, item }">
                     <v-list-item v-bind="props">
                       <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
@@ -82,6 +98,11 @@
                     </v-list-item>
                   </template>
                 </v-autocomplete>
+
+                <CreateCustomerDialog
+                  v-model="showCreateCustomer"
+                  @customer-created="onCustomerCreated"
+                />
               </v-col>
             </v-row>
 
@@ -175,6 +196,7 @@
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
+import CreateCustomerDialog from '../customer/CreateCustomerDialog.vue'
 import { useOrderType } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
 import { usePosStore } from '../../../../stores/pos-store'
@@ -218,6 +240,7 @@ const processing = ref(false)
 const error = computed(() => orderError.value || searchError.value)
 const customerSearch = ref('')
 const selectedCustomer = ref(null)
+const showCreateCustomer = ref(false)
 
 // Customer search handlers
 const onCustomerSearch = (search) => {
@@ -240,6 +263,11 @@ const clearSelectedCustomer = () => {
   Object.keys(customerInfo).forEach(key => {
     customerInfo[key] = ''
   })
+}
+
+const onCustomerCreated = (customer) => {
+  selectedCustomer.value = customer
+  onCustomerSelect(customer)
 }
 
 // Form state
