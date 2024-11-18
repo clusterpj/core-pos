@@ -323,7 +323,7 @@ const validateForm = () => {
   }
 
   if (!customerInfo.address.trim()) {
-    validationErrors.address = 'Delivery address is required'
+    validationErrors.address = 'Delivery address is required for delivery orders'
     isValid = false
   }
 

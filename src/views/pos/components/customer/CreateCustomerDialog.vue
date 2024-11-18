@@ -137,11 +137,13 @@ const validateForm = () => {
     isValid = false
   }
 
-  if (!formData.address.trim()) {
-    errors.address = 'Address is required'
+  // Address is only required for delivery orders
+  if (formData.address && !formData.address.trim()) {
+    errors.address = 'If provided, address cannot be empty'
     isValid = false
   }
 
+  // Email is optional, but validate if provided
   if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
     errors.email = 'Please enter a valid email address'
     isValid = false
@@ -169,8 +171,8 @@ const createCustomer = async () => {
     const customerData = {
       name: formData.name.trim(),
       phone: formData.phone.trim(),
-      email: formData.email.trim() || null,
-      address_street_1: formData.address.trim(),
+      email: formData.email.trim() || undefined,
+      address_street_1: formData.address.trim() || undefined,
       status_customer: 'A'
     }
 
