@@ -60,11 +60,11 @@
                   item-value="id"
                   variant="outlined"
                   density="comfortable"
-                  hide-no-data
-                  hide-selected
+                  persistent-hint
+                  hint="Type at least 3 characters to search"
                   return-object
                   @update:search="onCustomerSearch"
-                  @update:modelValue="onCustomerSelect"
+                  @update:model-value="onCustomerSelect"
                 >
                   <template v-slot:append-inner>
                     <v-icon
@@ -243,9 +243,10 @@ const selectedCustomer = ref(null)
 const showCreateCustomer = ref(false)
 
 // Customer search handlers
-const onCustomerSearch = (search) => {
-  if (search) {
-    searchCustomers(search)
+const onCustomerSearch = async (search) => {
+  customerSearch.value = search // Maintain search text
+  if (search && search.length >= 3) {
+    await searchCustomers(search)
   }
 }
 
@@ -254,6 +255,8 @@ const onCustomerSelect = (customer) => {
     customerInfo.name = customer.name
     customerInfo.phone = customer.phone || ''
     customerInfo.address = customer.address || ''
+    // Keep the search value after selection
+    customerSearch.value = customer.name
   }
 }
 
