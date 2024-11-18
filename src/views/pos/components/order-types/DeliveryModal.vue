@@ -61,7 +61,7 @@
                   variant="outlined"
                   density="comfortable"
                   persistent-hint
-                  hint="Type at least 3 characters to search"
+                  hint="Search by name, phone, or email (min. 3 characters)"
                   return-object
                   @update:search="onCustomerSearch"
                   @update:model-value="onCustomerSelect"
@@ -94,7 +94,10 @@
                   <template v-slot:item="{ props, item }">
                     <v-list-item v-bind="props">
                       <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
-                      <v-list-item-subtitle>{{ item.raw.phone || 'No phone' }}</v-list-item-subtitle>
+                      <v-list-item-subtitle>
+                        {{ item.raw.phone || 'No phone' }}
+                        {{ item.raw.email ? `• ${item.raw.email}` : '' }}
+                      </v-list-item-subtitle>
                     </v-list-item>
                   </template>
                 </v-autocomplete>

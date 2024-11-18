@@ -29,6 +29,7 @@ export function useCustomerSearch() {
       const response = await apiClient.get('/v1/customers', {
         params: {
           search: query,
+          searchFields: ['name', 'phone', 'email'],
           status_customer: 'A',
           page: 1
         }
