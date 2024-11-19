@@ -161,6 +161,31 @@
               </v-col>
             </v-row>
 
+            <v-row>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="customerInfo.city"
+                  label="City"
+                  variant="outlined"
+                  density="comfortable"
+                  :error-messages="validationErrors.city"
+                  @input="clearError('city')"
+                  required
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="customerInfo.state"
+                  label="State"
+                  variant="outlined"
+                  density="comfortable"
+                  :error-messages="validationErrors.state"
+                  @input="clearError('state')"
+                  required
+                ></v-text-field>
+              </v-col>
+            </v-row>
+
             <!-- Delivery Instructions -->
             <v-row>
               <v-col cols="12">
@@ -289,16 +314,17 @@ const onCustomerCreated = async (customer) => {
       name: customer.name,
       phone: customer.phone,
       email: customer.email,
-      address_street_1: customer.address_street_1,
-      address_street_2: customer.unit || '',
-      city: customer.city || '',
-      state: customer.state || '',
-      zip_code: customer.zipCode || '',
+      // Map delivery form fields to customer fields
+      address_street_1: customerInfo.address || '',
+      address_street_2: customerInfo.unit || '',
+      city: customerInfo.city || '',
+      state: customerInfo.state || '',
+      zip_code: customerInfo.zipCode || '',
       company_id: currentCustomer.company_id,
       avalara_type: 0,
       prepaid_option: 0,
       status_customer: 'A',
-      notes: customer.instructions || ''
+      notes: customerInfo.instructions || ''
     }
 
     logger.info('Creating customer with data:', customerData)
@@ -317,6 +343,8 @@ const customerInfo = reactive({
   address: '',
   unit: '',
   zipCode: '',
+  city: '',
+  state: '',
   instructions: ''
 })
 
@@ -325,7 +353,9 @@ const validationErrors = reactive({
   name: '',
   phone: '',
   address: '',
-  zipCode: ''
+  zipCode: '',
+  city: '',
+  state: ''
 })
 
 // Watch for dialog open to set order type
@@ -366,6 +396,16 @@ const validateForm = () => {
     isValid = false
   } else if (!/^\d{5}(-\d{4})?$/.test(customerInfo.zipCode.trim())) {
     validationErrors.zipCode = 'Invalid ZIP code format'
+    isValid = false
+  }
+
+  if (!customerInfo.city.trim()) {
+    validationErrors.city = 'City is required'
+    isValid = false
+  }
+
+  if (!customerInfo.state.trim()) {
+    validationErrors.state = 'State is required'
     isValid = false
   }
 
