@@ -204,6 +204,7 @@ import { useOrderType } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
 import { usePosStore } from '../../../../stores/pos-store'
 import { useCartStore } from '../../../../stores/cart-store'
+import { useCompanyStore } from '../../../../stores/company-store'
 import { logger } from '../../../../utils/logger'
 
 // Props
@@ -217,6 +218,7 @@ const props = defineProps({
 // Store access
 const posStore = usePosStore()
 const cartStore = useCartStore()
+const companyStore = useCompanyStore()
 
 // Composables
 const { 
@@ -274,8 +276,15 @@ const clearSelectedCustomer = () => {
 }
 
 const onCustomerCreated = (customer) => {
-  selectedCustomer.value = customer
-  onCustomerSelect(customer)
+  // Add required fields to customer data
+  const customerData = {
+    ...customer,
+    company_id: companyStore.selectedCompany?.id,
+    avalara_type: 0,
+    prepaid_option: 0
+  }
+  selectedCustomer.value = customerData
+  onCustomerSelect(customerData)
 }
 
 // Form state
