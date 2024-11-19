@@ -333,38 +333,39 @@ const clearSelectedCustomer = () => {
 }
 
 const onCustomerCreated = async (customer) => {
-  // Get the current customer to access company_id
-  const currentCustomer = companyStore.currentCustomer
-  if (!currentCustomer?.company_id) {
-    logger.error('No company ID available for customer creation')
-    return
-  }
-
   try {
-    // Prepare complete customer data with all required fields
-    const customerData = {
-      name: customer.name,
-      phone: customer.phone,
-      email: customer.email,
-      // Map delivery form fields to customer fields
-      address_street_1: customerInfo.address || '',
-      address_street_2: customerInfo.unit || '',
-      city: customerInfo.city || '',
-      state: customerInfo.state || '',
-      zip_code: customerInfo.zipCode || '',
-      company_id: currentCustomer.company_id,
-      avalara_type: 0,
-      prepaid_option: 0,
-      status_customer: 'A',
-      notes: customerInfo.instructions || ''
+    logger.info('New customer created:', customer)
+    
+    // Close the create customer dialog
+    showCreateCustomer.value = false
+    
+    // Set the selected customer and populate the form
+    selectedCustomer.value = customer
+    customerSearch.value = customer.name
+    
+    // Populate delivery form with customer data
+    customerInfo.name = customer.name
+    customerInfo.phone = customer.phone || ''
+    customerInfo.email = customer.email || ''
+    customerInfo.address = customer.address_street_1 || ''
+    customerInfo.unit = customer.address_street_2 || ''
+    customerInfo.city = customer.city || ''
+    customerInfo.state = customer.state || ''
+    customerInfo.zipCode = customer.zip_code || ''
+    customerInfo.instructions = customer.notes || ''
+    
+    // Clear any existing validation errors
+    clearAllErrors()
+    
+    // Show success message
+    if (window.toastr) {
+      window.toastr.success('Customer created and loaded successfully')
     }
-
-    logger.info('Creating customer with data:', customerData)
-    selectedCustomer.value = customerData
-    onCustomerSelect(customerData)
   } catch (error) {
-    logger.error('Error creating customer:', error)
-    throw error
+    logger.error('Error handling new customer:', error)
+    if (window.toastr) {
+      window.toastr.error('Error loading customer data')
+    }
   }
 }
 

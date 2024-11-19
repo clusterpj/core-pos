@@ -294,12 +294,15 @@ const createCustomer = async () => {
         ...customerData
       }
 
-      emit('customer-created', customer)
-      resetForm()
-      closeDialog()
+      // Show success message
       if (window.toastr) {
         window.toastr.success('Customer created successfully')
       }
+      
+      // Emit customer data and close dialog
+      emit('customer-created', customer)
+      resetForm()
+      closeDialog()
     } catch (error) {
       // Handle specific API error responses
       if (error.response?.data) {
