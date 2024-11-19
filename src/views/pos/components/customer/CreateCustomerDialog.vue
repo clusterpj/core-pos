@@ -221,15 +221,17 @@ const createCustomer = async () => {
   try {
     const customerData = {
       name: formData.name.trim(),
-      phone: formData.phone.trim() || null,
+      phone: formData.phone.trim(),  // Remove the || null to ensure phone is always sent
       email: formData.email.trim() || null,
-      address_street_1: formData.address.trim() || null,
-      city: formData.city.trim() || null,
-      state: formData.state.trim() || null,
+      address_street_1: formData.address.trim(),  // Remove the || null to ensure address is sent
+      city: formData.city.trim(),  // Remove the || null to ensure city is sent
+      state: formData.state.trim(),  // Remove the || null to ensure state is sent
+      zip_code: '',  // Adding zip_code field
       status_customer: 'A',
-      company_id: 1, // Using the company ID from the log
+      company_id: 1,
       avalara_type: 0,
-      prepaid_option: 0
+      prepaid_option: 0,
+      notes: ''  // Adding notes field
     }
 
     const response = await apiCreateCustomer(customerData)
