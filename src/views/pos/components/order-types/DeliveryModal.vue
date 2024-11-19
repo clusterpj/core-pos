@@ -204,7 +204,7 @@ import { useOrderType } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
 import { usePosStore } from '@/stores/pos-store'
 import { useCartStore } from '@/stores/cart-store'
-import { useCompanyStore } from '@/stores/company-store'
+import { useCompanyStore } from '@/stores/company'
 import { logger } from '../../../../utils/logger'
 
 // Props
@@ -279,7 +279,7 @@ const onCustomerCreated = (customer) => {
   // Add required fields to customer data
   const customerData = {
     ...customer,
-    company_id: companyStore.selectedCompany?.id,
+    company_id: companyStore.currentCustomer?.company_id,
     avalara_type: 0,
     prepaid_option: 0
   }
