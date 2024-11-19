@@ -226,7 +226,10 @@ const createCustomer = async () => {
       address_street_1: formData.address.trim() || null,
       city: formData.city.trim() || null,
       state: formData.state.trim() || null,
-      status_customer: 'A'
+      status_customer: 'A',
+      company_id: 1, // Using the company ID from the log
+      avalara_type: 0,
+      prepaid_option: 0
     }
 
     const response = await apiCreateCustomer(customerData)
