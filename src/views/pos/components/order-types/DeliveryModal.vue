@@ -276,13 +276,23 @@ const clearSelectedCustomer = () => {
 }
 
 const onCustomerCreated = (customer) => {
-  // Add required fields to customer data
+  // Get the current customer to access company_id
+  const currentCustomer = companyStore.currentCustomer
+  if (!currentCustomer?.company_id) {
+    logger.error('No company ID available for customer creation')
+    return
+  }
+
+  // Add required fields to customer data before creation
   const customerData = {
     ...customer,
-    company_id: companyStore.currentCustomer?.company_id,
+    company_id: currentCustomer.company_id,
     avalara_type: 0,
-    prepaid_option: 0
+    prepaid_option: 0,
+    status_customer: 'A'  // Ensure customer is active
   }
+
+  logger.info('Creating customer with data:', customerData)
   selectedCustomer.value = customerData
   onCustomerSelect(customerData)
 }
