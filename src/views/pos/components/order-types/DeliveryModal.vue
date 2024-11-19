@@ -275,7 +275,7 @@ const clearSelectedCustomer = () => {
   })
 }
 
-const onCustomerCreated = (customer) => {
+const onCustomerCreated = async (customer) => {
   // Get the current customer to access company_id
   const currentCustomer = companyStore.currentCustomer
   if (!currentCustomer?.company_id) {
@@ -283,18 +283,31 @@ const onCustomerCreated = (customer) => {
     return
   }
 
-  // Add required fields to customer data before creation
-  const customerData = {
-    ...customer,
-    company_id: currentCustomer.company_id,
-    avalara_type: 0,
-    prepaid_option: 0,
-    status_customer: 'A'  // Ensure customer is active
-  }
+  try {
+    // Prepare complete customer data with all required fields
+    const customerData = {
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email,
+      address_street_1: customer.address_street_1,
+      address_street_2: customer.unit || '',
+      city: customer.city || '',
+      state: customer.state || '',
+      zip_code: customer.zipCode || '',
+      company_id: currentCustomer.company_id,
+      avalara_type: 0,
+      prepaid_option: 0,
+      status_customer: 'A',
+      notes: customer.instructions || ''
+    }
 
-  logger.info('Creating customer with data:', customerData)
-  selectedCustomer.value = customerData
-  onCustomerSelect(customerData)
+    logger.info('Creating customer with data:', customerData)
+    selectedCustomer.value = customerData
+    onCustomerSelect(customerData)
+  } catch (error) {
+    logger.error('Error creating customer:', error)
+    throw error
+  }
 }
 
 // Form state
