@@ -1,13 +1,13 @@
 <template>
-  <v-dialog v-model="dialog" max-width="500">
-    <v-card>
-      <v-card-title class="text-h5">
-        Create New Customer
+  <v-dialog v-model="dialog" max-width="600" :scrim="true" transition="dialog-bottom-transition" class="rounded-lg">
+    <v-card class="rounded-lg">
+      <v-toolbar color="primary" density="comfortable">
+        <v-toolbar-title class="text-h6 font-weight-medium">
+          Create New Customer
+        </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn icon @click="closeDialog">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
+        <v-btn icon="mdi-close" variant="text" @click="closeDialog" />
+      </v-toolbar>
 
       <v-card-text>
         <v-container>
@@ -117,10 +117,14 @@
         <v-spacer></v-spacer>
         <v-btn
           color="primary"
+          size="large"
+          height="56"
           @click="createCustomer"
           :loading="creating"
           :disabled="creating"
+          elevation="2"
         >
+          <v-icon start>mdi-account-plus</v-icon>
           Create Customer
         </v-btn>
       </v-card-actions>

@@ -1,12 +1,12 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600">
+  <v-dialog v-model="dialog" max-width="600" :scrim="true" transition="dialog-bottom-transition" class="rounded-lg">
     <template v-slot:activator="{ props: dialogProps }">
       <v-btn
         color="primary"
         v-bind="dialogProps"
         prepend-icon="mdi-truck-delivery"
         :loading="loading"
-        :disabled="disabled"
+        :disabled="disabled || cartStore.isEmpty"
         class="text-none px-6"
         rounded="pill"
         elevation="2"
@@ -16,14 +16,14 @@
       </v-btn>
     </template>
 
-    <v-card>
-      <v-card-title class="text-h5">
-        Delivery Order
+    <v-card class="rounded-lg">
+      <v-toolbar color="primary" density="comfortable">
+        <v-toolbar-title class="text-h6 font-weight-medium">
+          Delivery Order
+        </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn icon @click="closeModal">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
+        <v-btn icon="mdi-close" variant="text" @click="closeModal" />
+      </v-toolbar>
 
       <v-card-text>
         <v-container>
@@ -209,16 +209,19 @@
 
             <!-- Submit Button -->
             <v-row class="mt-4">
-              <v-col cols="12" class="text-center">
+              <v-col cols="12">
                 <v-btn
                   color="primary"
                   size="large"
                   block
+                  height="56"
                   @click="processOrder"
                   :loading="processing"
-                  :disabled="processing"
+                  :disabled="!canProcessOrder || processing"
+                  elevation="2"
                 >
-                  Create Delivery Order
+                  <v-icon start>mdi-check-circle</v-icon>
+                  Process Order
                 </v-btn>
               </v-col>
             </v-row>
@@ -275,6 +278,16 @@ const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
 const error = computed(() => orderError.value || searchError.value)
+
+const canProcessOrder = computed(() => {
+  return !cartStore.isEmpty && 
+         customerInfo.name.trim() && 
+         customerInfo.phone.trim() && 
+         customerInfo.address.trim() && 
+         customerInfo.city.trim() && 
+         customerInfo.state.trim() && 
+         customerInfo.zipCode.trim()
+})
 const customerSearch = ref('')
 const selectedCustomer = ref(null)
 const showCreateCustomer = ref(false)
