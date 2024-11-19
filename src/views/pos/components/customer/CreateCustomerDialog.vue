@@ -11,8 +11,10 @@
 
       <v-card-text>
         <v-container>
+          <!-- Customer Information Section -->
           <v-row>
             <v-col cols="12">
+              <div class="text-subtitle-1 mb-2">Customer Information</div>
               <v-text-field
                 v-model="formData.name"
                 label="Full Name"
@@ -21,12 +23,9 @@
                 required
                 variant="outlined"
                 density="comfortable"
+                class="mb-3"
               ></v-text-field>
-            </v-col>
-          </v-row>
 
-          <v-row>
-            <v-col cols="12">
               <v-text-field
                 v-model="formData.phone"
                 label="Phone Number"
@@ -35,23 +34,23 @@
                 required
                 variant="outlined"
                 density="comfortable"
+                class="mb-3"
               ></v-text-field>
-            </v-col>
-          </v-row>
 
-          <v-row>
-            <v-col cols="12">
               <v-text-field
                 v-model="formData.email"
                 label="Email (Optional)"
                 variant="outlined"
                 density="comfortable"
+                class="mb-3"
               ></v-text-field>
             </v-col>
           </v-row>
 
+          <!-- Address Section -->
           <v-row>
             <v-col cols="12">
+              <div class="text-subtitle-1 mb-2">Address Information</div>
               <v-text-field
                 v-model="formData.address"
                 label="Street Address"
@@ -60,45 +59,22 @@
                 required
                 variant="outlined"
                 density="comfortable"
+                class="mb-3"
               ></v-text-field>
             </v-col>
           </v-row>
 
           <v-row>
-            <v-col cols="12">
+            <v-col cols="12" sm="6">
               <v-text-field
                 v-model="formData.unit"
                 label="Apt/Suite/Unit (Optional)"
                 variant="outlined"
                 density="comfortable"
+                class="mb-3"
               ></v-text-field>
             </v-col>
-          </v-row>
-
-          <v-row>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model="formData.city"
-                label="City"
-                :error-messages="errors.city"
-                @input="clearError('city')"
-                required
-                variant="outlined"
-                density="comfortable"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model="formData.state"
-                label="State"
-                :error-messages="errors.state"
-                @input="clearError('state')"
-                required
-                variant="outlined"
-                density="comfortable"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12" sm="4">
+            <v-col cols="12" sm="6">
               <v-text-field
                 v-model="formData.zipCode"
                 label="ZIP Code"
@@ -107,6 +83,34 @@
                 required
                 variant="outlined"
                 density="comfortable"
+                class="mb-3"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="formData.city"
+                label="City"
+                :error-messages="errors.city"
+                @input="clearError('city')"
+                required
+                variant="outlined"
+                density="comfortable"
+                class="mb-3"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="formData.state"
+                label="State"
+                :error-messages="errors.state"
+                @input="clearError('state')"
+                required
+                variant="outlined"
+                density="comfortable"
+                class="mb-3"
               ></v-text-field>
             </v-col>
           </v-row>
@@ -114,19 +118,25 @@
       </v-card-text>
 
       <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn
-          color="primary"
-          size="large"
-          height="56"
-          @click="createCustomer"
-          :loading="creating"
-          :disabled="creating"
-          elevation="2"
-        >
-          <v-icon start>mdi-account-plus</v-icon>
-          Create Customer
-        </v-btn>
+        <v-container>
+          <v-row>
+            <v-col cols="12">
+              <v-btn
+                color="primary"
+                size="large"
+                block
+                height="56"
+                @click="createCustomer"
+                :loading="creating"
+                :disabled="creating"
+                elevation="2"
+              >
+                <v-icon start>mdi-account-plus</v-icon>
+                Create Customer
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-container>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -321,3 +331,13 @@ watch(() => props.modelValue, (newVal) => {
   }
 })
 </script>
+
+<style scoped>
+.v-card-text {
+  padding-top: 20px;
+}
+
+.text-subtitle-1 {
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+</style>
