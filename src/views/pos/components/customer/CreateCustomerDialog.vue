@@ -65,10 +65,48 @@
           </v-row>
 
           <v-row>
-            <v-col cols="12" sm="6">
+            <v-col cols="12">
+              <v-text-field
+                v-model="formData.unit"
+                label="Apt/Suite/Unit (Optional)"
+                variant="outlined"
+                density="comfortable"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12" sm="4">
               <v-text-field
                 v-model="formData.city"
                 label="City"
+                :error-messages="errors.city"
+                @input="clearError('city')"
+                required
+                variant="outlined"
+                density="comfortable"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-text-field
+                v-model="formData.state"
+                label="State"
+                :error-messages="errors.state"
+                @input="clearError('state')"
+                required
+                variant="outlined"
+                density="comfortable"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-text-field
+                v-model="formData.zipCode"
+                label="ZIP Code"
+                :error-messages="errors.zipCode"
+                @input="clearError('zipCode')"
+                required
+                variant="outlined"
+                density="comfortable"
                 :error-messages="errors.city"
                 @input="clearError('city')"
                 required
@@ -128,8 +166,10 @@ const formData = reactive({
   phone: '',
   email: '',
   address: '',
+  unit: '',
   city: '',
   state: '',
+  zipCode: '',
 })
 
 const initialFormData = { ...formData }
@@ -145,6 +185,7 @@ const errors = reactive({
   address: '',
   city: '',
   state: '',
+  zipCode: '',
 })
 
 const creating = ref(false)
@@ -190,6 +231,14 @@ const validateForm = () => {
     isValid = false
   }
 
+  if (!formData.zipCode.trim()) {
+    errors.zipCode = 'ZIP code is required'
+    isValid = false
+  } else if (!/^\d{5}(-\d{4})?$/.test(formData.zipCode.trim())) {
+    errors.zipCode = 'Invalid ZIP code format'
+    isValid = false
+  }
+
   if (formData.email.trim()) {
     if (formData.email.trim().length < 5 || formData.email.trim().length > 120) {
       errors.email = 'Email must be between 5 and 120 characters'
@@ -221,17 +270,18 @@ const createCustomer = async () => {
   try {
     const customerData = {
       name: formData.name.trim(),
-      phone: formData.phone.trim(),  // Remove the || null to ensure phone is always sent
+      phone: formData.phone.trim(),
       email: formData.email.trim() || null,
-      address_street_1: formData.address.trim(),  // Remove the || null to ensure address is sent
-      city: formData.city.trim(),  // Remove the || null to ensure city is sent
-      state: formData.state.trim(),  // Remove the || null to ensure state is sent
-      zip_code: '',  // Adding zip_code field
+      address_street_1: formData.address.trim(),
+      address_street_2: formData.unit.trim() || null,
+      city: formData.city.trim(),
+      state: formData.state.trim(),
+      zip_code: formData.zipCode.trim(),
       status_customer: 'A',
       company_id: 1,
       avalara_type: 0,
       prepaid_option: 0,
-      notes: ''  // Adding notes field
+      notes: ''
     }
 
     const response = await apiCreateCustomer(customerData)
