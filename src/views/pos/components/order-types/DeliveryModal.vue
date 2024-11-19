@@ -98,6 +98,13 @@
                         {{ item.raw.phone || 'No phone' }}
                         {{ item.raw.email ? `• ${item.raw.email}` : '' }}
                       </v-list-item-subtitle>
+                      <v-list-item-subtitle v-if="item.raw.address_street_1">
+                        {{ item.raw.address_street_1 }}
+                        {{ item.raw.address_street_2 ? `, ${item.raw.address_street_2}` : '' }}
+                        {{ item.raw.city ? `, ${item.raw.city}` : '' }}
+                        {{ item.raw.state ? ` ${item.raw.state}` : '' }}
+                        {{ item.raw.zip_code ? ` ${item.raw.zip_code}` : '' }}
+                      </v-list-item-subtitle>
                     </v-list-item>
                   </template>
                 </v-autocomplete>
@@ -282,13 +289,25 @@ const onCustomerSearch = async (search) => {
 
 const onCustomerSelect = (customer) => {
   if (customer) {
+    // Populate all available customer information
     customerInfo.name = customer.name
     customerInfo.phone = customer.phone || ''
+    customerInfo.email = customer.email || ''
     customerInfo.address = customer.address_street_1 || ''
-    customerInfo.zipCode = customer.zip_code || ''
     customerInfo.unit = customer.address_street_2 || ''
+    customerInfo.city = customer.city || ''
+    customerInfo.state = customer.state || ''
+    customerInfo.zipCode = customer.zip_code || ''
+    customerInfo.instructions = customer.notes || ''
+    
     // Keep the search value after selection
     customerSearch.value = customer.name
+    
+    // Log the populated data
+    logger.info('Customer data populated:', { 
+      customer: customer.id,
+      fields: { ...customerInfo }
+    })
   }
 }
 

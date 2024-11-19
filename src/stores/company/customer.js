@@ -66,7 +66,10 @@ export const customerModule = {
       this.fetchPromise = (async () => {
         try {
           const response = await apiClient.get('customers', {
-            params: { limit: 'all' }
+            params: { 
+              limit: 'all',
+              include: 'addresses,contacts,details'
+            }
           })
           
           if (response.data?.customers?.data) {
