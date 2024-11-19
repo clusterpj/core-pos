@@ -269,7 +269,8 @@ const createCustomer = async () => {
     const customerData = {
       name: formData.name.trim(),
       phone: formData.phone.trim(),
-      email: formData.email.trim() || null,
+      // Only include email if it's not empty
+      ...(formData.email.trim() && { email: formData.email.trim() }),
       address_street_1: formData.address.trim(),
       address_street_2: formData.unit.trim() || null,
       city: formData.city.trim(),
@@ -279,7 +280,20 @@ const createCustomer = async () => {
       company_id: 1,
       avalara_type: 0,
       prepaid_option: 0,
-      notes: ''
+      notes: '',
+      // Add required fields for user creation
+      first_name: formData.name.trim(),
+      last_name: formData.name.trim(),
+      contact_name: formData.name.trim(),
+      customer_type: 'R',
+      role: 'customer',
+      sale_type: 'Retail',
+      language: 'en',
+      timezone: 'America/Chicago',
+      status_payment: 'prepaid',
+      type_vat_regime: 1,
+      incorporated: 1,
+      lfln: 1
     }
 
     try {
