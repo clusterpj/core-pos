@@ -107,22 +107,6 @@
                 required
                 variant="outlined"
                 density="comfortable"
-                :error-messages="errors.city"
-                @input="clearError('city')"
-                required
-                variant="outlined"
-                density="comfortable"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="formData.state"
-                label="State"
-                :error-messages="errors.state"
-                @input="clearError('state')"
-                required
-                variant="outlined"
-                density="comfortable"
               ></v-text-field>
             </v-col>
           </v-row>
