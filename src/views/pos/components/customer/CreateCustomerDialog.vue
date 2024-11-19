@@ -282,22 +282,54 @@ const createCustomer = async () => {
       notes: ''
     }
 
-    const response = await apiCreateCustomer(customerData)
-    
-    if (!response?.id) {
-      throw new Error('Invalid response from server')
-    }
+    try {
+      const response = await apiCreateCustomer(customerData)
+      
+      if (!response?.id) {
+        throw new Error('Invalid response from server')
+      }
 
-    const customer = {
-      id: response.id,
-      ...customerData
-    }
+      const customer = {
+        id: response.id,
+        ...customerData
+      }
 
-    emit('customer-created', customer)
-    resetForm()
-    closeDialog()
-    if (window.toastr) {
-      window.toastr.success('Customer created successfully')
+      emit('customer-created', customer)
+      resetForm()
+      closeDialog()
+      if (window.toastr) {
+        window.toastr.success('Customer created successfully')
+      }
+    } catch (error) {
+      // Handle specific API error responses
+      if (error.response?.data) {
+        const apiError = error.response.data
+        
+        // Check for duplicate customer errors
+        if (apiError.code === 'DUPLICATE_ENTRY') {
+          if (apiError.field === 'phone') {
+            errors.phone = 'This phone number is already registered'
+          } else if (apiError.field === 'email') {
+            errors.email = 'This email is already registered'
+          } else {
+            throw new Error(apiError.message || 'Customer already exists')
+          }
+          return
+        }
+        
+        // Handle validation errors from API
+        if (apiError.details) {
+          Object.keys(apiError.details).forEach(field => {
+            if (errors.hasOwnProperty(field)) {
+              errors[field] = apiError.details[field]
+            }
+          })
+          return
+        }
+      }
+      
+      // If we get here, it's an unexpected error
+      throw error
     }
   } catch (error) {
     console.error('Customer creation error:', error)
