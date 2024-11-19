@@ -63,6 +63,31 @@
               ></v-text-field>
             </v-col>
           </v-row>
+
+          <v-row>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="formData.city"
+                label="City"
+                :error-messages="errors.city"
+                @input="clearError('city')"
+                required
+                variant="outlined"
+                density="comfortable"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="formData.state"
+                label="State"
+                :error-messages="errors.state"
+                @input="clearError('state')"
+                required
+                variant="outlined"
+                density="comfortable"
+              ></v-text-field>
+            </v-col>
+          </v-row>
         </v-container>
       </v-card-text>
 
@@ -103,6 +128,8 @@ const formData = reactive({
   phone: '',
   email: '',
   address: '',
+  city: '',
+  state: '',
 })
 
 const initialFormData = { ...formData }
@@ -116,6 +143,8 @@ const errors = reactive({
   name: '',
   phone: '',
   address: '',
+  city: '',
+  state: '',
 })
 
 const creating = ref(false)
@@ -142,6 +171,22 @@ const validateForm = () => {
 
   if (formData.address.trim() && (formData.address.trim().length < 3 || formData.address.trim().length > 120)) {
     errors.address = 'Address must be between 3 and 120 characters'
+    isValid = false
+  }
+
+  if (!formData.city.trim()) {
+    errors.city = 'City is required'
+    isValid = false
+  } else if (formData.city.trim().length > 50) {
+    errors.city = 'City must not exceed 50 characters'
+    isValid = false
+  }
+
+  if (!formData.state.trim()) {
+    errors.state = 'State is required'
+    isValid = false
+  } else if (formData.state.trim().length > 2) {
+    errors.state = 'Please use 2-letter state code'
     isValid = false
   }
 
@@ -179,6 +224,8 @@ const createCustomer = async () => {
       phone: formData.phone.trim() || null,
       email: formData.email.trim() || null,
       address_street_1: formData.address.trim() || null,
+      city: formData.city.trim() || null,
+      state: formData.state.trim() || null,
       status_customer: 'A'
     }
 
