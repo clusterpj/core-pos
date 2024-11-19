@@ -202,9 +202,9 @@ import { ref, computed, watch, reactive } from 'vue'
 import CreateCustomerDialog from '../customer/CreateCustomerDialog.vue'
 import { useOrderType } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
-import { usePosStore } from '../../../../stores/pos-store'
-import { useCartStore } from '../../../../stores/cart-store'
-import { useCompanyStore } from '../../../../stores/company-store'
+import { usePosStore } from '@/stores/pos-store'
+import { useCartStore } from '@/stores/cart-store'
+import { useCompanyStore } from '@/stores/company-store'
 import { logger } from '../../../../utils/logger'
 
 // Props
