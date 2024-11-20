@@ -239,6 +239,7 @@ import { usePosStore } from '@/stores/pos-store'
 import { useCartStore } from '@/stores/cart-store'
 import { useCompanyStore } from '@/stores/company'
 import { logger } from '../../../../utils/logger'
+import { apiClient } from '@/services/api/client'
 
 // Props
 const props = defineProps({
