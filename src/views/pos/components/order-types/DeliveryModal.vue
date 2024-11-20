@@ -336,22 +336,27 @@ const onCustomerSelect = async (customer) => {
         customerInfo.state_id = null
       }
     
-    customerInfo.instructions = customer.notes || ''
-    
-    // Keep the search value after selection
-    customerSearch.value = customer.name
-    
-    // Log the populated data for debugging
-    logger.debug('Customer selected:', customer)
-    logger.debug('Billing address:', billingAddress)
-    logger.debug('Primary address:', primaryAddress)
-    logger.info('Customer data populated:', { 
-      customer: customer.id,
-      fields: { ...customerInfo }
-    })
+      customerInfo.instructions = customer.notes || ''
+      
+      // Keep the search value after selection
+      customerSearch.value = customer.name
+      
+      // Log the populated data for debugging
+      logger.debug('Customer selected:', customer)
+      logger.debug('Billing address:', billingAddress)
+      logger.info('Customer data populated:', { 
+        customer: customer.id,
+        fields: { ...customerInfo }
+      })
 
-    // Clear any existing validation errors
-    clearAllErrors()
+      // Clear any existing validation errors
+      clearAllErrors()
+    } catch (error) {
+      logger.error('Error fetching customer details:', error)
+      if (window.toastr) {
+        window.toastr.error('Failed to load customer details')
+      }
+    }
   }
 }
 
