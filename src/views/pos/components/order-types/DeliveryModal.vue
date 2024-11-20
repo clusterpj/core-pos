@@ -309,10 +309,10 @@ const onCustomerSelect = (customer) => {
     customerInfo.email = customer.email || ''
     
     // Address information - try primary address first, then fall back to customer level
-    customerInfo.address = primaryAddress.street_1 || customer.address_street_1 || ''
-    customerInfo.unit = primaryAddress.street_2 || customer.address_street_2 || ''
+    customerInfo.address = primaryAddress.address_street_1 || customer.address_street_1 || ''
+    customerInfo.unit = primaryAddress.address_street_2 || customer.address_street_2 || ''
     customerInfo.city = primaryAddress.city || customer.city || ''
-    customerInfo.zipCode = primaryAddress.zip_code || customer.zip_code || ''
+    customerInfo.zipCode = primaryAddress.zip || customer.zip || ''
     
     // Handle state information
     if (primaryAddress.state?.code) {
