@@ -144,6 +144,20 @@
                   </v-col>
                 </v-row>
 
+                <v-row v-if="orderHistory.length" class="mb-2">
+                  <v-col cols="12" class="d-flex justify-end px-4">
+                    <v-btn
+                      color="error"
+                      variant="outlined"
+                      prepend-icon="mdi-delete-sweep"
+                      @click="clearOrderHistory"
+                      size="small"
+                    >
+                      Clear History
+                    </v-btn>
+                  </v-col>
+                </v-row>
+
                 <template v-else>
                   <v-container class="px-2 pb-2">
                     <HeldOrdersFilters

@@ -49,6 +49,21 @@ export function useHeldOrders() {
     }
   }
 
+  // Clear order history
+  const clearOrderHistory = () => {
+    try {
+      orderHistory.value = []
+      localStorage.removeItem(HISTORY_STORAGE_KEY)
+      logger.info('Order history cleared successfully')
+      window.toastr?.['success']('Order history cleared successfully')
+      return true
+    } catch (error) {
+      logger.error('Failed to clear order history:', error)
+      window.toastr?.['error']('Failed to clear order history')
+      return false
+    }
+  }
+
   // Persist order history to localStorage
   const persistOrderHistory = () => {
     try {
@@ -436,6 +451,7 @@ export function useHeldOrders() {
     loadOrder,
     deleteOrder,
     fetchHoldInvoices,
-    handlePaymentComplete
+    handlePaymentComplete,
+    clearOrderHistory
   }
 }
