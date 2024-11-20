@@ -91,15 +91,7 @@
                   </v-fade-transition>
                 </template>
 
-                <template v-else>
-                  <v-row>
-                    <v-col cols="12" class="text-center">
-                      <p>No order history found</p>
-                    </v-col>
-                  </v-row>
-                </template>
-
-                <v-row v-else-if="!activeOrders.length">
+                <v-row v-if="!activeOrders.length">
                   <v-col cols="12" class="text-center">
                     <p>No active orders found</p>
                   </v-col>
