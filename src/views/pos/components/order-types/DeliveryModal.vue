@@ -330,7 +330,7 @@ const onCustomerSelect = (customer) => {
     
     // Log the populated data for debugging
     logger.debug('Customer selected:', customer)
-    logger.debug('Primary address:', primaryAddress)
+    logger.debug('Billing address:', billingAddress)
     logger.info('Customer data populated:', { 
       customer: customer.id,
       fields: { ...customerInfo }
