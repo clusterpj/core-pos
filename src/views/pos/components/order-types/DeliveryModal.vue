@@ -300,16 +300,19 @@ const onCustomerSearch = async (search) => {
 
 const onCustomerSelect = (customer) => {
   if (customer) {
+    // Get the primary address if available
+    const primaryAddress = customer.addresses?.[0] || {}
+
     // Populate all available customer information
     customerInfo.name = customer.name
     customerInfo.phone = customer.phone || ''
     customerInfo.email = customer.email || ''
-    customerInfo.address = customer.address_street_1 || ''
-    customerInfo.unit = customer.address_street_2 || ''
-    customerInfo.city = customer.city || ''
-    customerInfo.state = customer.state || ''
-    customerInfo.state_id = customer.state_id || null
-    customerInfo.zipCode = customer.zip || ''
+    customerInfo.address = primaryAddress.address_street_1 || customer.address_street_1 || ''
+    customerInfo.unit = primaryAddress.address_street_2 || customer.address_street_2 || ''
+    customerInfo.city = primaryAddress.city || customer.city || ''
+    customerInfo.state = primaryAddress.state?.code || customer.state?.code || customer.state || ''
+    customerInfo.state_id = primaryAddress.state_id || customer.state_id || null
+    customerInfo.zipCode = primaryAddress.zip || customer.zip || ''
     customerInfo.instructions = customer.notes || ''
     
     // Keep the search value after selection
@@ -318,7 +321,8 @@ const onCustomerSelect = (customer) => {
     // Log the populated data
     logger.info('Customer data populated:', { 
       customer: customer.id,
-      fields: { ...customerInfo }
+      fields: { ...customerInfo },
+      primaryAddress
     })
   }
 }
