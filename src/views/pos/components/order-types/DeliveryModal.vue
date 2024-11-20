@@ -308,19 +308,19 @@ const onCustomerSelect = (customer) => {
     customerInfo.phone = customer.phone || ''
     customerInfo.email = customer.email || ''
     
-    // Address information from billing address
-    customerInfo.address = billingAddress.address_street_1 || ''
-    customerInfo.unit = billingAddress.address_street_2 || ''
-    customerInfo.city = billingAddress.city || ''
-    customerInfo.zipCode = billingAddress.zip || ''
+    // Address information from billing address or fallback to customer fields
+    customerInfo.address = billingAddress.address_street_1 || customer.address_street_1 || ''
+    customerInfo.unit = billingAddress.address_street_2 || customer.address_street_2 || ''
+    customerInfo.city = billingAddress.city || customer.city || ''
+    customerInfo.zipCode = billingAddress.zip || customer.zip || ''
     
-    // Handle state information from billing address
+    // Handle state information from billing address or fallback to customer state
     if (billingAddress.state) {
       customerInfo.state = billingAddress.state.code || ''
       customerInfo.state_id = billingAddress.state.id || null
     } else {
-      customerInfo.state = ''
-      customerInfo.state_id = null
+      customerInfo.state = customer.state || ''
+      customerInfo.state_id = customer.state_id || null
     }
     
     customerInfo.instructions = customer.notes || ''
