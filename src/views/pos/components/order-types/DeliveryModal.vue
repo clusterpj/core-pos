@@ -516,12 +516,14 @@ const processOrder = async () => {
 
     // Update customer info in the order type composable
     setCustomerInfo({
+      customer_id: selectedCustomer.value?.id, // Include customer ID when available
       name: customerInfo.name.trim(),
       phone: customerInfo.phone.trim(),
       address: fullAddress,
       instructions: customerInfo.instructions.trim(),
       zip: customerInfo.zipCode.trim(),
-      state_id: customerInfo.state_id
+      state_id: customerInfo.state_id,
+      email: customerInfo.email.trim() // Include email for better customer identification
     })
 
     await processOrderType()
