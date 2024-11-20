@@ -300,35 +300,27 @@ const onCustomerSearch = async (search) => {
 
 const onCustomerSelect = (customer) => {
   if (customer) {
-    // Get the primary address if available
-    const primaryAddress = customer.addresses?.[0] || {}
+    // Get the billing address if available
+    const billingAddress = customer.billing_address || {}
 
     // Populate all available customer information
     customerInfo.name = customer.name || customer.first_name || ''
     customerInfo.phone = customer.phone || ''
     customerInfo.email = customer.email || ''
     
-    // Address information - prioritize customer level fields
-    customerInfo.address = customer.address_street_1 || ''
-    customerInfo.unit = customer.address_street_2 || ''
-    customerInfo.city = customer.city || ''
-    customerInfo.zipCode = customer.zip || ''
+    // Address information from billing address
+    customerInfo.address = billingAddress.address_street_1 || ''
+    customerInfo.unit = billingAddress.address_street_2 || ''
+    customerInfo.city = billingAddress.city || ''
+    customerInfo.zipCode = billingAddress.zip || ''
     
-    // Handle state information
-    customerInfo.state = customer.state || ''
-    customerInfo.state_id = customer.state_id || null
-
-    // If customer level fields are empty, try using primary address
-    if (!customerInfo.address && primaryAddress) {
-      customerInfo.address = primaryAddress.address_street_1 || ''
-      customerInfo.unit = primaryAddress.address_street_2 || ''
-      customerInfo.city = primaryAddress.city || ''
-      customerInfo.zipCode = primaryAddress.zip || ''
-      
-      if (!customerInfo.state && primaryAddress.state) {
-        customerInfo.state = primaryAddress.state.code || ''
-        customerInfo.state_id = primaryAddress.state.id || null
-      }
+    // Handle state information from billing address
+    if (billingAddress.state) {
+      customerInfo.state = billingAddress.state.code || ''
+      customerInfo.state_id = billingAddress.state.id || null
+    } else {
+      customerInfo.state = ''
+      customerInfo.state_id = null
     }
     
     customerInfo.instructions = customer.notes || ''
