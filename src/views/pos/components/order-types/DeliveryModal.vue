@@ -307,12 +307,26 @@ const onCustomerSelect = (customer) => {
     customerInfo.name = customer.name
     customerInfo.phone = customer.phone || ''
     customerInfo.email = customer.email || ''
+    
+    // Address information - try primary address first, then fall back to customer level
     customerInfo.address = primaryAddress.address_street_1 || customer.address_street_1 || ''
     customerInfo.unit = primaryAddress.address_street_2 || customer.address_street_2 || ''
     customerInfo.city = primaryAddress.city || customer.city || ''
-    customerInfo.state = primaryAddress.state?.code || customer.state?.code || customer.state || ''
-    customerInfo.state_id = primaryAddress.state_id || customer.state_id || null
-    customerInfo.zipCode = primaryAddress.zip || customer.zip || ''
+    
+    // Handle state information
+    if (primaryAddress.state?.code) {
+      customerInfo.state = primaryAddress.state.code
+      customerInfo.state_id = primaryAddress.state.id
+    } else if (customer.state?.code) {
+      customerInfo.state = customer.state.code
+      customerInfo.state_id = customer.state.id
+    } else {
+      customerInfo.state = customer.state || ''
+      customerInfo.state_id = customer.state_id || null
+    }
+    
+    // ZIP code
+    customerInfo.zip = primaryAddress.zip || customer.zip || ''
     customerInfo.instructions = customer.notes || ''
     
     // Keep the search value after selection
@@ -324,6 +338,9 @@ const onCustomerSelect = (customer) => {
       fields: { ...customerInfo },
       primaryAddress
     })
+
+    // Clear any existing validation errors
+    clearAllErrors()
   }
 }
 
@@ -376,9 +393,10 @@ const onCustomerCreated = async (customer) => {
 const customerInfo = reactive({
   name: '',
   phone: '',
+  email: '',
   address: '',
   unit: '',
-  zipCode: '',
+  zip: '',
   city: '',
   state: '',
   state_id: null,
@@ -387,6 +405,7 @@ const customerInfo = reactive({
 
 const onStateSelect = (state) => {
   customerInfo.state_id = state.id
+  customerInfo.state = state.code
 }
 
 // Validation
@@ -394,7 +413,7 @@ const validationErrors = reactive({
   name: '',
   phone: '',
   address: '',
-  zipCode: '',
+  zip: '',
   city: '',
   state: ''
 })
