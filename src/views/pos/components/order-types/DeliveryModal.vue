@@ -298,50 +298,43 @@ const onCustomerSearch = async (search) => {
   }
 }
 
-const onCustomerSelect = (customer) => {
+const onCustomerSelect = async (customer) => {
   if (customer) {
-    // Get the billing address if available
-    const billingAddress = customer.billing_address || {}
-    const addresses = customer.addresses || []
-    const primaryAddress = addresses.find(addr => addr.is_primary) || {}
+    logger.debug('Customer selected:', customer)
 
-    // Populate all available customer information
-    customerInfo.name = customer.name || customer.first_name || ''
-    customerInfo.phone = customer.phone || ''
-    customerInfo.email = customer.email || ''
-    
-    // Try to get address information from multiple sources in order of preference
-    customerInfo.address = 
-      billingAddress.address_street_1 || 
-      primaryAddress.address_street_1 || 
-      customer.address_street_1 || ''
+    try {
+      // Fetch full customer details including addresses
+      const response = await apiClient.get(`/v1/customers/${customer.id}`, {
+        params: {
+          include: 'billing_address,addresses'
+        }
+      })
       
-    customerInfo.unit = 
-      billingAddress.address_street_2 || 
-      primaryAddress.address_street_2 || 
-      customer.address_street_2 || ''
+      const fullCustomer = response.data.customer
+      const billingAddress = fullCustomer.billing_address || {}
       
-    customerInfo.city = 
-      billingAddress.city || 
-      primaryAddress.city || 
-      customer.city || ''
+      logger.debug('Full customer data:', fullCustomer)
+      logger.debug('Billing address:', billingAddress)
+
+      // Populate all available customer information
+      customerInfo.name = fullCustomer.name || fullCustomer.first_name || ''
+      customerInfo.phone = fullCustomer.phone || ''
+      customerInfo.email = fullCustomer.email || ''
       
-    customerInfo.zipCode = 
-      billingAddress.zip || 
-      primaryAddress.zip || 
-      customer.zip || ''
-    
-    // Handle state information from multiple sources
-    if (billingAddress.state) {
-      customerInfo.state = billingAddress.state.code || ''
-      customerInfo.state_id = billingAddress.state.id || null
-    } else if (primaryAddress.state) {
-      customerInfo.state = primaryAddress.state.code || ''
-      customerInfo.state_id = primaryAddress.state.id || null
-    } else {
-      customerInfo.state = customer.state || ''
-      customerInfo.state_id = customer.state_id || null
-    }
+      // Set address information from billing address
+      customerInfo.address = billingAddress.address_street_1 || ''
+      customerInfo.unit = billingAddress.address_street_2 || ''
+      customerInfo.city = billingAddress.city || ''
+      customerInfo.zipCode = billingAddress.zip || ''
+      
+      // Handle state information
+      if (billingAddress.state) {
+        customerInfo.state = billingAddress.state.code || ''
+        customerInfo.state_id = billingAddress.state.id || null
+      } else {
+        customerInfo.state = ''
+        customerInfo.state_id = null
+      }
     
     customerInfo.instructions = customer.notes || ''
     
