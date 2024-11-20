@@ -91,6 +91,14 @@
                   </v-fade-transition>
                 </template>
 
+                <template v-else>
+                  <v-row>
+                    <v-col cols="12" class="text-center">
+                      <p>No order history found</p>
+                    </v-col>
+                  </v-row>
+                </template>
+
                 <v-row v-else-if="!activeOrders.length">
                   <v-col cols="12" class="text-center">
                     <p>No active orders found</p>
@@ -138,27 +146,20 @@
                   </v-col>
                 </v-row>
 
-                <v-row v-else-if="!orderHistory.length">
-                  <v-col cols="12" class="text-center">
-                    <p>No order history found</p>
-                  </v-col>
-                </v-row>
-
-                <v-row v-if="orderHistory.length" class="mb-2">
-                  <v-col cols="12" class="d-flex justify-end px-4">
-                    <v-btn
-                      color="error"
-                      variant="outlined"
-                      prepend-icon="mdi-delete-sweep"
-                      @click="clearOrderHistory"
-                      size="small"
-                    >
-                      Clear History
-                    </v-btn>
-                  </v-col>
-                </v-row>
-
-                <template v-else>
+                <template v-else-if="orderHistory.length">
+                  <v-row class="mb-2">
+                    <v-col cols="12" class="d-flex justify-end px-4">
+                      <v-btn
+                        color="error"
+                        variant="outlined"
+                        prepend-icon="mdi-delete-sweep"
+                        @click="clearOrderHistory"
+                        size="small"
+                      >
+                        Clear History
+                      </v-btn>
+                    </v-col>
+                  </v-row>
                   <v-container class="px-2 pb-2">
                     <HeldOrdersFilters
                       :search="historySearch"
