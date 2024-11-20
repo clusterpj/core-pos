@@ -480,7 +480,7 @@ const processOrder = async () => {
       address: fullAddress,
       instructions: customerInfo.instructions.trim(),
       zip_code: customerInfo.zipCode.trim(),
-      state_id: customerInfo.state.trim()
+      state_id: customerInfo.state_id
     })
 
     await processOrderType()
