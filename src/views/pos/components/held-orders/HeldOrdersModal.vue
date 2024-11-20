@@ -269,7 +269,8 @@ const {
   fetchHoldInvoices,
   showPaymentDialog,
   currentInvoice,
-  handlePaymentComplete
+  handlePaymentComplete,
+  clearOrderHistory
 } = useHeldOrders()
 
 // Computed properties for active orders
