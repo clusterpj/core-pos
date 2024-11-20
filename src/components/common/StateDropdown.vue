@@ -30,23 +30,39 @@
   </v-autocomplete>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, watch } from 'vue'
-import type { State, StateDropdownProps } from '@/types/state'
 import { statesApi } from '@/services/api/states'
 import { logger } from '@/utils/logger'
 
-const props = withDefaults(defineProps<StateDropdownProps>(), {
-  label: 'State',
-  required: true,
-  disabled: false,
-  countryCode: 'US'
+const props = defineProps({
+  modelValue: {
+    type: String,
+    required: true
+  },
+  label: {
+    type: String,
+    default: 'State'
+  },
+  required: {
+    type: Boolean,
+    default: true
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  error: {
+    type: String,
+    default: undefined
+  },
+  countryCode: {
+    type: String,
+    default: 'US'
+  }
 })
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
-  (e: 'state-selected', state: State): void
-}>()
+const emit = defineEmits(['update:modelValue', 'state-selected'])
 
 const loading = ref(false)
 const states = ref<State[]>([])

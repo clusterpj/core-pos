@@ -1,8 +1,25 @@
 import { apiClient } from './client'
-import type { StateResponse } from '@/types/state'
+
+/**
+ * @typedef {Object} State
+ * @property {number} id
+ * @property {string} code
+ * @property {string} name
+ * @property {string} country_code
+ */
+
+/**
+ * @typedef {Object} StateResponse
+ * @property {State[]} states
+ */
 
 export const statesApi = {
-  async getStates(countryCode: string = 'US'): Promise<StateResponse> {
+  /**
+   * Fetches states for a given country code
+   * @param {string} [countryCode='US'] - The country code to fetch states for
+   * @returns {Promise<StateResponse>} The API response containing states
+   */
+  async getStates(countryCode = 'US') {
     try {
       const response = await apiClient.get(`/v1/states/${countryCode}`)
       return response.data
