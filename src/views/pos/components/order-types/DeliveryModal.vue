@@ -304,17 +304,28 @@ const onCustomerSelect = (customer) => {
     const primaryAddress = customer.addresses?.[0] || {}
 
     // Populate all available customer information
-    customerInfo.name = customer.name
+    customerInfo.name = customer.name || customer.first_name || ''
     customerInfo.phone = customer.phone || ''
     customerInfo.email = customer.email || ''
     
     // Address information - try primary address first, then fall back to customer level
-    customerInfo.address = primaryAddress.address_street_1 || customer.address_street_1 || ''
-    customerInfo.unit = primaryAddress.address_street_2 || customer.address_street_2 || ''
-    customerInfo.city = primaryAddress.city || customer.city || ''
-    customerInfo.zipCode = primaryAddress.zip || customer.zip || ''
-    customerInfo.state = primaryAddress.state?.code || customer.state || ''
-    customerInfo.state_id = primaryAddress.state?.id || customer.state_id || null
+    customerInfo.address = customer.address_street_1 || primaryAddress.address_street_1 || ''
+    customerInfo.unit = customer.address_street_2 || primaryAddress.address_street_2 || ''
+    customerInfo.city = customer.city || primaryAddress.city || ''
+    customerInfo.zipCode = customer.zip || primaryAddress.zip || ''
+    
+    // Handle state information
+    if (customer.state_id) {
+      customerInfo.state = customer.state || ''
+      customerInfo.state_id = customer.state_id
+    } else if (primaryAddress.state?.id) {
+      customerInfo.state = primaryAddress.state.code || ''
+      customerInfo.state_id = primaryAddress.state.id
+    } else {
+      customerInfo.state = ''
+      customerInfo.state_id = null
+    }
+    
     customerInfo.instructions = customer.notes || ''
     
     // Keep the search value after selection
