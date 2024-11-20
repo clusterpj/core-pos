@@ -313,29 +313,19 @@ const onCustomerSelect = (customer) => {
     customerInfo.unit = primaryAddress.address_street_2 || customer.address_street_2 || ''
     customerInfo.city = primaryAddress.city || customer.city || ''
     customerInfo.zipCode = primaryAddress.zip || customer.zip || ''
-    
-    // Handle state information
-    if (primaryAddress.state?.code) {
-      customerInfo.state = primaryAddress.state.code
-      customerInfo.state_id = primaryAddress.state.id
-    } else if (customer.state?.code) {
-      customerInfo.state = customer.state.code
-      customerInfo.state_id = customer.state.id
-    } else {
-      customerInfo.state = customer.state || ''
-      customerInfo.state_id = customer.state_id || null
-    }
-    
+    customerInfo.state = primaryAddress.state?.code || customer.state || ''
+    customerInfo.state_id = primaryAddress.state?.id || customer.state_id || null
     customerInfo.instructions = customer.notes || ''
     
     // Keep the search value after selection
     customerSearch.value = customer.name
     
-    // Log the populated data
+    // Log the populated data for debugging
+    logger.debug('Customer selected:', customer)
+    logger.debug('Primary address:', primaryAddress)
     logger.info('Customer data populated:', { 
       customer: customer.id,
-      fields: { ...customerInfo },
-      primaryAddress
+      fields: { ...customerInfo }
     })
 
     // Clear any existing validation errors
