@@ -308,7 +308,8 @@ const onCustomerSelect = (customer) => {
     customerInfo.unit = customer.address_street_2 || ''
     customerInfo.city = customer.city || ''
     customerInfo.state = customer.state || ''
-    customerInfo.zipCode = customer.zip_code || ''
+    customerInfo.state_id = customer.state_id || null
+    customerInfo.zipCode = customer.zip || ''
     customerInfo.instructions = customer.notes || ''
     
     // Keep the search value after selection
