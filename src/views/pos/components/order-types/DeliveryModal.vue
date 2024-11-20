@@ -354,7 +354,7 @@ const onCustomerCreated = async (customer) => {
     customerInfo.unit = customer.address_street_2 || ''
     customerInfo.city = customer.city || ''
     customerInfo.state = customer.state || ''
-    customerInfo.zipCode = customer.zip_code || ''
+    customerInfo.zipCode = customer.zip || ''
     customerInfo.instructions = customer.notes || ''
     
     // Clear any existing validation errors
