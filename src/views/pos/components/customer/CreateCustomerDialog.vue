@@ -278,7 +278,7 @@ const createCustomer = async () => {
       address_street_2: formData.unit.trim() || null,
       city: formData.city.trim(),
       state: formData.state.trim(),
-      zip_code: formData.zipCode.trim(),
+      zip: formData.zipCode.trim(),
       state_id: formData.state_id,
       status_customer: 'A',
       company_id: 1,

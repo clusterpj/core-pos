@@ -479,7 +479,7 @@ const processOrder = async () => {
       phone: customerInfo.phone.trim(),
       address: fullAddress,
       instructions: customerInfo.instructions.trim(),
-      zip_code: customerInfo.zipCode.trim(),
+      zip: customerInfo.zipCode.trim(),
       state_id: customerInfo.state_id
     })
 
