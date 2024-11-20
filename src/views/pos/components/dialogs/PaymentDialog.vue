@@ -362,7 +362,12 @@ const props = defineProps({
   modelValue: Boolean,
   invoice: {
     type: Object,
-    required: true
+    required: false,
+    default: () => ({
+      invoice: {},
+      invoicePrefix: '',
+      nextInvoiceNumber: ''
+    })
   }
 })
 
