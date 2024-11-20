@@ -181,15 +181,12 @@
                 ></v-text-field>
               </v-col>
               <v-col cols="12" sm="6">
-                <v-text-field
+                <StateDropdown
                   v-model="customerInfo.state"
-                  label="State"
-                  variant="outlined"
-                  density="comfortable"
-                  :error-messages="validationErrors.state"
-                  @input="clearError('state')"
-                  required
-                ></v-text-field>
+                  :error="validationErrors.state"
+                  @state-selected="onStateSelect"
+                  @update:model-value="clearError('state')"
+                />
               </v-col>
             </v-row>
 
@@ -234,6 +231,7 @@
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
+import StateDropdown from '@/components/common/StateDropdown.vue'
 import CreateCustomerDialog from '../customer/CreateCustomerDialog.vue'
 import { useOrderType } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
@@ -378,8 +376,13 @@ const customerInfo = reactive({
   zipCode: '',
   city: '',
   state: '',
+  state_id: null,
   instructions: ''
 })
+
+const onStateSelect = (state) => {
+  customerInfo.state_id = state.id
+}
 
 // Validation
 const validationErrors = reactive({

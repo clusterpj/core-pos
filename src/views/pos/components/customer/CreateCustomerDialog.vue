@@ -102,16 +102,13 @@
               ></v-text-field>
             </v-col>
             <v-col cols="12" sm="6">
-              <v-text-field
+              <StateDropdown
                 v-model="formData.state"
-                label="State"
-                :error-messages="errors.state"
-                @input="clearError('state')"
-                required
-                variant="outlined"
-                density="comfortable"
+                :error="errors.state"
+                @state-selected="onStateSelect"
+                @update:model-value="clearError('state')"
                 class="mb-3"
-              ></v-text-field>
+              />
             </v-col>
           </v-row>
         </v-container>
@@ -144,6 +141,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
+import StateDropdown from '@/components/common/StateDropdown.vue'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
 
 const props = defineProps({
@@ -167,8 +165,13 @@ const formData = reactive({
   unit: '',
   city: '',
   state: '',
+  state_id: null,
   zipCode: '',
 })
+
+const onStateSelect = (state) => {
+  formData.state_id = state.id
+}
 
 const initialFormData = { ...formData }
 
