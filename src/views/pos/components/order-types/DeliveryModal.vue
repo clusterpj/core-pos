@@ -302,22 +302,42 @@ const onCustomerSelect = (customer) => {
   if (customer) {
     // Get the billing address if available
     const billingAddress = customer.billing_address || {}
+    const addresses = customer.addresses || []
+    const primaryAddress = addresses.find(addr => addr.is_primary) || {}
 
     // Populate all available customer information
     customerInfo.name = customer.name || customer.first_name || ''
     customerInfo.phone = customer.phone || ''
     customerInfo.email = customer.email || ''
     
-    // Address information from billing address or fallback to customer fields
-    customerInfo.address = billingAddress.address_street_1 || customer.address_street_1 || ''
-    customerInfo.unit = billingAddress.address_street_2 || customer.address_street_2 || ''
-    customerInfo.city = billingAddress.city || customer.city || ''
-    customerInfo.zipCode = billingAddress.zip || customer.zip || ''
+    // Try to get address information from multiple sources in order of preference
+    customerInfo.address = 
+      billingAddress.address_street_1 || 
+      primaryAddress.address_street_1 || 
+      customer.address_street_1 || ''
+      
+    customerInfo.unit = 
+      billingAddress.address_street_2 || 
+      primaryAddress.address_street_2 || 
+      customer.address_street_2 || ''
+      
+    customerInfo.city = 
+      billingAddress.city || 
+      primaryAddress.city || 
+      customer.city || ''
+      
+    customerInfo.zipCode = 
+      billingAddress.zip || 
+      primaryAddress.zip || 
+      customer.zip || ''
     
-    // Handle state information from billing address or fallback to customer state
+    // Handle state information from multiple sources
     if (billingAddress.state) {
       customerInfo.state = billingAddress.state.code || ''
       customerInfo.state_id = billingAddress.state.id || null
+    } else if (primaryAddress.state) {
+      customerInfo.state = primaryAddress.state.code || ''
+      customerInfo.state_id = primaryAddress.state.id || null
     } else {
       customerInfo.state = customer.state || ''
       customerInfo.state_id = customer.state_id || null
@@ -331,6 +351,7 @@ const onCustomerSelect = (customer) => {
     // Log the populated data for debugging
     logger.debug('Customer selected:', customer)
     logger.debug('Billing address:', billingAddress)
+    logger.debug('Primary address:', primaryAddress)
     logger.info('Customer data populated:', { 
       customer: customer.id,
       fields: { ...customerInfo }
