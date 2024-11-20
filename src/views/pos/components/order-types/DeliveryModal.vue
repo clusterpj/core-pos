@@ -308,22 +308,27 @@ const onCustomerSelect = (customer) => {
     customerInfo.phone = customer.phone || ''
     customerInfo.email = customer.email || ''
     
-    // Address information - try primary address first, then fall back to customer level
-    customerInfo.address = customer.address_street_1 || primaryAddress.address_street_1 || ''
-    customerInfo.unit = customer.address_street_2 || primaryAddress.address_street_2 || ''
-    customerInfo.city = customer.city || primaryAddress.city || ''
-    customerInfo.zipCode = customer.zip || primaryAddress.zip || ''
+    // Address information - prioritize customer level fields
+    customerInfo.address = customer.address_street_1 || ''
+    customerInfo.unit = customer.address_street_2 || ''
+    customerInfo.city = customer.city || ''
+    customerInfo.zipCode = customer.zip || ''
     
     // Handle state information
-    if (customer.state_id) {
-      customerInfo.state = customer.state || ''
-      customerInfo.state_id = customer.state_id
-    } else if (primaryAddress.state?.id) {
-      customerInfo.state = primaryAddress.state.code || ''
-      customerInfo.state_id = primaryAddress.state.id
-    } else {
-      customerInfo.state = ''
-      customerInfo.state_id = null
+    customerInfo.state = customer.state || ''
+    customerInfo.state_id = customer.state_id || null
+
+    // If customer level fields are empty, try using primary address
+    if (!customerInfo.address && primaryAddress) {
+      customerInfo.address = primaryAddress.address_street_1 || ''
+      customerInfo.unit = primaryAddress.address_street_2 || ''
+      customerInfo.city = primaryAddress.city || ''
+      customerInfo.zipCode = primaryAddress.zip || ''
+      
+      if (!customerInfo.state && primaryAddress.state) {
+        customerInfo.state = primaryAddress.state.code || ''
+        customerInfo.state_id = primaryAddress.state.id || null
+      }
     }
     
     customerInfo.instructions = customer.notes || ''

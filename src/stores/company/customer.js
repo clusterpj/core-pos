@@ -68,7 +68,8 @@ export const customerModule = {
           const response = await apiClient.get('customers', {
             params: { 
               limit: 'all',
-              include: 'addresses,contacts,details,state'
+              include: 'addresses,contacts,details,state,address_fields',
+              fields: 'id,name,phone,email,address_street_1,address_street_2,city,state,zip,state_id,notes'
             }
           })
           
