@@ -65,7 +65,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'state-selected'])
 
 const loading = ref(false)
-const states = ref<State[]>([])
+/** @type {import('vue').Ref<Array<{id: number, code: string, name: string, country_code: string}>>} */
+const states = ref([])
 const selectedState = ref(props.modelValue)
 
 const fetchStates = async () => {
@@ -82,7 +83,10 @@ const fetchStates = async () => {
   }
 }
 
-const onStateSelect = (stateCode: string) => {
+/**
+ * @param {string} stateCode
+ */
+const onStateSelect = (stateCode) => {
   const selectedState = states.value.find(state => state.code === stateCode)
   if (selectedState) {
     emit('update:modelValue', stateCode)
