@@ -617,8 +617,8 @@ const processOrder = async () => {
         last_name: customerInfo.name.trim().split(' ').slice(1).join(' ') || 'N/A',
         email: customerInfo.email.trim(),
         phone: customerInfo.phone.trim(),
-        second_phone: '',
-        identification: 'N/A'  // Add default identification
+        second_phone: 'N/A',  // Default value for second_phone
+        identification: 'N/A'  // Default value for identification
       },
 
       // Arrays
