@@ -170,12 +170,14 @@ const editItem = (item, index) => {
 
 <style scoped>
 .pos-cart-container {
-  height: 100%;
+  height: 100% !important;
+  min-height: 100% !important;
   display: flex;
   flex-direction: column;
   background-color: rgb(250, 250, 250);
   border-radius: 8px;
   overflow: hidden;
+  width: 100% !important;
 }
 
 .cart-header {

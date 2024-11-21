@@ -157,8 +157,9 @@ const getImageUrl = (item) => {
 .product-grid-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  height: 100% !important;
+  min-height: 100% !important;
+  width: 100% !important;
   overflow: hidden;
 }
 
