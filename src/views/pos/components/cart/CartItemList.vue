@@ -1,60 +1,58 @@
 <!-- src/views/pos/components/cart/CartItemList.vue -->
 <template>
   <div class="cart-items">
-    <v-list class="cart-list pa-0">
+    <v-list class="cart-list pa-0" density="compact">
       <v-list-item
         v-for="(item, index) in items"
         :key="index"
-        class="cart-item"
+        class="cart-item py-1"
         :class="{ 'border-b': index !== items.length - 1 }"
       >
-        <!-- Item Details -->
-        <div class="d-flex flex-column flex-grow-1">
-          <div class="d-flex justify-space-between align-center mb-1">
-            <div class="item-name text-subtitle-1 font-weight-medium text-truncate">
+        <div class="d-flex align-center w-100 gap-2">
+          <!-- Quantity Badge -->
+          <div class="quantity-badge">
+            {{ item.quantity }}
+          </div>
+
+          <!-- Item Info -->
+          <div class="item-info flex-grow-1 min-width-0">
+            <div class="item-name text-body-2 font-weight-medium text-truncate">
               {{ item.name }}
             </div>
-            <div class="item-total text-subtitle-1 font-weight-medium">
-              ${{ formatPrice(item.price * item.quantity) }}
+            <div class="item-price text-caption text-grey-darken-1">
+              ${{ formatPrice(item.price) }} each
             </div>
           </div>
-          
-          <div class="d-flex justify-space-between align-center">
-            <!-- Quantity Controls -->
-            <div class="quantity-controls d-flex align-center">
+
+          <!-- Total and Actions -->
+          <div class="d-flex align-center gap-1">
+            <span class="item-total text-body-2 font-weight-medium">
+              ${{ formatPrice(item.price * item.quantity) }}
+            </span>
+            
+            <div class="action-buttons d-flex">
               <v-btn
                 icon="mdi-minus"
-                size="small"
-                variant="tonal"
-                density="comfortable"
+                size="x-small"
+                variant="text"
+                density="compact"
                 color="primary"
                 :disabled="item.quantity <= 1"
                 @click="emit('updateQuantity', item.id, Math.max(0, item.quantity - 1), index)"
               />
-              <span class="quantity-display mx-3 text-body-1">{{ item.quantity }}</span>
               <v-btn
                 icon="mdi-plus"
-                size="small"
-                variant="tonal"
-                density="comfortable"
+                size="x-small"
+                variant="text"
+                density="compact"
                 color="primary"
                 @click="emit('updateQuantity', item.id, item.quantity + 1, index)"
               />
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="action-buttons d-flex align-center gap-2">
-              <v-btn
-                icon="mdi-pencil"
-                size="small"
-                variant="text"
-                color="primary"
-                @click="emit('edit', item, index)"
-              />
               <v-btn
                 icon="mdi-delete"
-                size="small"
+                size="x-small"
                 variant="text"
+                density="compact"
                 color="error"
                 @click="emit('remove', item.id, index)"
               />
@@ -98,8 +96,9 @@ const formatPrice = (price) => {
 }
 
 .cart-item {
-  padding: 12px;
-  transition: background-color 0.2s ease;
+  padding: 4px 8px;
+  transition: all 0.2s ease;
+  border-radius: 4px;
 }
 
 .cart-item:hover {
@@ -107,25 +106,40 @@ const formatPrice = (price) => {
 }
 
 .border-b {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.quantity-badge {
+  background: rgba(var(--v-theme-primary), 0.1);
+  color: rgb(var(--v-theme-primary));
+  min-width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.item-info {
+  line-height: 1.2;
 }
 
 .item-name {
-  max-width: 70%;
+  margin-bottom: 2px;
 }
 
-.quantity-controls {
-  min-width: 120px;
-}
-
-.quantity-display {
-  min-width: 24px;
-  text-align: center;
-  font-weight: 500;
+.gap-1 {
+  gap: 4px;
 }
 
 .gap-2 {
   gap: 8px;
+}
+
+.min-width-0 {
+  min-width: 0;
 }
 
 .text-truncate {
@@ -137,16 +151,17 @@ const formatPrice = (price) => {
 /* Mobile Optimizations */
 @media (max-width: 600px) {
   .cart-item {
-    padding: 8px;
+    padding: 4px;
   }
   
-  .quantity-controls {
-    min-width: 100px;
-  }
-  
-  .quantity-display {
+  .quantity-badge {
     min-width: 20px;
-    margin: 0 8px;
+    height: 20px;
+    font-size: 0.75rem;
+  }
+  
+  .action-buttons {
+    gap: 0;
   }
 }
 </style>
