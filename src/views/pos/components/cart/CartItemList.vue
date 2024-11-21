@@ -51,16 +51,6 @@
                 class="touch-btn"
               />
               <v-btn
-                v-if="item.quantity > 1"
-                icon="mdi-call-split"
-                size="small"
-                variant="tonal"
-                density="comfortable"
-                color="info"
-                @click="openSplitDialog(item)"
-                class="touch-btn"
-              />
-              <v-btn
                 icon="mdi-delete"
                 size="small"
                 variant="tonal"
@@ -76,17 +66,9 @@
     </v-list>
   </div>
 
-  <split-item-dialog
-    v-model="showSplitDialog"
-    :item="selectedItem"
-    @split="handleSplit"
-  />
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import SplitItemDialog from './SplitItemDialog.vue'
-
 const props = defineProps({
   items: {
     type: Array,
@@ -94,42 +76,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['edit', 'remove', 'updateQuantity', 'split'])
-
-const showSplitDialog = ref(false)
-const selectedItem = ref(null)
-
-const openSplitDialog = (item) => {
-  selectedItem.value = item
-  showSplitDialog.value = true
-}
-
-const handleSplit = ({ itemId, quantity }) => {
-  const itemToSplit = props.items.find(item => item.id === itemId)
-  
-  if (!itemToSplit) {
-    window.toastr?.['error']('Item not found for splitting')
-    return
-  }
-  if (!quantity || quantity >= itemToSplit.quantity) {
-    window.toastr?.['error']('Invalid split quantity')
-    return
-  }
-  
-  // Ensure we pass the correct price and item_id
-  // Create a new split item that preserves all original properties
-  const itemForSplit = {
-    ...itemToSplit,
-    price: itemToSplit.price,
-    item_id: itemToSplit.item_id || itemToSplit.id,
-    original_item_id: itemToSplit.original_item_id || itemToSplit.id,
-    split_id: `${itemToSplit.id}_${Date.now()}`, // Unique identifier for the split
-    is_split: true,
-    modifications: [], // Reset modifications for the new split
-    split_group: itemToSplit.split_group || itemToSplit.id // Group related splits
-  }
-  emit('split', itemForSplit, quantity)
-}
+const emit = defineEmits(['edit', 'remove', 'updateQuantity'])
 
 // Format price for display, converting from cents to dollars if needed
 const formatPrice = (price) => {

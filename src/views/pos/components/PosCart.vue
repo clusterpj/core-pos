@@ -77,7 +77,6 @@
           @edit="editItem"
           @remove="removeItem"
           @update-quantity="updateQuantity"
-          @split="handleSplit"
           class="cart-items-list"
         />
       </template>
@@ -181,58 +180,6 @@ import { useCart } from './cart/composables/useCart'
 
 const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder, splitItem } = useCart()
 
-const handleSplit = async (item, quantity) => {
-  logger.startGroup('Cart: Split Item')
-  try {
-    // Validate inputs
-    if (!item?.id) {
-      throw new Error('Invalid item')
-    }
-    if (!quantity || quantity <= 0) {
-      throw new Error('Invalid quantity')
-    }
-    if (quantity >= item.quantity) {
-      throw new Error('Split quantity must be less than item quantity')
-    }
-
-    logger.info('Splitting item', { itemId: item.id, originalQty: item.quantity, splitQty: quantity })
-
-    // Update the original item's quantity
-    await updateQuantity(item.id, item.quantity - quantity)
-    
-    // Create new split item with enhanced tracking
-    const splitItem = {
-      ...item,
-      id: `${item.id}_split_${Date.now()}`, // Unique ID for cart management
-      item_id: item.id, // Keep original item_id for API reference
-      split_id: `${item.id}_${Date.now()}`, // Unique identifier for this split
-      split_group: item.split_group || item.id, // Group related splits
-      quantity: quantity,
-      is_split: true, // Mark as split item
-      price: item.price, // Ensure price is copied correctly
-      total: item.price * quantity,
-      sub_total: item.price * quantity,
-      modifications: [], // Reset modifications for the new split
-      original_name: item.name, // Keep original name for reference
-      name: `${item.name} (Split)` // Indicate this is a split item
-    }
-    
-    // Add the split item to cart
-    await cartStore.addItem(splitItem)
-    
-    // If this is a held order, update it immediately
-    if (cartStore.isHoldOrder && cartStore.holdOrderId) {
-      await updateOrder()
-    }
-    
-    window.toastr?.['success']('Item split successfully')
-  } catch (err) {
-    logger.error('Split operation failed', { error: err.message, item, quantity })
-    window.toastr?.['error'](err.message || 'Failed to split item')
-  } finally {
-    logger.endGroup()
-  }
-}
 
 // Local state for edit dialog
 const showEditDialog = ref(false)
