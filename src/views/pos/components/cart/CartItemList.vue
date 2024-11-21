@@ -105,10 +105,7 @@ const openSplitDialog = (item) => {
 }
 
 const handleSplit = ({ itemId, quantity }) => {
-  const itemToSplit = props.items.find(item => {
-    // Check both display_id and regular id
-    return item.display_id === itemId || item.id === itemId
-  })
+  const itemToSplit = props.items.find(item => item.id === itemId)
   
   if (!itemToSplit) {
     window.toastr?.['error']('Item not found for splitting')
