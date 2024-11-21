@@ -41,6 +41,13 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       items: invoice.hold_items?.length || 0
     })
 
+    // Ensure items array exists
+    if (!invoice.items && invoice.hold_items) {
+      invoice.items = invoice.hold_items
+    } else if (!invoice.items) {
+      invoice.items = []
+    }
+
     validateInvoiceForConversion(invoice)
     
     // 1. Get company settings
@@ -89,7 +96,7 @@ export const convertHeldOrderToInvoice = async (invoice) => {
 
     // Format items according to API requirements
     console.log('Formatting items data')
-    const formattedItems = invoice.hold_items.map(item => {
+    const formattedItems = invoice.items.map(item => {
       // Convert price to cents if needed
       const itemPrice = toCents(item.price)
       const itemQuantity = parseInt(item.quantity)
