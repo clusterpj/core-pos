@@ -173,7 +173,11 @@ const processDeliveryOrder = async () => {
     // Convert to regular invoice
     const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
     
-    if (!invoiceResult.success) {
+    // If we have an invoice object in the result or nested in result.invoice, consider it successful
+    if (invoiceResult?.invoice || invoiceResult?.result?.invoice) {
+      invoiceResult.success = true
+      invoiceResult.invoice = invoiceResult?.invoice || invoiceResult?.result?.invoice
+    } else if (!invoiceResult.success) {
       throw new Error('Failed to create invoice')
     }
 

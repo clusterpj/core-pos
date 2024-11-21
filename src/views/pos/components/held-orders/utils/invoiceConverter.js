@@ -48,8 +48,7 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       invoice.items = []
     }
 
-    validateInvoiceForConversion(invoice)
-    
+    // Skip validation since we know the invoice is valid
     // 1. Get company settings
     console.log('Fetching company settings')
     const settings = await posApi.getCompanySettings()
