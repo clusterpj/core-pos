@@ -26,55 +26,24 @@
 
       <v-card-text>
         <v-container>
-          <!-- Loading State -->
-          <v-row v-if="loading">
-            <v-col cols="12">
-              <v-sheet class="pa-3">
-                <v-skeleton-loader
-                  type="article, actions"
-                  class="mx-auto"
-                ></v-skeleton-loader>
-              </v-sheet>
+          <v-row>
+            <v-col cols="12" class="text-center">
+              <v-icon icon="mdi-check-circle" color="success" size="64" class="mb-4"></v-icon>
+              <h2 class="text-h5 mb-4">Delivery Order Created Successfully</h2>
+              <v-card variant="outlined" class="invoice-summary-card mb-4">
+                <v-card-text class="py-4">
+                  <div class="d-flex justify-space-between mb-2">
+                    <span>Invoice Number:</span>
+                    <strong>{{ invoiceNumber }}</strong>
+                  </div>
+                  <div class="d-flex justify-space-between mb-2">
+                    <span>Total Amount:</span>
+                    <strong>{{ formatCurrency(invoiceTotal / 100) }}</strong>
+                  </div>
+                </v-card-text>
+              </v-card>
             </v-col>
           </v-row>
-
-          <template v-else>
-            <!-- Invoice Summary -->
-            <v-row>
-              <v-col cols="12">
-                <v-card variant="elevated" class="invoice-summary-card mb-4" elevation="2">
-                  <v-card-item>
-                    <template v-slot:prepend>
-                      <v-icon icon="mdi-receipt" size="large" color="primary" class="mr-4"></v-icon>
-                    </template>
-                    <v-card-title class="text-h6 pb-2">
-                      Invoice Summary
-                    </v-card-title>
-                  </v-card-item>
-                  <v-divider></v-divider>
-                  <v-card-text class="py-4">
-                    <div class="d-flex justify-space-between mb-2">
-                      <span>Invoice Number:</span>
-                      <strong>{{ invoiceNumber }}</strong>
-                    </div>
-                    <div class="d-flex justify-space-between mb-2">
-                      <span>Total Amount:</span>
-                      <strong>{{ formatCurrency(invoiceTotal / 100) }}</strong>
-                    </div>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
-
-            <!-- Error Message -->
-            <v-row v-if="error">
-              <v-col cols="12">
-                <v-alert type="error" variant="tonal">
-                  {{ error }}
-                </v-alert>
-              </v-col>
-            </v-row>
-          </template>
         </v-container>
       </v-card-text>
 
@@ -82,11 +51,9 @@
         <v-spacer></v-spacer>
         <v-btn
           color="primary"
-          :loading="processing"
-          :disabled="processing"
-          @click="processDeliveryOrder"
+          @click="closeDialog"
         >
-          Create Delivery Order
+          Close
         </v-btn>
       </v-card-actions>
     </v-card>
