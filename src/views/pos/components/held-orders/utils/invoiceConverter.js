@@ -2,7 +2,6 @@ import { posApi } from '../../../../../services/api/pos-api'
 import { logger } from '../../../../../utils/logger'
 import { formatApiDate, toCents } from './formatters'
 import { validateInvoiceData, validateInvoiceForConversion } from './validators'
-import { OrderType } from '../../../../../types/order'
 import { OrderType, PaidStatus } from '../../../../../types/order'
 
 export const convertHeldOrderToInvoice = async (invoice) => {
