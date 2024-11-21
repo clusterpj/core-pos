@@ -303,12 +303,12 @@ const error = computed(() => orderError.value || searchError.value)
 
 const canProcessOrder = computed(() => {
   return !cartStore.isEmpty && 
-         customerInfo.name.trim() && 
-         customerInfo.phone.trim() && 
-         customerInfo.address.trim() && 
-         customerInfo.city.trim() && 
-         customerInfo.state.trim() && 
-         customerInfo.zipCode.trim()
+         (customerInfo.name || '').trim() && 
+         (customerInfo.phone || '').trim() && 
+         (customerInfo.address || '').trim() && 
+         (customerInfo.city || '').trim() && 
+         (customerInfo.state || '').trim() && 
+         (customerInfo.zipCode || '').trim()
 })
 const customerSearch = ref('')
 const selectedCustomer = ref(null)
@@ -340,16 +340,16 @@ const onCustomerSelect = async (customer) => {
       logger.debug('Full customer data:', fullCustomer)
       logger.debug('Billing address:', billingAddress)
 
-      // Populate all available customer information
-      customerInfo.name = (fullCustomer?.name || fullCustomer?.first_name || '').trim()
-      customerInfo.phone = (fullCustomer?.phone || '').trim()
-      customerInfo.email = (fullCustomer?.email || '').trim()
+      // Populate all available customer information with null checks
+      customerInfo.name = fullCustomer?.name?.trim() || fullCustomer?.first_name?.trim() || ''
+      customerInfo.phone = fullCustomer?.phone?.trim() || ''
+      customerInfo.email = fullCustomer?.email?.trim() || ''
       
-      // Set address information from billing address
-      customerInfo.address = (billingAddress?.address_street_1 || '').trim()
-      customerInfo.unit = (billingAddress?.address_street_2 || '').trim()
-      customerInfo.city = (billingAddress?.city || '').trim()
-      customerInfo.zip = (billingAddress?.zip || '').trim()
+      // Set address information from billing address with null checks
+      customerInfo.address = billingAddress?.address_street_1?.trim() || ''
+      customerInfo.unit = billingAddress?.address_street_2?.trim() || ''
+      customerInfo.city = billingAddress?.city?.trim() || ''
+      customerInfo.zipCode = billingAddress?.zip?.trim() || ''
       
       // Handle state information
       if (billingAddress.state) {
