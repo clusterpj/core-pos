@@ -189,7 +189,7 @@ const processDeliveryOrder = async () => {
         is_hold_invoice: true,
         status: 'HELD',
         description: invoiceResult.invoice.description || 'Delivery Order',
-        cash_register_id: companyStore.selectedCashier?.id || 1
+        cash_register_id: companyStore.selectedCashier?.id || companyStore.company?.id || 1
       }
       
       const holdResult = await posApi.holdInvoice.create(heldOrderData)
