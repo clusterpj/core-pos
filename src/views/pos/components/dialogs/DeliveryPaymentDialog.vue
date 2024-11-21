@@ -113,12 +113,6 @@ const formatCurrency = (amount) => {
 }
 
 const closeDialog = () => {
-  if (!processing.value) {
-    dialog.value = false
-  }
-}
-
-const closeDialog = () => {
   emit('payment-complete', true)
   dialog.value = false
 }
