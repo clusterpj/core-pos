@@ -572,7 +572,10 @@ const processOrder = async () => {
       send_sms: sendSms.value ? 1 : 0,
       // Ensure required fields are present
       invoice_template_id: 1,
-      company_id: companyStore.company?.id || 1
+      company_id: companyStore.company?.id || 1,
+      // Add empty tables array for delivery orders
+      tables_selected: [],
+      hold_tables: []
     }
 
     logger.debug('Creating hold order with data:', orderData)
