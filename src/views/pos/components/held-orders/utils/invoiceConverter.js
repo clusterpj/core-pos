@@ -233,30 +233,6 @@ export const convertHeldOrderToInvoice = async (invoice) => {
 
     console.log('Created invoice details:', createdInvoice)
 
-    // For delivery orders, we need to add it back to held orders
-    if (invoice.type === OrderType.DELIVERY) {
-      try {
-        const heldOrderData = {
-          ...createdInvoice,
-          is_hold_invoice: true,
-          status: 'HELD',
-          description: createdInvoice.description || 'Delivery Order'
-        }
-        
-        // Add to held orders through the API
-        const holdResult = await posApi.holdInvoice.create(heldOrderData)
-        
-        if (!holdResult.success) {
-          throw new Error('Failed to add delivery invoice to held orders')
-        }
-        
-        logger.info('Delivery order added to held orders successfully')
-      } catch (err) {
-        logger.error('Failed to add delivery order to held orders:', err)
-        throw new Error('Failed to add delivery order to held orders')
-      }
-    }
-
     logger.info('Order converted to invoice successfully:', createdInvoice.id)
     return {
       success: true,

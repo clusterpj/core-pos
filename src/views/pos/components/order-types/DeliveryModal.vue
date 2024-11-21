@@ -645,20 +645,6 @@ const processOrder = async () => {
 
     logger.debug('Creating hold order with data:', orderData)
 
-    // Create held order through API
-    const holdResult = await posApi.holdInvoice.create(orderData)
-    
-    if (!holdResult?.success || !holdResult.data) {
-      const errorMsg = holdResult?.message || 'Failed to create held order'
-      logger.error('Failed to create held order:', {
-        result: holdResult,
-        orderData: orderData
-      })
-      throw new Error(errorMsg)
-    }
-
-    logger.debug('Hold order created successfully:', holdResult.data)
-
     // Get next invoice number
     const nextInvoice = await posApi.invoice.getNextNumber()
     
@@ -666,11 +652,27 @@ const processOrder = async () => {
       throw new Error('Failed to get next invoice number')
     }
 
-    // Convert held order to invoice data
-    const convertedInvoiceData = await convertHeldOrderToInvoice({
-      ...holdResult.data,
-      invoice_number: `${nextInvoice.prefix}${nextInvoice.nextNumber}`
-    })
+    // Add invoice number to order data
+    orderData.invoice_number = `${nextInvoice.prefix}${nextInvoice.nextNumber}`
+    
+    // Create invoice directly
+    const invoiceResult = await posApi.invoice.create(orderData)
+    
+    if (!invoiceResult?.success || !invoiceResult.invoice) {
+      const errorMsg = invoiceResult?.message || 'Failed to create invoice'
+      logger.error('Failed to create invoice:', {
+        result: invoiceResult,
+        orderData: orderData
+      })
+      throw new Error(errorMsg)
+    }
+
+    logger.debug('Invoice created successfully:', invoiceResult.invoice)
+
+    const convertedInvoiceData = {
+      success: true,
+      invoice: invoiceResult.invoice
+    }
     
     if (!convertedInvoiceData.success) {
       throw new Error('Failed to prepare invoice data')
