@@ -1,5 +1,10 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600">
+  <v-dialog v-model="dialog" max-width="600" :scrim="true" transition="dialog-bottom-transition" class="rounded-lg">
+    <DeliveryPaymentDialog
+      v-model="showPaymentDialog"
+      :invoice="invoiceData"
+      @payment-complete="onPaymentComplete"
+    />
     <template v-slot:activator="{ props: dialogProps }">
       <v-btn
         color="primary"
@@ -134,7 +139,10 @@ import { useOrderType } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
 import { usePosStore } from '../../../../stores/pos-store'
 import { useCartStore } from '../../../../stores/cart-store'
+import { useCompanyStore } from '../../../../stores/company'
 import { logger } from '../../../../utils/logger'
+import { posApi } from '../../../../services/api/pos-api'
+import DeliveryPaymentDialog from '../dialogs/DeliveryPaymentDialog.vue'
 
 // Props
 const props = defineProps({
@@ -147,6 +155,15 @@ const props = defineProps({
 // Store access
 const posStore = usePosStore()
 const cartStore = useCartStore()
+const companyStore = useCompanyStore()
+
+// Payment dialog state
+const showPaymentDialog = ref(false)
+const invoiceData = ref({
+  invoice: null,
+  invoicePrefix: '',
+  nextInvoiceNumber: ''
+})
 
 // Composables
 const { 
@@ -302,23 +319,123 @@ const processOrder = async () => {
   processing.value = true
 
   try {
-    // Update customer info in the order type composable
-    setCustomerInfo({
-      name: customerInfo.name.trim(),
-      phone: customerInfo.phone.trim(),
-      pickupTime: customerInfo.pickupTime,
-      instructions: customerInfo.instructions.trim()
-    })
+    // Get current date and due date
+    const currentDate = new Date()
+    const dueDate = new Date(currentDate)
+    dueDate.setDate(dueDate.getDate() + 7)
 
-    await processOrderType()
-    dialog.value = false
-    // Show success message
-    window.toastr?.['success']('Pickup order created successfully')
+    // Get next invoice number
+    const nextInvoice = await posApi.invoice.getNextNumber()
+    
+    if (!nextInvoice) {
+      throw new Error('Failed to get next invoice number')
+    }
+
+    // Create invoice data
+    const orderData = {
+      invoice_date: currentDate.toISOString().split('T')[0],
+      due_date: dueDate.toISOString().split('T')[0],
+      invoice_number: `${nextInvoice.prefix}-${nextInvoice.nextNumber}`,
+      sub_total: Math.round(Number(cartStore.subtotal) || 0),
+      total: Math.round(Number(cartStore.total) || 0),
+      tax: Math.round(Number(cartStore.taxAmount) || 0),
+      items: cartStore.items.map(item => ({
+        item_id: item.id,
+        name: item.name,
+        description: item.description || '',
+        price: Math.round(Number(item.price) || 0),
+        quantity: Math.round(Number(item.quantity) || 1),
+        unit_name: item.unit_name || 'units',
+        sub_total: Math.round(Number(item.subtotal) || 0),
+        total: Math.round(Number(item.total) || 0),
+        tax: Math.round(Number(item.tax) || 0)
+      })),
+
+      // Boolean flags
+      avalara_bool: false,
+      banType: true,
+      package_bool: false,
+      print_pdf: false,
+      save_as_draft: false,
+      send_email: false,
+      not_charge_automatically: false,
+      is_hold_invoice: true,
+      is_invoice_pos: 1,
+      is_pdf_pos: true,
+
+      // IDs and references
+      invoice_template_id: 1,
+      invoice_pbx_modify: 0,
+      store_id: companyStore.selectedStore?.id,
+      cash_register_id: companyStore.selectedCashier?.id,
+      user_id: selectedCustomer.value?.id || 1,
+
+      // Order type and status
+      type: ORDER_TYPES.PICKUP,
+      status: 'HELD',
+      description: 'Pickup Order',
+
+      // Customer contact info
+      contact: {
+        name: customerInfo.name.trim().split(' ')[0] || customerInfo.name.trim(),
+        last_name: customerInfo.name.trim().split(' ').slice(1).join(' ') || 'N/A',
+        email: '',
+        phone: customerInfo.phone.trim(),
+        second_phone: 'N/A',
+        identification: 'N/A'
+      },
+
+      // Arrays
+      tables_selected: [],
+      packages: [],
+      taxes: [],
+
+      // Amounts and calculations
+      discount: "0",
+      discount_type: "fixed",
+      discount_val: Math.round(Number(0)),
+      discount_per_item: "NO",
+
+      // Additional info
+      notes: `Pickup Time: ${customerInfo.pickupTime}\n${customerInfo.instructions || ''}`.trim(),
+      hold_invoice_id: null,
+      tip: "0",
+      tip_type: "fixed",
+      tip_val: 0
+    }
+
+    // Create invoice
+    const invoiceResult = await posApi.invoice.create(orderData)
+    
+    if (!invoiceResult?.invoice) {
+      throw new Error('No invoice data received')
+    }
+
+    // Update invoice data ref
+    invoiceData.value = {
+      invoice: invoiceResult.invoice,
+      invoicePrefix: nextInvoice.prefix,
+      nextInvoiceNumber: nextInvoice.nextNumber
+    }
+
+    // Show payment dialog
+    showPaymentDialog.value = true
   } catch (err) {
-    logger.error('Failed to process pickup order:', err)
-    error.value = err.message || 'Failed to create pickup order'
+    logger.error('Failed to prepare pickup order:', {
+      error: err,
+      message: err.message,
+      data: { customerInfo }
+    })
+    window.toastr?.error(err.message || 'Failed to prepare pickup order')
   } finally {
     processing.value = false
+  }
+}
+
+const onPaymentComplete = async (success) => {
+  if (success) {
+    dialog.value = false
+    window.toastr?.['success']('Pickup order created successfully')
   }
 }
 
