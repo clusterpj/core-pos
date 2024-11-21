@@ -166,8 +166,9 @@ const processDeliveryOrder = async () => {
       throw new Error('Invoice data not provided')
     }
 
-    // Ensure SMS flag is set
+    // Ensure required fields are set
     holdInvoice.send_sms = 1
+    holdInvoice.user_id = holdInvoice.user_id || 1 // Ensure user_id is set
 
     // Convert to regular invoice
     const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
