@@ -572,6 +572,7 @@ const processOrder = async () => {
       // Ensure required fields are present
       invoice_template_id: 1,
       company_id: companyStore.company?.id || 1,
+      cash_register_id: companyStore.selectedCashier?.id,
       // Add empty tables array for delivery orders
       tables_selected: [],
       hold_tables: []
