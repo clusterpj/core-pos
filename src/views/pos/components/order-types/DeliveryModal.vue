@@ -561,22 +561,61 @@ const processOrder = async () => {
     }
     setCustomerInfo(customerData)
 
-    // Create held order data
+    // Create invoice data with required fields
     const orderData = {
-      ...customerData,
-      type: ORDER_TYPES.DELIVERY,
+      // Boolean flags
+      avalara_bool: false,
+      banType: true,
+      package_bool: false,
+      print_pdf: false,
+      save_as_draft: false,
+      send_email: false,
+      not_charge_automatically: false,
       is_hold_invoice: true,
+      is_invoice_pos: 1,
+      is_pdf_pos: true,
+
+      // IDs and references
+      invoice_template_id: 1,
+      invoice_pbx_modify: 0,
+      store_id: companyStore.selectedStore?.id,
+      cash_register_id: companyStore.selectedCashier?.id,
+      user_id: selectedCustomer.value?.id || 1,
+
+      // Order type and status
+      type: ORDER_TYPES.DELIVERY,
       status: 'HELD',
       description: 'Delivery Order',
-      send_sms: sendSms.value ? 1 : 0,
-      // Ensure required fields are present
-      invoice_template_id: 1,
-      company_id: companyStore.company?.id || 1,
-      cash_register_id: companyStore.selectedCashier?.id || companyStore.company?.id || 1,
-      user_id: selectedCustomer.value?.id || 1, // Ensure user_id is set
-      // Add empty tables array for delivery orders
+
+      // Customer contact info
+      contact: {
+        name: customerInfo.name.trim(),
+        last_name: '',
+        email: customerInfo.email.trim(),
+        phone: customerInfo.phone.trim(),
+        second_phone: ''
+      },
+
+      // Arrays
       tables_selected: [],
-      hold_tables: []
+      packages: [],
+      taxes: [],
+
+      // Amounts and calculations
+      discount: "0",
+      discount_type: "fixed",
+      discount_val: 0,
+      discount_per_item: "NO",
+      
+      // SMS notification
+      send_sms: sendSms.value ? 1 : 0,
+
+      // Additional required fields
+      notes: customerInfo.instructions || '',
+      hold_invoice_id: null,
+      tip: "0",
+      tip_type: "fixed",
+      tip_val: 0
     }
 
     logger.debug('Creating hold order with data:', orderData)
