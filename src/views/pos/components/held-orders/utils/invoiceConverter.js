@@ -131,9 +131,9 @@ export const convertHeldOrderToInvoice = async (invoice) => {
     console.log('Invoice data', invoice)
 
     // Ensure all required numeric fields are present and properly formatted
-    const subTotal = toCents(invoice.sub_total || 0)
-    const taxAmount = toCents(invoice.tax || 0)
-    const totalAmount = toCents(invoice.total || (subTotal + taxAmount))
+    const subTotal = Math.round(Number(toCents(invoice.sub_total || 0)))
+    const taxAmount = Math.round(Number(toCents(invoice.tax || 0)))
+    const totalAmount = Math.round(Number(toCents(invoice.total || (subTotal + taxAmount))))
 
     const invoiceData = {
       // Required fields first
@@ -165,18 +165,18 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       // IDs and references
       invoice_template_id: 1,
       invoice_pbx_modify: 0,
-      hold_invoice_id: Number(invoice.id || 0),
-      store_id: Number(invoice.store_id || 0),
-      cash_register_id: Number(invoice.cash_register_id || 0),
-      user_id: Number(invoice.user_id || 1),
+      hold_invoice_id: Math.round(Number(invoice.id || 0)),
+      store_id: Math.round(Number(invoice.store_id || 0)),
+      cash_register_id: Math.round(Number(invoice.cash_register_id || 0)),
+      user_id: Math.round(Number(invoice.user_id || 1)),
 
       // Amounts
-      due_amount: totalAmount,
+      due_amount: Math.round(Number(totalAmount)),
       
       // Discount
-      discount: invoice.discount || "0",
+      discount: String(Math.round(Number(invoice.discount || 0))),
       discount_type: invoice.discount_type || "fixed",
-      discount_val: toCents(invoice.discount_val || 0),
+      discount_val: Math.round(Number(toCents(invoice.discount_val || 0))),
       discount_per_item: settings.discount_per_item || "NO",
 
       // Tip - ensure consistent formatting
