@@ -39,6 +39,7 @@ export interface Order {
   invoice_number?: string
   invoice_status?: InvoiceStatus
   invoice_generated_at?: Date
+  send_sms?: number // 0 or 1 for SMS sending flag
 }
 
 export interface InvoiceGenerationRequest {

@@ -204,6 +204,19 @@
               </v-col>
             </v-row>
 
+            <!-- SMS Toggle -->
+            <v-row>
+              <v-col cols="12">
+                <v-switch
+                  v-model="sendSms"
+                  color="primary"
+                  label="Send invoice via SMS"
+                  hint="Customer will receive an SMS with the invoice link"
+                  persistent-hint
+                ></v-switch>
+              </v-col>
+            </v-row>
+
             <!-- Submit Button -->
             <v-row class="mt-4">
               <v-col cols="12">
@@ -276,6 +289,7 @@ const {
 const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
+const sendSms = ref(false)
 const error = computed(() => orderError.value || searchError.value)
 
 const canProcessOrder = computed(() => {
@@ -523,7 +537,8 @@ const processOrder = async () => {
       instructions: customerInfo.instructions.trim(),
       zip: customerInfo.zipCode.trim(),
       state_id: customerInfo.state_id,
-      email: customerInfo.email.trim() // Include email for better customer identification
+      email: customerInfo.email.trim(), // Include email for better customer identification
+      send_sms: sendSms.value ? 1 : 0 // Add SMS flag
     })
 
     await processOrderType()

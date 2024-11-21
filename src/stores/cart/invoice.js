@@ -86,6 +86,7 @@ export const invoiceActions = {
         status: "SENT",
         paid_status: "UNPAID",
         tax_per_item: "NO",
+        send_sms: state.type === OrderType.DELIVERY ? (state.sendSms ? 1 : 0) : 0,
         late_fee_amount: 0,
         late_fee_taxes: 0,
         pbx_service_price: 0,
