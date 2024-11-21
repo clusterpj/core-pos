@@ -1,59 +1,68 @@
 <!-- src/views/pos/components/cart/CartItemList.vue -->
 <template>
   <div class="cart-items">
-    <v-table density="compact" class="cart-table">
-      <thead>
-        <tr>
-          <th>Products</th>
-          <th class="text-center">Qty</th>
-          <th class="text-right">Total</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(item, index) in items" :key="index">
-          <td>
-            {{ item.name }}
-          </td>
-          <td class="text-center">
-            <div class="d-flex align-center justify-center">
+    <v-list class="cart-list pa-0">
+      <v-list-item
+        v-for="(item, index) in items"
+        :key="index"
+        class="cart-item"
+        :class="{ 'border-b': index !== items.length - 1 }"
+      >
+        <!-- Item Details -->
+        <div class="d-flex flex-column flex-grow-1">
+          <div class="d-flex justify-space-between align-center mb-1">
+            <div class="item-name text-subtitle-1 font-weight-medium text-truncate">
+              {{ item.name }}
+            </div>
+            <div class="item-total text-subtitle-1 font-weight-medium">
+              ${{ formatPrice(item.price * item.quantity) }}
+            </div>
+          </div>
+          
+          <div class="d-flex justify-space-between align-center">
+            <!-- Quantity Controls -->
+            <div class="quantity-controls d-flex align-center">
               <v-btn
                 icon="mdi-minus"
-                size="x-small"
-                variant="text"
+                size="small"
+                variant="tonal"
+                density="comfortable"
+                color="primary"
+                :disabled="item.quantity <= 1"
                 @click="emit('updateQuantity', item.id, Math.max(0, item.quantity - 1), index)"
               />
-              {{ item.quantity }}
+              <span class="quantity-display mx-3 text-body-1">{{ item.quantity }}</span>
               <v-btn
                 icon="mdi-plus"
-                size="x-small"
-                variant="text"
+                size="small"
+                variant="tonal"
+                density="comfortable"
+                color="primary"
                 @click="emit('updateQuantity', item.id, item.quantity + 1, index)"
               />
             </div>
-          </td>
-          <td class="text-right">${{ formatPrice(item.price * item.quantity) }}</td>
-          <td>
-            <div class="d-flex gap-1">
+
+            <!-- Action Buttons -->
+            <div class="action-buttons d-flex align-center gap-2">
               <v-btn
                 icon="mdi-pencil"
-                size="x-small"
+                size="small"
                 variant="text"
                 color="primary"
                 @click="emit('edit', item, index)"
               />
               <v-btn
                 icon="mdi-delete"
-                size="x-small"
+                size="small"
                 variant="text"
                 color="error"
                 @click="emit('remove', item.id, index)"
               />
             </div>
-          </td>
-        </tr>
-      </tbody>
-    </v-table>
+          </div>
+        </div>
+      </v-list-item>
+    </v-list>
   </div>
 </template>
 
@@ -84,20 +93,38 @@ const formatPrice = (price) => {
   position: relative;
 }
 
-.cart-table {
-  width: 100%;
-  height: 100%;
+.cart-list {
+  background: transparent;
 }
 
-.v-table {
-  background: transparent !important;
+.cart-item {
+  padding: 12px;
+  transition: background-color 0.2s ease;
 }
 
-.v-table > .v-table__wrapper {
-  overflow-y: auto;
+.cart-item:hover {
+  background-color: rgb(250, 250, 250);
 }
 
-.gap-1 {
+.border-b {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.item-name {
+  max-width: 70%;
+}
+
+.quantity-controls {
+  min-width: 120px;
+}
+
+.quantity-display {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.gap-2 {
   gap: 8px;
 }
 
@@ -105,5 +132,21 @@ const formatPrice = (price) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 600px) {
+  .cart-item {
+    padding: 8px;
+  }
+  
+  .quantity-controls {
+    min-width: 100px;
+  }
+  
+  .quantity-display {
+    min-width: 20px;
+    margin: 0 8px;
+  }
 }
 </style>
