@@ -653,7 +653,7 @@ const processOrder = async () => {
     }
 
     // Add invoice number to order data
-    orderData.invoice_number = `${nextInvoice.prefix}${nextInvoice.nextNumber}`
+    orderData.invoice_number = `${nextInvoice.prefix}-${nextInvoice.nextNumber}`
     
     // Create invoice directly
     const invoiceResult = await posApi.invoice.create(orderData)
