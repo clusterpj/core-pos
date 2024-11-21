@@ -357,6 +357,7 @@ import { ref, computed, watch } from 'vue'
 import { usePayment } from '../../composables/usePayment'
 import { useTableManagement } from '../../composables/useTableManagement'
 import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
+import { posApi } from '@/services/api/pos-api'
 
 const props = defineProps({
   modelValue: Boolean,
