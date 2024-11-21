@@ -560,7 +560,7 @@ const processOrder = async () => {
     setCustomerInfo(customerData)
 
     // Create held order data
-    const heldOrderData = {
+    const orderData = {
       ...customerData,
       type: ORDER_TYPES.DELIVERY,
       is_hold_invoice: true,
@@ -569,14 +569,17 @@ const processOrder = async () => {
       send_sms: sendSms.value ? 1 : 0
     }
 
+    logger.debug('Creating hold order with data:', orderData)
+
     // Create held order through API
-    const holdResult = await posApi.holdInvoice.create(heldOrderData)
+    const holdResult = await posApi.holdInvoice.create(orderData)
     
-    if (!holdResult.success) {
+    if (!holdResult?.success || !holdResult.data) {
+      logger.error('Failed to create held order:', holdResult)
       throw new Error('Failed to create held order')
     }
 
-    logger.debug('Hold order created:', holdResult.data)
+    logger.debug('Hold order created successfully:', holdResult.data)
 
     // Get next invoice number
     const nextInvoice = await posApi.invoice.getNextNumber()
