@@ -3,7 +3,7 @@
   <v-footer app class="d-flex flex-column pos-footer">
     <div class="footer-content">
       <!-- Order Type Actions -->
-      <div class="d-flex gap-4 justify-center">
+      <div class="d-flex gap-8 justify-center">
         <held-orders-modal 
           v-model="showHeldOrdersModal"
           :disabled="false" 
@@ -15,7 +15,7 @@
       </div>
 
       <!-- Order Actions -->
-      <div class="d-flex gap-6 justify-center">
+      <div class="d-flex gap-12 justify-center">
         <v-btn
           color="info"
           prepend-icon="mdi-printer"
@@ -261,7 +261,7 @@ defineEmits(['print-order', 'submit-order'])
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 32px;
+  gap: 48px;
 }
 
 @media (max-width: 600px) {
@@ -280,13 +280,15 @@ defineEmits(['print-order', 'submit-order'])
     gap: 8px;
   }
   
-  .gap-4 {
+  .gap-8 {
     flex-wrap: wrap;
     justify-content: center;
+    gap: 16px;
   }
   
-  .gap-6 {
+  .gap-12 {
     justify-content: center;
+    gap: 24px;
   }
   
   .v-btn {
