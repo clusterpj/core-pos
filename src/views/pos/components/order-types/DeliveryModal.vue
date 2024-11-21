@@ -349,7 +349,7 @@ const onCustomerSelect = async (customer) => {
       customerInfo.address = billingAddress.address_street_1 || ''
       customerInfo.unit = billingAddress.address_street_2 || ''
       customerInfo.city = billingAddress.city || ''
-      customerInfo.zipCode = billingAddress.zip || ''
+      customerInfo.zip = billingAddress.zip || ''
       
       // Handle state information
       if (billingAddress.state) {

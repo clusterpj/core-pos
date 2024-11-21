@@ -5,7 +5,18 @@ import { validateInvoiceData, validateInvoiceForConversion } from './validators'
 import { OrderType, PaidStatus } from '../../../../../types/order'
 
 export const convertHeldOrderToInvoice = async (invoice) => {
-  if (!invoice?.id) {
+  // Validate invoice object structure
+  if (!invoice || typeof invoice !== 'object') {
+    throw new Error('Invalid invoice data provided')
+  }
+
+  // For nested invoice structure, extract the inner invoice
+  if (invoice.invoice && typeof invoice.invoice === 'object') {
+    invoice = invoice.invoice
+  }
+
+  // Now check for ID
+  if (!invoice.id) {
     const error = new Error('Invalid invoice: missing ID')
     logger.error('[InvoiceConverter] Invalid invoice data:', { invoice })
     throw error
