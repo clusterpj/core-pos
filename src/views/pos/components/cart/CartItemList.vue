@@ -33,28 +33,31 @@
             <div class="action-buttons d-flex">
               <v-btn
                 icon="mdi-minus"
-                size="x-small"
-                variant="text"
-                density="compact"
+                size="small"
+                variant="tonal"
+                density="comfortable" 
                 color="primary"
                 :disabled="item.quantity <= 1"
                 @click="emit('updateQuantity', item.id, Math.max(0, item.quantity - 1), index)"
+                class="touch-btn"
               />
               <v-btn
                 icon="mdi-plus"
-                size="x-small"
-                variant="text"
-                density="compact"
+                size="small"
+                variant="tonal"
+                density="comfortable"
                 color="primary"
                 @click="emit('updateQuantity', item.id, item.quantity + 1, index)"
+                class="touch-btn"
               />
               <v-btn
                 icon="mdi-delete"
-                size="x-small"
-                variant="text"
-                density="compact"
+                size="small"
+                variant="tonal"
+                density="comfortable"
                 color="error"
                 @click="emit('remove', item.id, index)"
+                class="touch-btn"
               />
             </div>
           </div>
@@ -96,7 +99,7 @@ const formatPrice = (price) => {
 }
 
 .cart-item {
-  padding: 4px 8px;
+  padding: 8px 12px;
   transition: all 0.2s ease;
   border-radius: 4px;
 }
@@ -112,9 +115,9 @@ const formatPrice = (price) => {
 .quantity-badge {
   background: rgba(var(--v-theme-primary), 0.1);
   color: rgb(var(--v-theme-primary));
-  min-width: 24px;
-  height: 24px;
-  border-radius: 12px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,20 +151,32 @@ const formatPrice = (price) => {
   text-overflow: ellipsis;
 }
 
+/* Touch Optimizations */
+.touch-btn {
+  margin: 0 2px;
+  min-width: 36px !important;
+  width: 36px;
+  height: 36px !important;
+}
+
+.touch-btn:active {
+  transform: scale(0.95);
+}
+
 /* Mobile Optimizations */
 @media (max-width: 600px) {
   .cart-item {
-    padding: 4px;
+    padding: 8px;
   }
   
   .quantity-badge {
-    min-width: 20px;
-    height: 20px;
-    font-size: 0.75rem;
+    min-width: 28px;
+    height: 28px;
+    font-size: 0.875rem;
   }
   
   .action-buttons {
-    gap: 0;
+    gap: 4px;
   }
 }
 </style>
