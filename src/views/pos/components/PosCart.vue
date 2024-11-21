@@ -204,9 +204,12 @@ const handleSplit = async (item, quantity) => {
     const splitItem = {
       ...item,
       id: `${item.id}_split_${Date.now()}`, // Add unique suffix
-      original_item_id: item.id, // Keep track of original item ID
+      item_id: item.id, // Keep original item_id for API
       quantity: quantity,
-      split: true // Mark as split item
+      split: true, // Mark as split item
+      price: item.price, // Ensure price is copied correctly
+      total: item.price * quantity,
+      sub_total: item.price * quantity
     }
     
     // Add the split item to cart

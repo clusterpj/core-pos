@@ -114,7 +114,14 @@ const handleSplit = ({ itemId, quantity }) => {
     window.toastr?.['error']('Invalid split quantity')
     return
   }
-  emit('split', itemToSplit, quantity)
+  
+  // Ensure we pass the correct price and item_id
+  const itemForSplit = {
+    ...itemToSplit,
+    price: itemToSplit.price,
+    item_id: itemToSplit.item_id || itemToSplit.id
+  }
+  emit('split', itemForSplit, quantity)
 }
 
 // Format price for display, converting from cents to dollars if needed
