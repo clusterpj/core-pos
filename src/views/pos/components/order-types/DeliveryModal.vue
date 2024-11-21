@@ -658,8 +658,9 @@ const processOrder = async () => {
     // Create invoice directly
     const invoiceResult = await posApi.invoice.create(orderData)
     
-    if (!invoiceResult?.success || !invoiceResult.invoice) {
-      const errorMsg = invoiceResult?.message || 'Failed to create invoice'
+    // Check if we have an invoice object, regardless of success flag
+    if (!invoiceResult?.invoice) {
+      const errorMsg = 'No invoice data received'
       logger.error('Failed to create invoice:', {
         result: invoiceResult,
         orderData: orderData

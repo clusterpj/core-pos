@@ -209,8 +209,13 @@ export const convertHeldOrderToInvoice = async (invoice) => {
     const invoiceResponse = await posApi.invoice.create(invoiceData)
     console.log('Invoice creation response:', invoiceResponse)
     
-    if (!invoiceResponse?.invoice?.id) {
-      throw new Error('Failed to create invoice: Invalid response')
+    // If we have an invoice object with an ID, consider it successful
+    if (invoiceResponse?.result?.invoice?.id) {
+      invoiceResponse.invoice = invoiceResponse.result.invoice
+    } else if (invoiceResponse?.invoice?.id) {
+      // Keep existing invoice structure
+    } else {
+      throw new Error('Failed to create invoice: No valid invoice ID')
     }
 
     // Add hold_invoice_id to the response
