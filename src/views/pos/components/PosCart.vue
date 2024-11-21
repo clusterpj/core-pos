@@ -200,10 +200,12 @@ const handleSplit = async (item, quantity) => {
     // Update the original item's quantity
     await updateQuantity(item.id, item.quantity - quantity)
     
-    // Create new split item
+    // Create new split item with unique ID
     const splitItem = {
       ...item,
-      quantity: quantity
+      id: `${item.id}_split_${Date.now()}`, // Add unique suffix
+      quantity: quantity,
+      split: true // Mark as split item
     }
     
     // Add the split item to cart
