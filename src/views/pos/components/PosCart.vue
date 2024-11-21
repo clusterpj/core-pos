@@ -1,88 +1,112 @@
 <!-- src/views/pos/components/PosCart.vue -->
 <template>
   <div class="pos-cart-container">
-    <div class="cart-header px-4 pt-4 pb-2">
-      <div class="d-flex justify-space-between align-center">
-        <div>
-          <h2 class="text-h6 font-weight-medium">Current Order</h2>
-          <div class="d-flex align-center gap-2">
-            <template v-if="cartStore.isHoldOrder">
-              <v-chip
-                color="warning"
-                size="small"
-                variant="elevated"
-                class="mt-1 font-weight-medium"
-                prepend-icon="mdi-clock-outline"
-              >
-                Held Order: {{ cartStore.holdOrderDescription || 'No Description' }}
-              </v-chip>
-              <v-btn
-                color="warning"
-                size="small"
-                variant="tonal"
-                class="mt-1 text-none"
-                :loading="updating"
-                @click="updateOrder"
-                prepend-icon="mdi-content-save"
-              >
-                Update Order
-              </v-btn>
-            </template>
-          </div>
-        </div>
+    <v-card class="cart-header" flat>
+      <v-toolbar
+        density="comfortable"
+        color="primary"
+        class="rounded-t-lg"
+      >
+        <v-toolbar-title class="text-h6 font-weight-medium">
+          Current Order
+        </v-toolbar-title>
+        
+        <v-spacer></v-spacer>
+        
         <v-btn
-          color="error"
-          variant="tonal"
-          density="comfortable"
+          v-if="cartStore.isHoldOrder"
+          color="white"
+          variant="text"
+          :loading="updating"
+          @click="updateOrder"
+          prepend-icon="mdi-content-save"
+          class="text-none"
+        >
+          Update
+        </v-btn>
+        
+        <v-btn
+          color="white"
+          variant="text"
           :disabled="cartStore.isEmpty"
           @click="clearOrder"
           prepend-icon="mdi-delete-outline"
-          class="text-none"
+          class="text-none ml-2"
         >
-          Clear Cart
+          Clear
         </v-btn>
+      </v-toolbar>
+
+      <div v-if="cartStore.isHoldOrder" class="px-4 py-2 bg-warning-lighten-4">
+        <div class="d-flex align-center">
+          <v-icon
+            icon="mdi-clock-outline"
+            color="warning"
+            class="mr-2"
+          />
+          <span class="text-warning text-body-2 font-weight-medium">
+            Held Order: {{ cartStore.holdOrderDescription || 'No Description' }}
+          </span>
+        </div>
       </div>
-    </div>
+    </v-card>
 
-    <div class="cart-scrollable-content">
-      <!-- Empty Cart State -->
-      <v-alert
-        v-if="cartStore.isEmpty"
-        type="info"
-        variant="tonal"
-        class="mx-4 mb-4"
-        border="start"
-        density="comfortable"
-        prepend-icon="mdi-cart-outline"
-      >
-        <div class="text-subtitle-1 font-weight-medium">Cart is Empty</div>
-        <div class="text-body-2">Add items from the product list to get started.</div>
-      </v-alert>
+    <v-card
+      class="cart-scrollable-content mx-4 mt-4"
+      variant="flat"
+      :class="{ 'empty-cart': cartStore.isEmpty }"
+    >
+      <template v-if="cartStore.isEmpty">
+        <div class="empty-state pa-8 text-center">
+          <v-icon
+            icon="mdi-cart-outline"
+            size="64"
+            color="grey-lighten-1"
+            class="mb-4"
+          />
+          <h3 class="text-h6 font-weight-medium text-grey-darken-1">Cart is Empty</h3>
+          <p class="text-body-2 text-grey-darken-1 mt-2">
+            Add items from the product list to get started.
+          </p>
+        </div>
+      </template>
 
-      <!-- Cart Items -->
       <template v-else>
         <cart-item-list
           :items="cartStore.items"
           @edit="editItem"
           @remove="removeItem"
           @update-quantity="updateQuantity"
+          class="cart-items-list"
         />
       </template>
-    </div>
+    </v-card>
 
     <!-- Order Notes -->
-    <order-notes v-if="!cartStore.isEmpty" />
+    <v-card
+      v-if="!cartStore.isEmpty"
+      class="mx-4 mt-4"
+      variant="flat"
+    >
+      <order-notes />
+    </v-card>
 
-    <!-- Order Summary - Always visible at bottom -->
-    <div class="cart-summary-wrapper px-4 pb-4 elevation-1">
-      <cart-summary
-        :subtotal="cartStore.subtotal"
-        :discount-amount="cartStore.discountAmount"
-        :tax-rate="cartStore.taxRate"
-        :tax-amount="cartStore.taxAmount"
-        :total="cartStore.total"
-      />
-    </div>
+    <!-- Order Summary -->
+    <v-card
+      class="cart-summary-wrapper mx-4 mt-4 mb-4"
+      elevation="2"
+      rounded="lg"
+    >
+      <v-card-text class="pa-4">
+        <cart-summary
+          :subtotal="cartStore.subtotal"
+          :discount-amount="cartStore.discountAmount"
+          :tax-rate="cartStore.taxRate"
+          :tax-amount="cartStore.taxAmount"
+          :total="cartStore.total"
+        />
+      </v-card-text>
+    </v-card>
 
     <!-- Edit Item Dialog -->
     <edit-item-dialog
@@ -174,17 +198,16 @@ const editItem = (item, index) => {
   min-height: 100% !important;
   display: flex;
   flex-direction: column;
-  background-color: rgb(250, 250, 250);
-  border-radius: 8px;
+  background-color: rgb(245, 245, 245);
   overflow: hidden;
   width: 100% !important;
+  padding: 1rem;
 }
 
 .cart-header {
   flex-shrink: 0;
-  background-color: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
   z-index: 2;
+  border-radius: 8px 8px 0 0;
 }
 
 .cart-scrollable-content {
@@ -193,17 +216,36 @@ const editItem = (item, index) => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding: 16px 0;
-  /* Calculate height to prevent footer overlap */
-  height: calc(100% - 140px); /* Adjust based on header + summary height */
+  border-radius: 8px;
+  background-color: white;
+}
+
+.empty-cart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  border: 2px dashed rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+}
+
+.cart-items-list {
+  padding: 1rem;
 }
 
 .cart-summary-wrapper {
   flex-shrink: 0;
   background-color: white;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
   margin-top: auto;
   z-index: 2;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
 }
 
 /* Mobile Optimizations */
