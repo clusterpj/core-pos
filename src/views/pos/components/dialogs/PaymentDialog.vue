@@ -360,6 +360,10 @@ import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter
 
 const props = defineProps({
   modelValue: Boolean,
+  createInvoiceOnly: {
+    type: Boolean,
+    default: false
+  },
   invoice: {
     type: Object,
     required: false,
@@ -705,6 +709,33 @@ const processPayment = async () => {
     
     if (!invoiceResult.success) {
       throw new Error('Failed to create invoice')
+    }
+
+    // Add to held orders if in create-invoice-only mode
+    if (props.createInvoiceOnly) {
+      try {
+        const heldOrderData = {
+          ...invoiceResult.invoice,
+          is_hold_invoice: true,
+          status: 'HELD',
+          description: invoiceResult.invoice.description || 'Delivery Order'
+        }
+        
+        // Add to held orders through the API
+        const holdResult = await posApi.holdInvoice.create(heldOrderData)
+        
+        if (!holdResult.success) {
+          throw new Error('Failed to add invoice to held orders')
+        }
+
+        window.toastr?.['success']('Invoice created and added to held orders')
+        emit('payment-complete', true)
+        dialog.value = false
+        return
+      } catch (err) {
+        console.error('Failed to add to held orders:', err)
+        throw new Error('Failed to add invoice to held orders')
+      }
     }
 
     // Format payments for API - amounts are already in cents
