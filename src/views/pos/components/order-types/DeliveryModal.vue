@@ -572,19 +572,19 @@ const processOrder = async () => {
       invoice_date: currentDate.toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
       invoice_number: `DEL-${Date.now()}`, // Temporary invoice number
-      sub_total: cartStore.subtotal,
-      total: cartStore.total,
-      tax: cartStore.taxAmount,
+      sub_total: Math.round(Number(cartStore.subtotal) || 0),
+      total: Math.round(Number(cartStore.total) || 0),
+      tax: Math.round(Number(cartStore.taxAmount) || 0),
       items: cartStore.items.map(item => ({
         item_id: item.id,
         name: item.name,
         description: item.description || '',
-        price: item.price,
-        quantity: item.quantity,
+        price: Math.round(Number(item.price) || 0),
+        quantity: Math.round(Number(item.quantity) || 1),
         unit_name: item.unit_name || 'units',
-        sub_total: item.subtotal,
-        total: item.total,
-        tax: item.tax || 0
+        sub_total: Math.round(Number(item.subtotal) || 0),
+        total: Math.round(Number(item.total) || 0),
+        tax: Math.round(Number(item.tax) || 0)
       })),
 
       // Boolean flags
@@ -629,7 +629,7 @@ const processOrder = async () => {
       // Amounts and calculations
       discount: "0",
       discount_type: "fixed",
-      discount_val: 0,
+      discount_val: Math.round(Number(0)),
       discount_per_item: "NO",
       
       // SMS notification
