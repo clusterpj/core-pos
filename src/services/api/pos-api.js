@@ -361,7 +361,7 @@ const operations = {
     async create(invoiceData) {
       logger.startGroup('POS API: Create Invoice')
       try {
-        const endpoint = 'http://localhost/api/v1/invoices'
+        const endpoint = getApiEndpoint('pos.invoice.create')
         logger.info('Creating invoice at endpoint:', endpoint)
         logger.debug('Invoice data:', invoiceData)
 
