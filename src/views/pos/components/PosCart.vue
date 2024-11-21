@@ -174,16 +174,23 @@
 import { ref } from 'vue'
 import CartItemList from './cart/CartItemList.vue'
 import CartSummary from './cart/CartSummary.vue'
+import { logger } from '../../../utils/logger'
 import EditItemDialog from './cart/EditItemDialog.vue'
 import OrderNotes from './cart/OrderNotes.vue'
 import { useCart } from './cart/composables/useCart'
 
 const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder, splitItem } = useCart()
 
-const handleSplit = (item, quantity) => {
+const handleSplit = async (item, quantity) => {
+  logger.startGroup('Cart: Split Item')
   try {
+    // Validate inputs
+    if (!item?.id || !quantity) {
+      throw new Error('Invalid split parameters')
+    }
+
     // Reduce quantity of original item
-    cartStore.updateQuantity(item.id, item.quantity - quantity)
+    await cartStore.updateQuantity(item.id, item.quantity - quantity)
     
     // Create new split item by cloning the original
     const splitItem = {
@@ -192,11 +199,14 @@ const handleSplit = (item, quantity) => {
     }
     
     // Add the split item as a new cart item
-    cartStore.addItem(splitItem, quantity)
+    await cartStore.addItem(splitItem, quantity)
     
+    window.toastr?.['success']('Item split successfully')
   } catch (err) {
     logger.error('Split operation failed:', err)
-    window.toastr?.['error']('Failed to split item')
+    window.toastr?.['error'](err.message || 'Failed to split item')
+  } finally {
+    logger.endGroup()
   }
 }
 
