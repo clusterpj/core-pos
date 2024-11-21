@@ -97,6 +97,7 @@
 import { ref, computed } from 'vue'
 import { posApi } from '@/services/api/pos-api'
 import { logger } from '@/utils/logger'
+import { useCompanyStore } from '@/stores/company'
 import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
 
 const props = defineProps({
@@ -186,7 +187,8 @@ const processDeliveryOrder = async () => {
         ...invoiceResult.invoice,
         is_hold_invoice: true,
         status: 'HELD',
-        description: invoiceResult.invoice.description || 'Delivery Order'
+        description: invoiceResult.invoice.description || 'Delivery Order',
+        cash_register_id: companyStore.selectedCashier?.id || 1
       }
       
       const holdResult = await posApi.holdInvoice.create(heldOrderData)

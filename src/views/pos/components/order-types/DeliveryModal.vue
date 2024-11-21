@@ -274,6 +274,7 @@ const props = defineProps({
 const posStore = usePosStore()
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
+const companyStore = useCompanyStore()
 
 // Composables
 const { 

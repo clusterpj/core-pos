@@ -259,6 +259,7 @@ const processOrder = async () => {
       ...baseInvoiceData,
       type: OrderType.TO_GO,
       description: `TO_GO_${customerInfo.name}`,
+      cash_register_id: companyStore.selectedCashier?.id || 1,
       hold_items: cartStore.items.map(item => ({
         item_id: item.id,
         name: item.name,
