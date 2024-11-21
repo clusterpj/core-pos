@@ -573,6 +573,7 @@ const processOrder = async () => {
       invoice_template_id: 1,
       company_id: companyStore.company?.id || 1,
       cash_register_id: companyStore.selectedCashier?.id || null,
+      user_id: selectedCustomer.value?.id || 1, // Ensure user_id is set
       // Add empty tables array for delivery orders
       tables_selected: [],
       hold_tables: []
