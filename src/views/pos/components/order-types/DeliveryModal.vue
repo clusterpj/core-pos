@@ -547,14 +547,17 @@ const processOrder = async () => {
 
     // Update customer info in the order type composable
     const customerData = {
-      customer_id: selectedCustomer.value?.id,
+      customer_id: selectedCustomer.value?.id || null,
       name: customerInfo.name.trim(),
       phone: customerInfo.phone.trim(),
-      address: fullAddress,
-      instructions: customerInfo.instructions.trim(),
+      address: customerInfo.address.trim(),
+      unit: customerInfo.unit.trim(),
       zip: customerInfo.zipCode.trim(),
+      city: customerInfo.city.trim(),
+      state: customerInfo.state.trim(),
       state_id: customerInfo.state_id,
       email: customerInfo.email.trim(),
+      instructions: customerInfo.instructions.trim(),
       send_sms: sendSms.value ? 1 : 0
     }
     setCustomerInfo(customerData)
@@ -566,7 +569,10 @@ const processOrder = async () => {
       is_hold_invoice: true,
       status: 'HELD',
       description: 'Delivery Order',
-      send_sms: sendSms.value ? 1 : 0
+      send_sms: sendSms.value ? 1 : 0,
+      // Ensure required fields are present
+      invoice_template_id: 1,
+      company_id: companyStore.company?.id || 1
     }
 
     logger.debug('Creating hold order with data:', orderData)
