@@ -1,6 +1,6 @@
 <!-- src/views/pos/components/cart/CartItemList.vue -->
 <template>
-  <div class="cart-items">
+  <div class="cart-items" :class="$attrs.class">
     <v-list class="cart-list pa-0" density="compact">
       <v-list-item
         v-for="(item, index) in items"
@@ -105,7 +105,12 @@ const openSplitDialog = (item) => {
 }
 
 const handleSplit = ({ itemId, quantity }) => {
-  emit('split', itemId, quantity)
+  const itemToSplit = props.items.find(item => item.id === itemId)
+  if (itemToSplit) {
+    emit('split', itemToSplit, quantity)
+  } else {
+    console.error('Item not found for splitting:', itemId)
+  }
 }
 
 // Format price for display, converting from cents to dollars if needed

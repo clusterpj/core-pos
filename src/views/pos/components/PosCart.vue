@@ -180,8 +180,24 @@ import { useCart } from './cart/composables/useCart'
 
 const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder, splitItem } = useCart()
 
-const handleSplit = (itemId, quantity) => {
-  cartStore.splitItem(itemId, quantity)
+const handleSplit = (item, quantity) => {
+  try {
+    // Reduce quantity of original item
+    cartStore.updateQuantity(item.id, item.quantity - quantity)
+    
+    // Create new split item by cloning the original
+    const splitItem = {
+      ...item,
+      quantity: quantity
+    }
+    
+    // Add the split item as a new cart item
+    cartStore.addItem(splitItem, quantity)
+    
+  } catch (err) {
+    logger.error('Split operation failed:', err)
+    window.toastr?.['error']('Failed to split item')
+  }
 }
 
 // Local state for edit dialog
