@@ -117,12 +117,16 @@ const handleSplit = ({ itemId, quantity }) => {
   }
   
   // Ensure we pass the correct price and item_id
+  // Create a new split item that preserves all original properties
   const itemForSplit = {
     ...itemToSplit,
     price: itemToSplit.price,
     item_id: itemToSplit.item_id || itemToSplit.id,
-    // Preserve original item reference
-    original_item_id: itemToSplit.original_item_id || itemToSplit.id
+    original_item_id: itemToSplit.original_item_id || itemToSplit.id,
+    split_id: `${itemToSplit.id}_${Date.now()}`, // Unique identifier for the split
+    is_split: true,
+    modifications: [], // Reset modifications for the new split
+    split_group: itemToSplit.split_group || itemToSplit.id // Group related splits
   }
   emit('split', itemForSplit, quantity)
 }

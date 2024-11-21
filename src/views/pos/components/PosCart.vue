@@ -200,16 +200,21 @@ const handleSplit = async (item, quantity) => {
     // Update the original item's quantity
     await updateQuantity(item.id, item.quantity - quantity)
     
-    // Create new split item with unique ID but preserve original item_id for held order tracking
+    // Create new split item with enhanced tracking
     const splitItem = {
       ...item,
       id: `${item.id}_split_${Date.now()}`, // Unique ID for cart management
       item_id: item.id, // Keep original item_id for API reference
+      split_id: `${item.id}_${Date.now()}`, // Unique identifier for this split
+      split_group: item.split_group || item.id, // Group related splits
       quantity: quantity,
-      split: true, // Mark as split item
+      is_split: true, // Mark as split item
       price: item.price, // Ensure price is copied correctly
       total: item.price * quantity,
-      sub_total: item.price * quantity
+      sub_total: item.price * quantity,
+      modifications: [], // Reset modifications for the new split
+      original_name: item.name, // Keep original name for reference
+      name: `${item.name} (Split)` // Indicate this is a split item
     }
     
     // Add the split item to cart
