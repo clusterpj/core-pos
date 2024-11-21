@@ -111,7 +111,22 @@ export const convertHeldOrderToInvoice = async (invoice) => {
     // 3. Prepare invoice data according to API requirements
     console.log('Preparing invoice data')
     console.log('Invoice data', invoice)
+
+    // Ensure all required numeric fields are present and properly formatted
+    const subTotal = toCents(invoice.sub_total || 0)
+    const taxAmount = toCents(invoice.tax || 0)
+    const totalAmount = toCents(invoice.total || (subTotal + taxAmount))
+
     const invoiceData = {
+      // Required fields first
+      invoice_date: formatApiDate(currentDate),
+      due_date: formatApiDate(dueDate),
+      invoice_number: invoiceNumber,
+      sub_total: subTotal,
+      total: totalAmount,
+      tax: taxAmount,
+      items: formattedItems, // This is prepared earlier in the code
+
       // Ensure tables arrays are present for all order types
       tables_selected: invoice.tables_selected || [],
       hold_tables: invoice.hold_tables || [],
@@ -130,23 +145,15 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       is_prepared_data: true,
 
       // IDs and references
-      invoice_number: invoiceNumber,
       invoice_template_id: 1,
       invoice_pbx_modify: 0,
-      hold_invoice_id: Number(invoice.id),
-      store_id: Number(invoice.store_id),
-      cash_register_id: Number(invoice.cash_register_id),
-      user_id: Number(invoice.user_id),
+      hold_invoice_id: Number(invoice.id || 0),
+      store_id: Number(invoice.store_id || 0),
+      cash_register_id: Number(invoice.cash_register_id || 0),
+      user_id: Number(invoice.user_id || 1),
 
-      // Dates
-      invoice_date: formatApiDate(currentDate),
-      due_date: formatApiDate(dueDate),
-
-      // Amounts (convert to cents if needed)
-      sub_total: toCents(invoice.sub_total),
-      total: toCents(invoice.total),
-      due_amount: toCents(invoice.total),
-      tax: toCents(invoice.tax || 0),
+      // Amounts
+      due_amount: totalAmount,
       
       // Discount
       discount: invoice.discount || "0",
