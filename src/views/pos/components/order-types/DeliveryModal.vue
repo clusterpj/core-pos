@@ -618,8 +618,7 @@ const processOrder = async () => {
       error: err,
       message: err.message,
       data: {
-        customerInfo,
-        orderData: orderData
+        customerInfo
       }
     })
     window.toastr?.error(err.message || 'Failed to prepare delivery order')
