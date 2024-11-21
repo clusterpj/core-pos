@@ -200,16 +200,22 @@ const handleSplit = async (item, quantity) => {
     // Update the original item's quantity
     await updateQuantity(item.id, item.quantity - quantity)
     
-    // Create new split item with unique ID
+    // Create new split item with unique ID but preserve original item_id for held order tracking
     const splitItem = {
       ...item,
       id: `${item.id}_split_${Date.now()}`, // Add unique suffix
+      original_item_id: item.id, // Keep track of original item ID
       quantity: quantity,
       split: true // Mark as split item
     }
     
     // Add the split item to cart
     await cartStore.addItem(splitItem)
+    
+    // If this is a held order, update it immediately
+    if (cartStore.isHoldOrder && cartStore.holdOrderId) {
+      await updateOrder()
+    }
     
     window.toastr?.['success']('Item split successfully')
   } catch (err) {
