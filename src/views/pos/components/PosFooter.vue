@@ -248,9 +248,11 @@ defineEmits(['print-order', 'submit-order'])
   right: 0;
   z-index: 100;
   background: white;
-  height: 64px;
+  height: 64px !important;
+  min-height: 64px !important;
   box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
   padding: 0 !important;
+  width: 100vw !important;
 }
 
 .footer-content {

@@ -1,6 +1,6 @@
 <!-- src/views/pos/PosView.vue -->
 <template>
-  <v-layout class="pos-layout fill-height" :class="{ 'mobile-layout': $vuetify.display.smAndDown }">
+  <v-layout class="pos-layout fill-height" :class="{ 'mobile-layout': $vuetify.display.smAndDown }" style="min-width: 100vw; min-height: 100vh;">
     <!-- Error Alert -->
     <v-alert
       v-if="error"
