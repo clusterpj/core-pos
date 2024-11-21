@@ -1,5 +1,10 @@
 <template>
   <v-dialog v-model="dialog" max-width="600" :scrim="true" transition="dialog-bottom-transition" class="rounded-lg">
+    <PaymentDialog
+      v-model="showPaymentDialog"
+      :create-invoice-only="true"
+      @payment-complete="onPaymentComplete"
+    />
     <template v-slot:activator="{ props: dialogProps }">
       <v-btn
         color="primary"
@@ -246,6 +251,7 @@
 import { ref, computed, watch, reactive } from 'vue'
 import StateDropdown from '@/components/common/StateDropdown.vue'
 import CreateCustomerDialog from '../customer/CreateCustomerDialog.vue'
+import PaymentDialog from '../dialogs/PaymentDialog.vue'
 import { useOrderType } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
 import { usePosStore } from '@/stores/pos-store'
@@ -290,6 +296,7 @@ const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
 const sendSms = ref(false)
+const showPaymentDialog = ref(false)
 const error = computed(() => orderError.value || searchError.value)
 
 const canProcessOrder = computed(() => {
@@ -530,26 +537,31 @@ const processOrder = async () => {
 
     // Update customer info in the order type composable
     setCustomerInfo({
-      customer_id: selectedCustomer.value?.id, // Include customer ID when available
+      customer_id: selectedCustomer.value?.id,
       name: customerInfo.name.trim(),
       phone: customerInfo.phone.trim(),
       address: fullAddress,
       instructions: customerInfo.instructions.trim(),
       zip: customerInfo.zipCode.trim(),
       state_id: customerInfo.state_id,
-      email: customerInfo.email.trim(), // Include email for better customer identification
-      send_sms: sendSms.value ? 1 : 0 // Add SMS flag
+      email: customerInfo.email.trim(),
+      send_sms: sendSms.value ? 1 : 0
     })
 
-    await processOrderType()
-    dialog.value = false
-    // Show success message
-    window.toastr?.['success']('Delivery order created successfully')
+    // Show payment dialog instead of processing order directly
+    showPaymentDialog.value = true
   } catch (err) {
-    logger.error('Failed to process delivery order:', err)
-    error.value = err.message || 'Failed to create delivery order'
+    logger.error('Failed to prepare delivery order:', err)
+    error.value = err.message || 'Failed to prepare delivery order'
   } finally {
     processing.value = false
+  }
+}
+
+const onPaymentComplete = async (success) => {
+  if (success) {
+    dialog.value = false
+    window.toastr?.['success']('Delivery order created successfully')
   }
 }
 
