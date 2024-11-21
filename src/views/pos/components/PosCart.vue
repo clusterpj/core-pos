@@ -197,16 +197,16 @@ const handleSplit = async (item, quantity) => {
 
     logger.info('Splitting item', { itemId: item.id, originalQty: item.quantity, splitQty: quantity })
 
-    // Reduce quantity of original item
-    await cartStore.updateQuantity(item.id, item.quantity - quantity)
+    // Update the original item's quantity
+    await updateQuantity(item.id, item.quantity - quantity)
     
-    // Create new split item by cloning the original
+    // Create new split item
     const splitItem = {
       ...item,
       quantity: quantity
     }
     
-    // Add the split item as a new cart item
+    // Add the split item to cart
     await cartStore.addItem(splitItem)
     
     window.toastr?.['success']('Item split successfully')
