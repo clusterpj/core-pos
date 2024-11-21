@@ -113,6 +113,10 @@ export const convertHeldOrderToInvoice = async (invoice) => {
     console.log('Preparing invoice data')
     console.log('Invoice data', invoice)
     const invoiceData = {
+      // Ensure tables arrays are present for all order types
+      tables_selected: invoice.tables_selected || [],
+      hold_tables: invoice.hold_tables || [],
+      
       // Required boolean flags
       avalara_bool: false,
       banType: true,
