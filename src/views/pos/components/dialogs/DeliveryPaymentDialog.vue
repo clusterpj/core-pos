@@ -151,73 +151,9 @@ const closeDialog = () => {
   }
 }
 
-const processDeliveryOrder = async () => {
-  if (processing.value) return
-
-  processing.value = true
-  error.value = null
-
-  try {
-    logger.info('Starting delivery order processing')
-
-    // Get the hold invoice data
-    const holdInvoice = props.invoice.invoice
-    if (!holdInvoice) {
-      throw new Error('Invoice data not provided')
-    }
-
-    // Ensure required fields are set
-    holdInvoice.send_sms = 1
-    holdInvoice.user_id = holdInvoice.user_id || 1 // Ensure user_id is set
-
-    // Convert to regular invoice
-    const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
-    
-    // If we have an invoice object in the result or nested in result.invoice, consider it successful
-    if (invoiceResult?.invoice || invoiceResult?.result?.invoice) {
-      invoiceResult.success = true
-      invoiceResult.invoice = invoiceResult?.invoice || invoiceResult?.result?.invoice
-    } else if (!invoiceResult.success) {
-      throw new Error('Failed to create invoice')
-    }
-
-    logger.info('Delivery invoice created successfully:', {
-      invoiceId: invoiceResult.invoice.id,
-      invoiceNumber: invoiceResult.invoice.invoice_number
-    })
-
-    // Add back to held orders
-    try {
-      const heldOrderData = {
-        ...invoiceResult.invoice,
-        is_hold_invoice: true,
-        status: 'HELD',
-        description: invoiceResult.invoice.description || 'Delivery Order',
-        cash_register_id: companyStore.selectedCashier?.id || companyStore.company?.id || 1
-      }
-      
-      const holdResult = await posApi.holdInvoice.create(heldOrderData)
-      
-      if (!holdResult.success) {
-        throw new Error('Failed to add invoice to held orders')
-      }
-
-      logger.info('Delivery order added to held orders successfully')
-      window.toastr?.['success']('Delivery order created successfully')
-      
-      emit('payment-complete', true)
-      dialog.value = false
-    } catch (err) {
-      logger.error('Failed to add to held orders:', err)
-      throw new Error('Failed to add delivery order to held orders')
-    }
-  } catch (err) {
-    logger.error('Failed to process delivery order:', err)
-    error.value = err.message || 'Failed to process delivery order'
-    window.toastr?.['error'](error.value)
-  } finally {
-    processing.value = false
-  }
+const closeDialog = () => {
+  emit('payment-complete', true)
+  dialog.value = false
 }
 </script>
 
