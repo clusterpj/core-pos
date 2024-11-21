@@ -1,8 +1,7 @@
 <template>
   <v-dialog v-model="dialog" max-width="600" :scrim="true" transition="dialog-bottom-transition" class="rounded-lg">
-    <PaymentDialog
+    <DeliveryPaymentDialog
       v-model="showPaymentDialog"
-      :create-invoice-only="true"
       :invoice="invoiceData"
       @payment-complete="onPaymentComplete"
     />
@@ -252,7 +251,7 @@
 import { ref, computed, watch, reactive } from 'vue'
 import StateDropdown from '@/components/common/StateDropdown.vue'
 import CreateCustomerDialog from '../customer/CreateCustomerDialog.vue'
-import PaymentDialog from '../dialogs/PaymentDialog.vue'
+import DeliveryPaymentDialog from '../dialogs/DeliveryPaymentDialog.vue'
 import { useOrderType } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
 import { usePosStore } from '@/stores/pos-store'
