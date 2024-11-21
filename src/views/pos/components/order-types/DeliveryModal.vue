@@ -575,8 +575,12 @@ const processOrder = async () => {
     const holdResult = await posApi.holdInvoice.create(orderData)
     
     if (!holdResult?.success || !holdResult.data) {
-      logger.error('Failed to create held order:', holdResult)
-      throw new Error('Failed to create held order')
+      const errorMsg = holdResult?.message || 'Failed to create held order'
+      logger.error('Failed to create held order:', {
+        result: holdResult,
+        orderData: orderData
+      })
+      throw new Error(errorMsg)
     }
 
     logger.debug('Hold order created successfully:', holdResult.data)
@@ -615,7 +619,7 @@ const processOrder = async () => {
       message: err.message,
       data: {
         customerInfo,
-        heldOrderData: heldOrderData
+        orderData: orderData
       }
     })
     window.toastr?.error(err.message || 'Failed to prepare delivery order')
