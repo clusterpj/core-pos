@@ -260,6 +260,8 @@ import { useCartStore } from '@/stores/cart-store'
 import { useCompanyStore } from '@/stores/company'
 import { logger } from '../../../../utils/logger'
 import { apiClient } from '@/services/api/client'
+import { posApi } from '@/services/api/pos-api'
+import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
 
 // Props
 const props = defineProps({
@@ -574,25 +576,46 @@ const processOrder = async () => {
       throw new Error('Failed to create held order')
     }
 
+    logger.debug('Hold order created:', holdResult.data)
+
+    // Get next invoice number
+    const nextInvoice = await posApi.invoice.getNextNumber()
+    
+    if (!nextInvoice) {
+      throw new Error('Failed to get next invoice number')
+    }
+
     // Convert held order to invoice data
-    const convertedInvoiceData = await convertHeldOrderToInvoice(holdResult.data)
+    const convertedInvoiceData = await convertHeldOrderToInvoice({
+      ...holdResult.data,
+      invoice_number: `${nextInvoice.prefix}${nextInvoice.nextNumber}`
+    })
     
     if (!convertedInvoiceData.success) {
       throw new Error('Failed to prepare invoice data')
     }
 
+    logger.debug('Converted invoice data:', convertedInvoiceData)
+
     // Update invoice data ref
     invoiceData.value = {
       invoice: convertedInvoiceData.invoice,
-      invoicePrefix: convertedInvoiceData.prefix || '',
-      nextInvoiceNumber: convertedInvoiceData.nextNumber || ''
+      invoicePrefix: nextInvoice.prefix,
+      nextInvoiceNumber: nextInvoice.nextNumber
     }
 
     // Show payment dialog
     showPaymentDialog.value = true
   } catch (err) {
-    logger.error('Failed to prepare delivery order:', err)
-    error.value = err.message || 'Failed to prepare delivery order'
+    logger.error('Failed to prepare delivery order:', {
+      error: err,
+      message: err.message,
+      data: {
+        customerInfo,
+        heldOrderData: heldOrderData
+      }
+    })
+    window.toastr?.error(err.message || 'Failed to prepare delivery order')
   } finally {
     processing.value = false
   }
