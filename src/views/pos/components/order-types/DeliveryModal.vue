@@ -536,7 +536,7 @@ const processOrder = async () => {
     ].filter(Boolean).join(', ')
 
     // Update customer info in the order type composable
-    setCustomerInfo({
+    const customerData = {
       customer_id: selectedCustomer.value?.id,
       name: customerInfo.name.trim(),
       phone: customerInfo.phone.trim(),
@@ -546,9 +546,39 @@ const processOrder = async () => {
       state_id: customerInfo.state_id,
       email: customerInfo.email.trim(),
       send_sms: sendSms.value ? 1 : 0
-    })
+    }
+    setCustomerInfo(customerData)
 
-    // Show payment dialog instead of processing order directly
+    // Create held order data
+    const heldOrderData = {
+      ...customerData,
+      type: ORDER_TYPES.DELIVERY,
+      is_hold_invoice: true,
+      status: 'HELD',
+      description: 'Delivery Order',
+      send_sms: sendSms.value ? 1 : 0
+    }
+
+    // Create held order through API
+    const holdResult = await posApi.holdInvoice.create(heldOrderData)
+    
+    if (!holdResult.success) {
+      throw new Error('Failed to create held order')
+    }
+
+    // Convert held order to invoice data
+    const invoiceData = await convertHeldOrderToInvoice(holdResult.data)
+    
+    if (!invoiceData.success) {
+      throw new Error('Failed to prepare invoice data')
+    }
+
+    // Show payment dialog with prepared invoice data
+    props.invoice = {
+      invoice: invoiceData.invoice,
+      invoicePrefix: invoiceData.prefix || '',
+      nextInvoiceNumber: invoiceData.nextNumber || ''
+    }
     showPaymentDialog.value = true
   } catch (err) {
     logger.error('Failed to prepare delivery order:', err)

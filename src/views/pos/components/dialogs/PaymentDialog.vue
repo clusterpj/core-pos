@@ -656,8 +656,11 @@ const processPayment = async () => {
       tipAmount: tipAmount.value
     })
 
-    // First create the invoice with tip included
-    const holdInvoice = { ...props.invoice.invoice }
+    // Use the prepared invoice data
+    const holdInvoice = props.invoice.invoice
+    if (!holdInvoice) {
+      throw new Error('Invoice data not provided')
+    }
     
     // Calculate the total with tip
     const totalWithTip = invoiceTotal.value + tipAmount.value
