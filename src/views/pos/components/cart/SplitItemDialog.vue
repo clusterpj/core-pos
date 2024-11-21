@@ -74,8 +74,9 @@ const emit = defineEmits(['update:modelValue', 'split'])
 const splitQuantity = ref(1)
 
 const isValidQuantity = computed(() => {
+  if (!props.item?.quantity) return false
   const qty = Number(splitQuantity.value)
-  return qty > 0 && qty < props.item?.quantity
+  return !isNaN(qty) && qty > 0 && qty < props.item.quantity
 })
 
 const handleSplit = () => {

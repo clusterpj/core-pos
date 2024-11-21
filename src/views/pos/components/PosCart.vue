@@ -185,9 +185,17 @@ const handleSplit = async (item, quantity) => {
   logger.startGroup('Cart: Split Item')
   try {
     // Validate inputs
-    if (!item?.id || !quantity) {
-      throw new Error('Invalid split parameters')
+    if (!item?.id) {
+      throw new Error('Invalid item')
     }
+    if (!quantity || quantity <= 0) {
+      throw new Error('Invalid quantity')
+    }
+    if (quantity >= item.quantity) {
+      throw new Error('Split quantity must be less than item quantity')
+    }
+
+    logger.info('Splitting item', { itemId: item.id, originalQty: item.quantity, splitQty: quantity })
 
     // Reduce quantity of original item
     await cartStore.updateQuantity(item.id, item.quantity - quantity)
@@ -199,11 +207,11 @@ const handleSplit = async (item, quantity) => {
     }
     
     // Add the split item as a new cart item
-    await cartStore.addItem(splitItem, quantity)
+    await cartStore.addItem(splitItem)
     
     window.toastr?.['success']('Item split successfully')
   } catch (err) {
-    logger.error('Split operation failed:', err)
+    logger.error('Split operation failed', { error: err.message, item, quantity })
     window.toastr?.['error'](err.message || 'Failed to split item')
   } finally {
     logger.endGroup()

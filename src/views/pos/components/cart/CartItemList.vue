@@ -105,15 +105,16 @@ const openSplitDialog = (item) => {
 }
 
 const handleSplit = ({ itemId, quantity }) => {
-  try {
-    const itemToSplit = props.items.find(item => item.id === itemId)
-    if (!itemToSplit) {
-      throw new Error('Item not found for splitting')
-    }
-    emit('split', itemToSplit, quantity)
-  } catch (error) {
-    window.toastr?.['error'](error.message || 'Failed to split item')
+  const itemToSplit = props.items.find(item => item.id === itemId)
+  if (!itemToSplit) {
+    window.toastr?.['error']('Item not found for splitting')
+    return
   }
+  if (!quantity || quantity >= itemToSplit.quantity) {
+    window.toastr?.['error']('Invalid split quantity')
+    return
+  }
+  emit('split', itemToSplit, quantity)
 }
 
 // Format price for display, converting from cents to dollars if needed
