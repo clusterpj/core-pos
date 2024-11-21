@@ -613,11 +613,12 @@ const processOrder = async () => {
 
       // Customer contact info
       contact: {
-        name: customerInfo.name.trim(),
-        last_name: '',
+        name: customerInfo.name.trim().split(' ')[0] || customerInfo.name.trim(),
+        last_name: customerInfo.name.trim().split(' ').slice(1).join(' ') || 'N/A',
         email: customerInfo.email.trim(),
         phone: customerInfo.phone.trim(),
-        second_phone: ''
+        second_phone: '',
+        identification: 'N/A'  // Add default identification
       },
 
       // Arrays
