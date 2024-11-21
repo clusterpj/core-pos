@@ -247,8 +247,7 @@ onMounted(async () => {
   max-height: 100vh !important;
   min-height: 100vh !important;
   overflow: hidden;
-  position: relative;
-  width: 100vw !important;
+  width: 100% !important;
 }
 
 .v-main--pos {

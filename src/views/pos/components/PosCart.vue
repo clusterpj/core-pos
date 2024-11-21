@@ -178,11 +178,6 @@ const editItem = (item, index) => {
   border-radius: 8px;
   overflow: hidden;
   width: 100% !important;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
 }
 
 .cart-header {
