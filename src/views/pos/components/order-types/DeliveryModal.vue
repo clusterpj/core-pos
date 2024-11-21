@@ -3,6 +3,7 @@
     <PaymentDialog
       v-model="showPaymentDialog"
       :create-invoice-only="true"
+      :invoice="invoiceData"
       @payment-complete="onPaymentComplete"
     />
     <template v-slot:activator="{ props: dialogProps }">
@@ -522,6 +523,13 @@ const clearAllErrors = () => {
 }
 
 // Process the order
+// Add reactive invoice data state
+const invoiceData = ref({
+  invoice: null,
+  invoicePrefix: '',
+  nextInvoiceNumber: ''
+})
+
 const processOrder = async () => {
   if (!validateForm()) return
 
@@ -567,18 +575,20 @@ const processOrder = async () => {
     }
 
     // Convert held order to invoice data
-    const invoiceData = await convertHeldOrderToInvoice(holdResult.data)
+    const convertedInvoiceData = await convertHeldOrderToInvoice(holdResult.data)
     
-    if (!invoiceData.success) {
+    if (!convertedInvoiceData.success) {
       throw new Error('Failed to prepare invoice data')
     }
 
-    // Show payment dialog with prepared invoice data
-    props.invoice = {
-      invoice: invoiceData.invoice,
-      invoicePrefix: invoiceData.prefix || '',
-      nextInvoiceNumber: invoiceData.nextNumber || ''
+    // Update invoice data ref
+    invoiceData.value = {
+      invoice: convertedInvoiceData.invoice,
+      invoicePrefix: convertedInvoiceData.prefix || '',
+      nextInvoiceNumber: convertedInvoiceData.nextNumber || ''
     }
+
+    // Show payment dialog
     showPaymentDialog.value = true
   } catch (err) {
     logger.error('Failed to prepare delivery order:', err)
