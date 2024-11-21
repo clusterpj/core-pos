@@ -51,6 +51,16 @@
                 class="touch-btn"
               />
               <v-btn
+                v-if="item.quantity > 1"
+                icon="mdi-call-split"
+                size="small"
+                variant="tonal"
+                density="comfortable"
+                color="info"
+                @click="openSplitDialog(item)"
+                class="touch-btn"
+              />
+              <v-btn
                 icon="mdi-delete"
                 size="small"
                 variant="tonal"
@@ -65,9 +75,18 @@
       </v-list-item>
     </v-list>
   </div>
+
+  <split-item-dialog
+    v-model="showSplitDialog"
+    :item="selectedItem"
+    @split="handleSplit"
+  />
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import SplitItemDialog from './SplitItemDialog.vue'
+
 const props = defineProps({
   items: {
     type: Array,
@@ -75,7 +94,19 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['edit', 'remove', 'updateQuantity'])
+const emit = defineEmits(['edit', 'remove', 'updateQuantity', 'split'])
+
+const showSplitDialog = ref(false)
+const selectedItem = ref(null)
+
+const openSplitDialog = (item) => {
+  selectedItem.value = item
+  showSplitDialog.value = true
+}
+
+const handleSplit = ({ itemId, quantity }) => {
+  emit('split', itemId, quantity)
+}
 
 // Format price for display, converting from cents to dollars if needed
 const formatPrice = (price) => {

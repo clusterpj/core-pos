@@ -77,6 +77,7 @@
           @edit="editItem"
           @remove="removeItem"
           @update-quantity="updateQuantity"
+          @split="handleSplit"
           class="cart-items-list"
         />
       </template>
@@ -177,7 +178,11 @@ import EditItemDialog from './cart/EditItemDialog.vue'
 import OrderNotes from './cart/OrderNotes.vue'
 import { useCart } from './cart/composables/useCart'
 
-const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder } = useCart()
+const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder, splitItem } = useCart()
+
+const handleSplit = (itemId, quantity) => {
+  cartStore.splitItem(itemId, quantity)
+}
 
 // Local state for edit dialog
 const showEditDialog = ref(false)
