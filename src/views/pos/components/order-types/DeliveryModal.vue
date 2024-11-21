@@ -561,8 +561,32 @@ const processOrder = async () => {
     }
     setCustomerInfo(customerData)
 
+    // Get current date and due date
+    const currentDate = new Date()
+    const dueDate = new Date(currentDate)
+    dueDate.setDate(dueDate.getDate() + 7) // Set due date to 7 days from now
+
     // Create invoice data with required fields
     const orderData = {
+      // Required fields first
+      invoice_date: currentDate.toISOString().split('T')[0],
+      due_date: dueDate.toISOString().split('T')[0],
+      invoice_number: `DEL-${Date.now()}`, // Temporary invoice number
+      sub_total: cartStore.subtotal,
+      total: cartStore.total,
+      tax: cartStore.taxAmount,
+      items: cartStore.items.map(item => ({
+        item_id: item.id,
+        name: item.name,
+        description: item.description || '',
+        price: item.price,
+        quantity: item.quantity,
+        unit_name: item.unit_name || 'units',
+        sub_total: item.subtotal,
+        total: item.total,
+        tax: item.tax || 0
+      })),
+
       // Boolean flags
       avalara_bool: false,
       banType: true,
