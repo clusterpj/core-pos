@@ -575,6 +575,7 @@ const processOrder = async () => {
       sub_total: Math.round(Number(cartStore.subtotal) || 0),
       total: Math.round(Number(cartStore.total) || 0),
       tax: Math.round(Number(cartStore.taxAmount) || 0),
+      send_sms: sendSms.value ? 1 : 0,
       items: cartStore.items.map(item => ({
         item_id: item.id,
         name: item.name,
