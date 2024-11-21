@@ -341,15 +341,15 @@ const onCustomerSelect = async (customer) => {
       logger.debug('Billing address:', billingAddress)
 
       // Populate all available customer information
-      customerInfo.name = fullCustomer.name || fullCustomer.first_name || ''
-      customerInfo.phone = fullCustomer.phone || ''
-      customerInfo.email = fullCustomer.email || ''
+      customerInfo.name = (fullCustomer?.name || fullCustomer?.first_name || '').trim()
+      customerInfo.phone = (fullCustomer?.phone || '').trim()
+      customerInfo.email = (fullCustomer?.email || '').trim()
       
       // Set address information from billing address
-      customerInfo.address = billingAddress.address_street_1 || ''
-      customerInfo.unit = billingAddress.address_street_2 || ''
-      customerInfo.city = billingAddress.city || ''
-      customerInfo.zip = billingAddress.zip || ''
+      customerInfo.address = (billingAddress?.address_street_1 || '').trim()
+      customerInfo.unit = (billingAddress?.address_street_2 || '').trim()
+      customerInfo.city = (billingAddress?.city || '').trim()
+      customerInfo.zip = (billingAddress?.zip || '').trim()
       
       // Handle state information
       if (billingAddress.state) {
@@ -547,16 +547,16 @@ const processOrder = async () => {
     // Update customer info in the order type composable
     const customerData = {
       customer_id: selectedCustomer.value?.id || null,
-      name: customerInfo.name.trim(),
-      phone: customerInfo.phone.trim(),
-      address: customerInfo.address.trim(),
-      unit: customerInfo.unit.trim(),
-      zip: customerInfo.zipCode.trim(),
-      city: customerInfo.city.trim(),
-      state: customerInfo.state.trim(),
+      name: (customerInfo.name || '').trim(),
+      phone: (customerInfo.phone || '').trim(),
+      address: (customerInfo.address || '').trim(),
+      unit: (customerInfo.unit || '').trim(),
+      zip: (customerInfo.zipCode || '').trim(),
+      city: (customerInfo.city || '').trim(),
+      state: (customerInfo.state || '').trim(),
       state_id: customerInfo.state_id,
-      email: customerInfo.email.trim(),
-      instructions: customerInfo.instructions.trim(),
+      email: (customerInfo.email || '').trim(),
+      instructions: (customerInfo.instructions || '').trim(),
       send_sms: sendSms.value ? 1 : 0
     }
     setCustomerInfo(customerData)
