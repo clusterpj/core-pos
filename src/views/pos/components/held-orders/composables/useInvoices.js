@@ -39,7 +39,7 @@ export function useInvoices() {
         page
       })
 
-      const response = await apiClient.get('/api/v1/invoices', {
+      const response = await apiClient.getPaginated('/api/v1/invoices', {
         params: {
           customer_id: customerId,
           status,
@@ -48,8 +48,8 @@ export function useInvoices() {
           invoice_number: invoiceNumber,
           customcode,
           unit,
-          orderByField,
-          orderBy,
+          order_by_field: orderByField,
+          order_by: orderBy,
           v2: true,
           page,
           limit
