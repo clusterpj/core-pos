@@ -39,7 +39,7 @@ export function useInvoices() {
         page
       })
 
-      const response = await apiClient.get('invoices?is_invoice_pos=1&limit=all')
+      const response = await apiClient.get('invoices?is_invoice_pos=1&limit=all&orderBy=desc')
       
       logger.debug('Raw API response:', {
         status: response?.status,
