@@ -191,13 +191,13 @@ const getImageUrl = (item) => {
   padding: 2px;
   height: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-content: flex-start;
 }
 
 .product-grid-item {
   padding: 2px;
-  margin-bottom: 0;
+  margin-bottom: 4px;
 }
 
 .product-card {
