@@ -208,6 +208,10 @@
                   :getOrderTypeColor="getOrderTypeColor"
                   :formatDate="formatDate"
                   :formatCurrency="formatCurrency"
+                  :showPagination="true"
+                  :page="invoicePage"
+                  :totalPages="totalInvoicePages"
+                  @update:page="invoicePage = $event"
                 />
               </v-window-item>
             </v-window>
@@ -277,6 +281,8 @@ const historyItemsPerPage = ref(10)
 const invoiceSearch = ref('')
 const invoiceSelectedType = ref('ALL')
 const invoiceSelectedStatus = ref('ALL')
+const invoicePage = ref(1)
+const invoiceItemsPerPage = ref(10)
 
 const updateModelValue = (value) => {
   emit('update:model-value', value)
@@ -337,7 +343,27 @@ const filteredActiveOrders = computed(() => {
     )
   }
 
-  return filtered
+  // Calculate pagination
+  const startIndex = (invoicePage.value - 1) * invoiceItemsPerPage.value
+  const paginatedData = filtered.slice(startIndex, startIndex + invoiceItemsPerPage.value)
+
+  return paginatedData
+})
+
+const totalInvoicePages = computed(() => {
+  if (!Array.isArray(invoices.value)) return 1
+  const filteredLength = invoices.value.filter(invoice => {
+    if (invoiceSelectedType.value !== 'ALL' && invoice?.type !== invoiceSelectedType.value) return false
+    if (invoiceSelectedStatus.value !== 'ALL' && invoice?.status !== invoiceSelectedStatus.value) return false
+    if (invoiceSearch.value) {
+      const searchTerm = invoiceSearch.value.toLowerCase()
+      return invoice?.invoice_number?.toLowerCase().includes(searchTerm) ||
+             invoice?.customer?.name?.toLowerCase().includes(searchTerm) ||
+             invoice?.id?.toString().includes(searchTerm)
+    }
+    return true
+  }).length
+  return Math.ceil(filteredLength / invoiceItemsPerPage.value)
 })
 
 // Computed properties for history orders

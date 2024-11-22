@@ -15,8 +15,8 @@
     </v-row>
   </v-container>
 
-  <v-container class="px-2" v-else>
-    <v-table fixed-header height="600px" class="elevation-1 w-100">
+  <v-container class="px-2" v-else class="d-flex flex-column">
+    <v-table fixed-header height="550px" class="elevation-1 w-100">
       <thead>
         <tr>
           <th class="text-left" style="min-width: 150px">Date</th>
@@ -48,6 +48,16 @@
         </tr>
       </tbody>
     </v-table>
+    
+    <div v-if="showPagination" class="d-flex justify-center align-center mt-4">
+      <v-pagination
+        :model-value="page"
+        @update:model-value="$emit('update:page', $event)"
+        :length="totalPages"
+        :total-visible="7"
+        rounded="circle"
+      ></v-pagination>
+    </div>
   </v-container>
 </template>
 
@@ -78,8 +88,22 @@ const props = defineProps({
   formatCurrency: {
     type: Function,
     required: true
+  },
+  showPagination: {
+    type: Boolean,
+    default: false
+  },
+  page: {
+    type: Number,
+    default: 1
+  },
+  totalPages: {
+    type: Number,
+    default: 1
   }
 })
+
+defineEmits(['update:page'])
 
 const getStatusColor = (status) => {
   switch (status?.toUpperCase()) {
