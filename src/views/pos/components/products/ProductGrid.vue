@@ -65,8 +65,8 @@
               </div>
             </template>
           </v-card>
-        </v-col>
-      </v-row>
+        </div>
+      </div>
     </div>
 
     <!-- Pagination -->
