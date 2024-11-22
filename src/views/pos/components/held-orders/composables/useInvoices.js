@@ -51,16 +51,31 @@ export function useInvoices() {
 
       const response = await apiClient.getPaginated('invoices', { params })
       
-      // Check if response exists and has the expected structure
-      if (!response || !response.data) {
-        throw new Error('Invalid response format from server')
+      logger.debug('Raw API response:', response)
+
+      // Handle different response formats
+      let invoiceData = []
+      if (response?.data) {
+        if (Array.isArray(response.data)) {
+          invoiceData = response.data
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          invoiceData = response.data.data
+        } else if (typeof response.data === 'object') {
+          // If it's an object but not an array, try to extract values
+          invoiceData = Object.values(response.data).filter(item => 
+            item && typeof item === 'object' && item.id
+          )
+        }
       }
 
-      // Handle both possible response formats
-      const invoiceData = Array.isArray(response.data) ? response.data : (response.data.data || [])
       invoices.value = invoiceData
       
-      logger.info('Invoices fetched successfully:', invoices.value.length)
+      logger.info('Invoices fetched successfully:', {
+        total: invoiceData.length,
+        firstInvoice: invoiceData[0]?.id,
+        format: Array.isArray(response.data) ? 'array' : 
+                (response.data?.data ? 'paginated' : 'object')
+      })
       return { success: true, data: invoices.value }
     } catch (err) {
       const errorResponse = handleApiError(err)

@@ -377,7 +377,47 @@ const filteredHistoryOrders = computed(() => {
 })
 
 // Computed property for filtered invoices
-const filteredInvoiceOrders = computed(() => invoices.value)
+const filteredInvoiceOrders = computed(() => {
+  if (!Array.isArray(invoices.value)) {
+    logger.warn('Invoices is not an array:', invoices.value)
+    return []
+  }
+
+  let filtered = invoices.value
+
+  if (invoiceSelectedType.value !== 'ALL') {
+    filtered = filtered.filter(invoice => 
+      invoice?.type === invoiceSelectedType.value
+    )
+  }
+
+  if (invoiceSelectedStatus.value !== 'ALL') {
+    filtered = filtered.filter(invoice => 
+      invoice?.status === invoiceSelectedStatus.value
+    )
+  }
+
+  if (invoiceSearch.value) {
+    const searchTerm = invoiceSearch.value.toLowerCase()
+    filtered = filtered.filter(invoice => 
+      invoice?.invoice_number?.toLowerCase().includes(searchTerm) ||
+      invoice?.customer?.name?.toLowerCase().includes(searchTerm) ||
+      invoice?.id?.toString().includes(searchTerm)
+    )
+  }
+
+  logger.debug('Filtered invoice orders:', {
+    total: invoices.value.length,
+    filtered: filtered.length,
+    filters: {
+      type: invoiceSelectedType.value,
+      status: invoiceSelectedStatus.value,
+      search: invoiceSearch.value
+    }
+  })
+
+  return filtered
+})
 
 const handleLoadOrder = async (invoice) => {
   logger.info('Loading order:', {

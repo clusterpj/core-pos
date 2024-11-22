@@ -31,21 +31,21 @@
       </thead>
       <tbody>
         <tr v-for="invoice in invoices" :key="invoice.id">
-          <td>{{ invoice.invoice_number }}</td>
+          <td>{{ invoice?.invoice_number || 'N/A' }}</td>
           <td>
             <v-chip
               :color="getOrderTypeColor(getOrderType(invoice))"
               size="small"
             >
-              {{ getOrderType(invoice) }}
+              {{ getOrderType(invoice) || 'Unknown' }}
             </v-chip>
           </td>
           <td class="text-truncate" style="max-width: 200px">
-            {{ invoice.customer?.name || 'Walk-in Customer' }}
+            {{ invoice?.customer?.name || 'Walk-in Customer' }}
           </td>
-          <td>{{ formatDate(invoice.created_at) }}</td>
-          <td>{{ invoice.items?.length || 0 }} items</td>
-          <td>{{ formatCurrency(invoice.total / 100) }}</td>
+          <td>{{ invoice?.created_at ? formatDate(invoice.created_at) : 'N/A' }}</td>
+          <td>{{ Array.isArray(invoice?.items) ? invoice.items.length : 0 }} items</td>
+          <td>{{ invoice?.total ? formatCurrency(invoice.total / 100) : formatCurrency(0) }}</td>
           <td>
             <v-chip
               :color="getStatusColor(invoice.status)"
