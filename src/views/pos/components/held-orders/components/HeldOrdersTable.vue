@@ -98,6 +98,15 @@
       </tr>
     </tbody>
   </v-table>
+  
+  <div v-if="showPagination" class="d-flex justify-center align-center mt-4">
+    <v-pagination
+      v-model="page"
+      :length="totalPages"
+      :total-visible="7"
+      rounded="circle"
+    ></v-pagination>
+  </div>
   </v-container>
 </template>
 
@@ -140,6 +149,18 @@ const props = defineProps({
   hideActions: {
     type: Boolean,
     default: false
+  },
+  showPagination: {
+    type: Boolean,
+    default: false
+  },
+  page: {
+    type: Number,
+    default: 1
+  },
+  totalPages: {
+    type: Number,
+    default: 1
   }
 })
 

@@ -177,6 +177,10 @@
                         :formatDate="formatDate"
                         :formatCurrency="formatCurrency"
                         :hideActions="true"
+                        :showPagination="true"
+                        :page="historyPage"
+                        :totalPages="totalHistoryPages"
+                        @update:page="historyPage = $event"
                       />
                     </v-col>
                   </v-row>
@@ -266,6 +270,8 @@ const selectedStatus = ref('ALL')
 const historySearch = ref('')
 const historySelectedType = ref('ALL')
 const historySelectedStatus = ref('ALL')
+const historyPage = ref(1)
+const historyItemsPerPage = ref(10)
 
 // Invoice filters
 const invoiceSearch = ref('')
@@ -363,9 +369,16 @@ const filteredHistoryOrders = computed(() => {
     )
   }
 
+  // Calculate pagination
+  const startIndex = (historyPage.value - 1) * historyItemsPerPage.value
+  const paginatedData = filtered.slice(startIndex, startIndex + historyItemsPerPage.value)
+
   logger.debug('Filtered history orders:', {
     total: orderHistory.value.length,
     filtered: filtered.length,
+    paginated: paginatedData.length,
+    page: historyPage.value,
+    itemsPerPage: historyItemsPerPage.value,
     filters: {
       type: historySelectedType.value,
       status: historySelectedStatus.value,
@@ -373,7 +386,22 @@ const filteredHistoryOrders = computed(() => {
     }
   })
 
-  return filtered
+  return paginatedData
+})
+
+const totalHistoryPages = computed(() => {
+  if (!Array.isArray(orderHistory.value)) return 1
+  const filteredLength = orderHistory.value.filter(invoice => {
+    if (historySelectedType.value !== 'ALL' && invoice?.type !== historySelectedType.value) return false
+    if (historySelectedStatus.value !== 'ALL' && invoice?.paid_status !== historySelectedStatus.value) return false
+    if (historySearch.value) {
+      const searchTerm = historySearch.value.toLowerCase()
+      return invoice?.description?.toLowerCase().includes(searchTerm) ||
+             invoice?.id?.toString().includes(searchTerm)
+    }
+    return true
+  }).length
+  return Math.ceil(filteredLength / historyItemsPerPage.value)
 })
 
 // Computed property for filtered invoices
