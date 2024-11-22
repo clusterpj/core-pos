@@ -49,7 +49,7 @@ export function useInvoices() {
       if (status && status !== 'ALL') params.status = status
       if (invoiceNumber?.trim()) params.invoice_number = invoiceNumber.trim()
 
-      const response = await apiClient.get('v1/invoices?is_invoice_pos=1&limit=all', { params })
+      const response = await apiClient.get('invoices?is_invoice_pos=1&limit=all')
       
       logger.debug('Raw API response:', {
         status: response?.status,
