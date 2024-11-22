@@ -55,17 +55,20 @@ export function useInvoices() {
 
       // Handle different response formats
       let invoiceData = []
-      if (response?.data) {
-        if (Array.isArray(response.data)) {
-          invoiceData = response.data
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          invoiceData = response.data.data
-        } else if (typeof response.data === 'object') {
-          // If it's an object but not an array, try to extract values
-          invoiceData = Object.values(response.data).filter(item => 
-            item && typeof item === 'object' && item.id
-          )
-        }
+      if (response?.data?.invoices?.data && Array.isArray(response.data.invoices.data)) {
+        // Handle the nested structure: { invoices: { data: [...] } }
+        invoiceData = response.data.invoices.data
+      } else if (response?.data?.data && Array.isArray(response.data.data)) {
+        // Handle paginated format: { data: [...] }
+        invoiceData = response.data.data
+      } else if (Array.isArray(response?.data)) {
+        // Handle direct array format
+        invoiceData = response.data
+      } else if (typeof response?.data === 'object') {
+        // If it's an object but not an array, try to extract values
+        invoiceData = Object.values(response.data).filter(item => 
+          item && typeof item === 'object' && item.id
+        )
       }
 
       invoices.value = invoiceData
