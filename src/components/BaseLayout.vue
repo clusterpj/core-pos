@@ -137,7 +137,7 @@
     </v-navigation-drawer>
 
 
-    <v-main class="main-content">
+    <v-main class="main-content pa-0">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />
