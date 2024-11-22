@@ -92,17 +92,6 @@
             <v-window v-model="activeTab" class="mt-6">
               <!-- Active Orders Tab -->
               <v-window-item value="active">
-                <template v-if="loading">
-                  <v-fade-transition>
-                    <v-sheet class="pa-4">
-                      <v-skeleton-loader
-                        type="table-heading, table-row-divider, table-row@6"
-                        class="mx-auto"
-                      ></v-skeleton-loader>
-                    </v-sheet>
-                  </v-fade-transition>
-                </template>
-
                 <v-row v-if="!activeOrders.length">
                   <v-col cols="12" class="text-center">
                     <p>No active orders found</p>
