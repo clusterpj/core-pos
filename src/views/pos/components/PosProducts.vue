@@ -73,7 +73,29 @@
 
       <v-container fluid class="products-content pa-0">
         <div class="products-scroll-container">
-          <!-- Loading State with fixed dimensions -->
+          <!-- Products Grid -->
+          <product-grid
+            v-if="posStore.products.length > 0"
+            :products="posStore.products"
+            :grid-settings="gridSettings"
+            @select="quickAdd"
+            class="products-grid"
+          />
+
+          <!-- Empty State -->
+          <v-alert
+            v-else
+            type="info"
+            variant="tonal"
+            class="mx-4 products-empty-state"
+          >
+            <template v-slot:prepend>
+              <v-icon icon="mdi-information" />
+            </template>
+            No items found
+          </v-alert>
+
+          <!-- Overlay Loading State -->
           <div v-if="posStore.loading.products" class="products-loading-state">
             <v-progress-circular
               indeterminate
@@ -81,9 +103,6 @@
               size="32"
             />
           </div>
-
-          <!-- Products Grid with minimum height -->
-          <template v-else>
             <product-grid
               v-if="posStore.products.length > 0"
               :products="posStore.products"
@@ -195,7 +214,8 @@ const quickAdd = (product) => {
   flex-direction: column;
   background-color: rgb(250, 250, 250);
   overflow: hidden;
-  min-height: 400px;
+  contain: strict;
+  position: relative;
 }
 
 .products-header {
@@ -206,8 +226,8 @@ const quickAdd = (product) => {
   top: 0;
   z-index: 2;
   flex-shrink: 0;
-  height: auto;
-  min-height: 140px;
+  height: 140px;
+  contain: layout size;
 }
 
 .products-content {
@@ -225,15 +245,22 @@ const quickAdd = (product) => {
 }
 
 .products-loading-state {
+  position: absolute;
+  top: 140px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
-  width: 100%;
+  background-color: rgb(250, 250, 250);
+  z-index: 1;
 }
 
 .products-grid {
-  min-height: 400px;
+  height: calc(100vh - 204px);
+  contain: layout size;
+  position: relative;
 }
 
 .products-empty-state {
