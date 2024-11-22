@@ -2,7 +2,7 @@
 <template>
   <div class="product-grid-container">
     <div class="product-grid-scroll">
-      <v-row class="product-grid ma-0">
+      <v-row class="product-grid ma-0" no-gutters align="start" justify="start">
         <v-col
           v-for="item in displayedProducts"
           :key="item.id"
@@ -188,12 +188,16 @@ const getImageUrl = (item) => {
 }
 
 .product-grid {
-  padding: 4px;
+  padding: 2px;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .product-grid-item {
-  padding: 4px;
+  padding: 2px;
+  margin-bottom: 0;
 }
 
 .product-card {
