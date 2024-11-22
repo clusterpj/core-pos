@@ -245,6 +245,7 @@
 import { ref, watch, computed } from 'vue'
 import { logger } from '../../../../utils/logger'
 import { useHeldOrders } from './composables/useHeldOrders'
+import { useInvoices } from './composables/useInvoices'
 import HeldOrdersFilters from './components/HeldOrdersFilters.vue'
 import HeldOrdersTable from './components/HeldOrdersTable.vue'
 import DeleteConfirmationDialog from './components/DeleteConfirmationDialog.vue'
@@ -290,7 +291,7 @@ const updateModelValue = (value) => {
 }
 
 const {
-  loading,
+  loading: holdOrdersLoading,
   loadingOrder,
   deletingOrder,
   convertingOrder,
@@ -310,6 +311,15 @@ const {
   handlePaymentComplete,
   clearOrderHistory
 } = useHeldOrders()
+
+const {
+  loading: invoicesLoading,
+  invoices,
+  error: invoicesError,
+  fetchInvoices
+} = useInvoices()
+
+const loading = computed(() => holdOrdersLoading || invoicesLoading)
 
 // Computed properties for active orders
 const activeOrders = computed(() => 
@@ -360,6 +370,9 @@ const filteredHistoryOrders = computed(() => {
 
   return filtered
 })
+
+// Computed property for filtered invoices
+const filteredInvoiceOrders = computed(() => invoices.value)
 
 const handleLoadOrder = async (invoice) => {
   logger.info('Loading order:', {
@@ -427,10 +440,33 @@ const confirmDelete = async () => {
   }
 }
 
-// Watch for dialog open to refresh the list
+// Watch for dialog open to refresh the lists
 watch(() => props.modelValue, async (newValue) => {
   if (newValue) {
-    await fetchHoldInvoices()
+    await Promise.all([
+      fetchHoldInvoices(),
+      fetchInvoices()
+    ])
+  }
+})
+
+// Watch for invoice tab activation
+watch(activeTab, async (newValue) => {
+  if (newValue === 'invoices') {
+    await fetchInvoices({
+      status: invoiceSelectedStatus.value !== 'ALL' ? invoiceSelectedStatus.value : '',
+      invoiceNumber: invoiceSearch.value
+    })
+  }
+})
+
+// Watch for invoice filters changes
+watch([invoiceSearch, invoiceSelectedType, invoiceSelectedStatus], async () => {
+  if (activeTab.value === 'invoices') {
+    await fetchInvoices({
+      status: invoiceSelectedStatus.value !== 'ALL' ? invoiceSelectedStatus.value : '',
+      invoiceNumber: invoiceSearch.value
+    })
   }
 })
 
