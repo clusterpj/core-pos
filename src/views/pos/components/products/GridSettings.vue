@@ -1,11 +1,16 @@
 <!-- src/views/pos/components/products/GridSettings.vue -->
 <template>
-  <div class="grid-settings">
+  <div class="grid-settings pa-4">
+    <v-card flat class="mb-6">
+      <v-card-text class="text-body-1">
+        Customize how products are displayed in your POS grid. Adjust the layout, number of items per row, and number of rows to optimize for your screen size and workflow.
+      </v-card-text>
+    </v-card>
     <v-slide-x-transition>
       <div class="d-flex align-center">
         <v-tooltip
           location="top"
-          text="Number of items to show in each row"
+          text="Set how many product cards appear in each row of the grid"
         >
           <template v-slot:activator="{ props }">
             <v-select
@@ -16,7 +21,7 @@
               density="compact"
               hide-details
               variant="outlined"
-              class="grid-select"
+              class="grid-select elevation-1"
               @update:model-value="updateColumns"
               bg-color="white"
               :menu-props="{ maxHeight: 200 }"
@@ -30,7 +35,7 @@
 
         <v-tooltip
           location="top"
-          text="Number of rows to display"
+          text="Set how many rows of products to display before pagination"
         >
           <template v-slot:activator="{ props }">
             <v-select
@@ -41,7 +46,7 @@
               density="compact"
               hide-details
               variant="outlined"
-              class="grid-select me-3 mb-2"
+              class="grid-select me-3 mb-2 elevation-1"
               @update:model-value="updateRows"
               bg-color="white"
               :menu-props="{ maxHeight: 200 }"
@@ -55,7 +60,7 @@
 
         <v-tooltip
           location="top"
-          text="Toggle between comfortable and compact view"
+          text="Choose how products are displayed: Large (spacious), Compact (smaller cards), or List view"
         >
           <template v-slot:activator="{ props }">
             <v-btn-toggle
@@ -64,7 +69,7 @@
               mandatory
               density="compact"
               rounded="lg"
-              class="grid-toggle mb-2"
+              class="grid-toggle mb-2 elevation-1"
               @update:model-value="updateLayout"
             >
               <v-btn

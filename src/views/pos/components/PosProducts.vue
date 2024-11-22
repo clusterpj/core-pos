@@ -34,12 +34,12 @@
 
               <v-dialog
                 v-model="showGridSettings"
-                max-width="700"
+                max-width="800"
                 transition="dialog-bottom-transition"
               >
                 <v-card>
-                  <v-card-title class="d-flex justify-space-between align-center pa-4">
-                    <span>Grid Display Settings</span>
+                  <v-card-title class="d-flex justify-space-between align-center pa-4 bg-primary text-white">
+                    <span class="text-h6">Grid Display Settings</span>
                     <v-btn
                       icon="mdi-close"
                       variant="text"
