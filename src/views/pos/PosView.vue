@@ -110,8 +110,8 @@
 
     <!-- Main Content -->
     <template v-if="companyStore.isConfigured">
-      <v-main class="pos-main">
-        <v-container fluid class="fill-height pa-0 pos-container">
+      <v-main class="pos-main pa-0">
+        <v-container fluid class="fill-height pos-container">
           <v-row no-gutters class="fill-height">
             <!-- Left Side - Cart -->
             <v-col 
