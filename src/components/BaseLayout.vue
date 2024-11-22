@@ -137,7 +137,7 @@
     </v-navigation-drawer>
 
 
-    <v-main>
+    <v-main class="main-content">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />
@@ -408,5 +408,10 @@ onMounted(async () => {
 .nav-item-container {
   position: relative;
   margin-bottom: 8px;
+}
+
+.main-content {
+  height: 100vh;
+  overflow: hidden;
 }
 </style>

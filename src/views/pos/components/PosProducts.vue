@@ -72,37 +72,40 @@
       </div>
 
       <v-container fluid class="products-content pa-0">
-        <!-- Loading State -->
-        <div v-if="posStore.loading.products" class="d-flex justify-center align-center" style="min-height: 200px;">
-          <v-progress-circular
-            indeterminate
-            color="primary"
-            size="32"
-          />
+        <div class="products-scroll-container">
+          <!-- Loading State with fixed dimensions -->
+          <div v-if="posStore.loading.products" class="products-loading-state">
+            <v-progress-circular
+              indeterminate
+              color="primary"
+              size="32"
+            />
+          </div>
+
+          <!-- Products Grid with minimum height -->
+          <template v-else>
+            <product-grid
+              v-if="posStore.products.length > 0"
+              :products="posStore.products"
+              :grid-settings="gridSettings"
+              @select="quickAdd"
+              class="products-grid"
+            />
+
+            <!-- Empty State with consistent height -->
+            <v-alert
+              v-else
+              type="info"
+              variant="tonal"
+              class="mx-4 products-empty-state"
+            >
+              <template v-slot:prepend>
+                <v-icon icon="mdi-information" />
+              </template>
+              No items found
+            </v-alert>
+          </template>
         </div>
-
-        <!-- Products Grid -->
-        <template v-else>
-          <product-grid
-            v-if="posStore.products.length > 0"
-            :products="posStore.products"
-            :grid-settings="gridSettings"
-            @select="quickAdd"
-          />
-
-          <!-- Empty State -->
-          <v-alert
-            v-else
-            type="info"
-            variant="tonal"
-            class="mx-4"
-          >
-            <template v-slot:prepend>
-              <v-icon icon="mdi-information" />
-            </template>
-            No items found
-          </v-alert>
-        </template>
       </v-container>
     </template>
   </div>
@@ -192,21 +195,7 @@ const quickAdd = (product) => {
   flex-direction: column;
   background-color: rgb(250, 250, 250);
   overflow: hidden;
-}
-
-@media (max-width: 600px) {
-  .pos-products-container {
-    max-height: calc(100vh - 96px); /* Account for mobile footer */
-  }
-  
-  .products-header .v-container {
-    padding: 8px;
-  }
-  
-  .grid-settings-btn {
-    min-width: auto;
-    padding: 0 12px;
-  }
+  min-height: 400px;
 }
 
 .products-header {
@@ -217,6 +206,41 @@ const quickAdd = (product) => {
   top: 0;
   z-index: 2;
   flex-shrink: 0;
+  height: auto;
+  min-height: 140px;
+}
+
+.products-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.products-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 200px;
+}
+
+.products-loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  width: 100%;
+}
+
+.products-grid {
+  min-height: 400px;
+}
+
+.products-empty-state {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-field {
@@ -228,14 +252,29 @@ const quickAdd = (product) => {
   min-width: 135px;
 }
 
-
-.products-content {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  padding: 16px 0;
+@media (max-width: 600px) {
+  .pos-products-container {
+    max-height: calc(100vh - 96px);
+    min-height: 300px;
+  }
+  
+  .products-header {
+    min-height: 120px;
+  }
+  
+  .products-loading-state,
+  .products-grid {
+    min-height: 300px;
+  }
+  
+  .products-header .v-container {
+    padding: 8px;
+  }
+  
+  .grid-settings-btn {
+    min-width: auto;
+    padding: 0 12px;
+  }
 }
 
 /* Tablet Optimizations */
