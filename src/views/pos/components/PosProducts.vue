@@ -237,6 +237,7 @@ const quickAdd = (product) => {
 }
 
 .products-grid {
+  width: 100%;
   min-height: calc(100vh - 204px);
   height: calc(100vh - 204px);
   contain: layout size style;

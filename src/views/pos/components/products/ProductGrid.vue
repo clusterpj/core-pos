@@ -3,10 +3,9 @@
   <div class="product-grid-container">
     <div class="product-grid-scroll">
       <v-row class="product-grid ma-0" no-gutters align="start" justify="start">
-        <v-col
+        <div
           v-for="item in displayedProducts"
           :key="item.id"
-          :cols="gridSettings.layout === 'list' ? 12 : 12 / gridSettings.columns"
           class="product-grid-item"
         >
           <v-card
@@ -190,8 +189,9 @@ const getImageUrl = (item) => {
 .product-grid {
   padding: 2px;
   height: 100%;
-  display: flex;
-  flex-wrap: wrap;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(v-bind(gridSettings.columns), 1fr);
   gap: 8px;
   align-content: flex-start;
 }
