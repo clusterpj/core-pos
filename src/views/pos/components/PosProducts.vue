@@ -71,7 +71,7 @@
         </v-container>
       </div>
 
-      <v-container fluid class="products-content pa-0">
+      <v-container fluid class="products-content pa-0" style="max-width: none;">
         <div class="products-scroll-container">
           <!-- Products Grid -->
           <product-grid

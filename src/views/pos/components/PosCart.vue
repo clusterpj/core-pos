@@ -1,6 +1,6 @@
 <!-- src/views/pos/components/PosCart.vue -->
 <template>
-  <div class="pos-cart-container">
+  <div class="pos-cart-container" style="max-width: none;">
     <v-card class="cart-header" flat>
       <v-toolbar
         density="comfortable"
