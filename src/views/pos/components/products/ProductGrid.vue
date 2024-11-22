@@ -2,7 +2,7 @@
 <template>
   <div class="product-grid-container">
     <div class="product-grid-scroll">
-      <v-row class="product-grid ma-0" no-gutters align="start" justify="start">
+      <div class="product-grid ma-0">
         <div
           v-for="item in displayedProducts"
           :key="item.id"
