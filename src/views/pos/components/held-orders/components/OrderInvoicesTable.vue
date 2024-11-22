@@ -15,7 +15,7 @@
     </v-row>
   </v-container>
 
-  <v-container class="px-2" v-else class="d-flex flex-column">
+  <v-container v-else class="px-2 d-flex flex-column">
     <v-table fixed-header height="550px" class="elevation-1 w-100">
       <thead>
         <tr>
