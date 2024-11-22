@@ -50,15 +50,30 @@ export function useInvoices() {
       if (invoiceNumber?.trim()) params.invoice_number = invoiceNumber.trim()
 
       const response = await apiClient.getPaginated('v1/invoices', { params })
+      
+      // Check if response exists and has the expected structure
+      if (!response || !response.data) {
+        throw new Error('Invalid response format from server')
+      }
 
-      invoices.value = response.data.data || []
+      // Handle both possible response formats
+      const invoiceData = Array.isArray(response.data) ? response.data : (response.data.data || [])
+      invoices.value = invoiceData
+      
       logger.info('Invoices fetched successfully:', invoices.value.length)
       return { success: true, data: invoices.value }
     } catch (err) {
       const errorResponse = handleApiError(err)
       error.value = errorResponse.message
-      logger.error('Failed to fetch invoices:', errorResponse)
-      return { success: false, error: errorResponse.message }
+      logger.error('Failed to fetch invoices:', {
+        error: errorResponse,
+        params: params
+      })
+      return { 
+        success: false, 
+        message: errorResponse.message || 'Failed to fetch invoices',
+        errors: errorResponse.errors || {}
+      }
     } finally {
       loading.value = false
     }
