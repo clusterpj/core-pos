@@ -39,16 +39,6 @@ export function useInvoices() {
         page
       })
 
-      // Only include essential params
-      const params = {
-        page,
-        limit
-      }
-      
-      // Add filters only if they have actual values
-      if (status && status !== 'ALL') params.status = status
-      if (invoiceNumber?.trim()) params.invoice_number = invoiceNumber.trim()
-
       const response = await apiClient.get('invoices?is_invoice_pos=1&limit=all')
       
       logger.debug('Raw API response:', {
