@@ -358,27 +358,12 @@ const operations = {
 
   // Hold Invoice Operations
   holdInvoice: {
+    async create(invoiceData) {
+      logger.startGroup('POS API: Create Hold Invoice')
+      try {
         const endpoint = getApiEndpoint('pos.holdInvoices')
         logger.info('Creating hold invoice at endpoint:', endpoint)
         logger.debug('Hold invoice data:', invoiceData)
->>>>>>> parent of d1d4d16 (fix: Update invoice endpoint from hold-invoices to invoices)
-
-        const response = await apiClient.post(endpoint, invoiceData)
-        logger.debug('Hold invoice response:', response.data)
-
-        return response.data
-      } catch (error) {
-        logger.error('Failed to create hold invoice', error)
-        throw error
-      } finally {
-        logger.endGroup()
-      }
-    },
-=======
-        const endpoint = getApiEndpoint('pos.holdInvoices')
-        logger.info('Creating hold invoice at endpoint:', endpoint)
-        logger.debug('Hold invoice data:', invoiceData)
->>>>>>> parent of d1d4d16 (fix: Update invoice endpoint from hold-invoices to invoices)
 
         const response = await apiClient.post(endpoint, invoiceData)
         logger.debug('Hold invoice response:', response.data)
