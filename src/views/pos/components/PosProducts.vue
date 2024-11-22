@@ -103,27 +103,6 @@
               size="32"
             />
           </div>
-            <product-grid
-              v-if="posStore.products.length > 0"
-              :products="posStore.products"
-              :grid-settings="gridSettings"
-              @select="quickAdd"
-              class="products-grid"
-            />
-
-            <!-- Empty State with consistent height -->
-            <v-alert
-              v-else
-              type="info"
-              variant="tonal"
-              class="mx-4 products-empty-state"
-            >
-              <template v-slot:prepend>
-                <v-icon icon="mdi-information" />
-              </template>
-              No items found
-            </v-alert>
-          </template>
         </div>
       </v-container>
     </template>
@@ -227,7 +206,7 @@ const quickAdd = (product) => {
   z-index: 2;
   flex-shrink: 0;
   height: 140px;
-  contain: layout size;
+  contain: layout size paint;
 }
 
 .products-content {
@@ -258,13 +237,14 @@ const quickAdd = (product) => {
 }
 
 .products-grid {
+  min-height: calc(100vh - 204px);
   height: calc(100vh - 204px);
-  contain: layout size;
+  contain: layout size style;
   position: relative;
 }
 
 .products-empty-state {
-  min-height: 200px;
+  height: calc(100vh - 204px);
   display: flex;
   align-items: center;
   justify-content: center;
