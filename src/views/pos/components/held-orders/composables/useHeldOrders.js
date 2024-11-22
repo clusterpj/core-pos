@@ -141,11 +141,39 @@ export function useHeldOrders() {
         throw new Error('Original hold invoice not found')
       }
 
-      // Move the order to history
-      const success = await moveToHistory(originalHoldInvoice.value)
+      // Create history entry with payment details
+      const historyEntry = {
+        ...originalHoldInvoice.value,
+        paid_status: 'PAID',
+        paid_at: new Date().toISOString(),
+        payment_details: paymentResult,
+        tables_selected: originalHoldInvoice.value.tables_selected || [],
+        hold_tables: originalHoldInvoice.value.hold_tables || []
+      }
+
+      // Add to history
+      orderHistory.value.unshift(historyEntry)
       
-      if (!success) {
-        throw new Error('Failed to move order to history')
+      // Persist to localStorage
+      try {
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(orderHistory.value))
+        logger.debug('Order history updated in localStorage')
+      } catch (storageError) {
+        logger.error('Failed to persist order history:', storageError)
+      }
+
+      // Delete the original order
+      const deleteSuccess = await deleteOrder(originalHoldInvoice.value.id)
+      if (!deleteSuccess) {
+        throw new Error('Failed to delete original order')
+      }
+
+      // Release any held tables
+      if (historyEntry.tables_selected?.length) {
+        await releaseTablesAfterPayment(historyEntry.tables_selected)
+      }
+      if (historyEntry.hold_tables?.length) {
+        await releaseTablesAfterPayment(historyEntry.hold_tables)
       }
       
       // Show success message
