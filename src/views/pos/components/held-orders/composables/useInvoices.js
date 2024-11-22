@@ -7,6 +7,11 @@ export function useInvoices() {
   const loading = ref(false)
   const invoices = ref([])
   const error = ref(null)
+  const pagination = ref({
+    total: 0,
+    currentPage: 1,
+    lastPage: 1
+  })
 
   const fetchInvoices = async ({
     customerId = '',
@@ -66,12 +71,15 @@ export function useInvoices() {
         }
       })
 
-      // Extract invoices from the nested structure
-      const invoiceData = response?.data?.invoices?.data || []
-
-      logger.debug('Extracted invoice data:', {
-        total: invoiceData.length,
-        sample: invoiceData[0] ? {
+      // Extract invoices and pagination data from the response
+      const { data: invoiceData, total, current_page, last_page } = response?.data?.invoices || {}
+      
+      logger.debug('Extracted API response data:', {
+        total,
+        currentPage: current_page,
+        lastPage: last_page,
+        dataCount: invoiceData?.length,
+        sample: invoiceData?.[0] ? {
           id: invoiceData[0].id,
           invoice_number: invoiceData[0].invoice_number,
           status: invoiceData[0].status,
@@ -79,7 +87,14 @@ export function useInvoices() {
         } : null
       })
 
-      invoices.value = invoiceData.map(invoice => ({
+      // Update pagination info
+      pagination.value = {
+        total: total || 0,
+        currentPage: current_page || 1,
+        lastPage: last_page || 1
+      }
+
+      invoices.value = (invoiceData || []).map(invoice => ({
         ...invoice,
         // Ensure required fields exist
         invoice_number: invoice.invoice_number || '-',
@@ -115,6 +130,7 @@ export function useInvoices() {
     loading,
     invoices,
     error,
+    pagination,
     fetchInvoices
   }
 }
