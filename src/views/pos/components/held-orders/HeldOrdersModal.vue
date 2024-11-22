@@ -560,11 +560,14 @@ watch(activeTab, async (newValue) => {
 })
 
 // Watch for invoice filters changes
-watch([invoiceSearch, invoiceSelectedType, invoiceSelectedStatus], async () => {
+watch([invoiceSearch, invoiceSelectedType, invoiceSelectedStatus, invoicePage], async () => {
   if (activeTab.value === 'invoices') {
     await fetchInvoices({
       status: invoiceSelectedStatus.value !== 'ALL' ? invoiceSelectedStatus.value : '',
-      invoiceNumber: invoiceSearch.value
+      invoiceNumber: invoiceSearch.value,
+      page: invoicePage.value,
+      orderByField: 'invoice_number',
+      orderBy: 'desc'
     })
   }
 })
