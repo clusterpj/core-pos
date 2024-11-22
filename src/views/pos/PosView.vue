@@ -1,6 +1,6 @@
 <!-- src/views/pos/PosView.vue -->
 <template>
-  <v-layout class="pos-layout fill-height" :class="{ 'mobile-layout': $vuetify.display.smAndDown }" style="min-width: 100vw; min-height: 100vh;">
+  <v-layout class="pos-layout fill-height" :class="{ 'mobile-layout': $vuetify.display.smAndDown }">
     <!-- Error Alert -->
     <v-alert
       v-if="error"
@@ -247,7 +247,10 @@ onMounted(async () => {
   max-height: 100vh !important;
   min-height: 100vh !important;
   overflow: hidden;
-  width: 100% !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .v-main--pos {
@@ -280,7 +283,10 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  width: 100% !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
   position: relative;
 }
 
