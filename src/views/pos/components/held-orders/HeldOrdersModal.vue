@@ -336,23 +336,42 @@ const filteredActiveOrders = computed(() => {
 
 // Computed properties for history orders
 const filteredHistoryOrders = computed(() => {
+  if (!Array.isArray(orderHistory.value)) {
+    logger.warn('Order history is not an array:', orderHistory.value)
+    return []
+  }
+
   let filtered = orderHistory.value
 
   if (historySelectedType.value !== 'ALL') {
-    filtered = filtered.filter(invoice => invoice.type === historySelectedType.value)
+    filtered = filtered.filter(invoice => 
+      invoice?.type === historySelectedType.value
+    )
   }
 
   if (historySelectedStatus.value !== 'ALL') {
-    filtered = filtered.filter(invoice => invoice.paid_status === historySelectedStatus.value)
+    filtered = filtered.filter(invoice => 
+      invoice?.paid_status === historySelectedStatus.value
+    )
   }
 
   if (historySearch.value) {
     const searchTerm = historySearch.value.toLowerCase()
     filtered = filtered.filter(invoice => 
-      invoice.description?.toLowerCase().includes(searchTerm) ||
-      invoice.id?.toString().includes(searchTerm)
+      invoice?.description?.toLowerCase().includes(searchTerm) ||
+      invoice?.id?.toString().includes(searchTerm)
     )
   }
+
+  logger.debug('Filtered history orders:', {
+    total: orderHistory.value.length,
+    filtered: filtered.length,
+    filters: {
+      type: historySelectedType.value,
+      status: historySelectedStatus.value,
+      search: historySearch.value
+    }
+  })
 
   return filtered
 })

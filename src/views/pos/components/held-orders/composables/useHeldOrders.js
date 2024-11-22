@@ -41,11 +41,24 @@ export function useHeldOrders() {
     try {
       const storedHistory = localStorage.getItem(HISTORY_STORAGE_KEY)
       if (storedHistory) {
-        orderHistory.value = JSON.parse(storedHistory)
-        logger.info('Initialized order history from localStorage:', orderHistory.value.length)
+        const parsedHistory = JSON.parse(storedHistory)
+        if (Array.isArray(parsedHistory)) {
+          orderHistory.value = parsedHistory
+          logger.info('Initialized order history from localStorage:', {
+            count: orderHistory.value.length,
+            firstItem: orderHistory.value[0]?.id
+          })
+        } else {
+          logger.warn('Stored history is not an array, initializing empty array')
+          orderHistory.value = []
+        }
+      } else {
+        orderHistory.value = []
+        logger.info('No stored history found, initialized empty array')
       }
     } catch (error) {
       logger.error('Failed to initialize order history from localStorage:', error)
+      orderHistory.value = []
     }
   }
 
