@@ -101,7 +101,8 @@
   
   <div v-if="showPagination" class="d-flex justify-center align-center mt-4">
     <v-pagination
-      v-model="page"
+      :model-value="page"
+      @update:model-value="$emit('update:page', $event)"
       :length="totalPages"
       :total-visible="7"
       rounded="circle"
@@ -164,7 +165,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['load', 'convert', 'delete'])
+const emit = defineEmits(['load', 'convert', 'delete', 'update:page'])
 
 const hasNotes = (invoice) => {
   const notes = parseOrderNotes(invoice.notes)
