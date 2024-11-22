@@ -51,25 +51,42 @@ export function useInvoices() {
 
       const response = await apiClient.getPaginated('invoices', { params })
       
-      logger.debug('Raw API response:', response)
+      logger.debug('Raw API response structure:', {
+        hasData: !!response?.data,
+        dataType: typeof response?.data,
+        isArray: Array.isArray(response?.data),
+        hasNestedInvoices: !!response?.data?.invoices,
+        hasNestedData: !!response?.data?.data,
+        keys: response?.data ? Object.keys(response.data) : [],
+        meta: response?.meta || response?.data?.meta || null
+      })
 
       // Handle different response formats
       let invoiceData = []
+      
       if (response?.data?.invoices?.data && Array.isArray(response.data.invoices.data)) {
-        // Handle the nested structure: { invoices: { data: [...] } }
+        logger.debug('Found nested invoices.data structure')
         invoiceData = response.data.invoices.data
       } else if (response?.data?.data && Array.isArray(response.data.data)) {
-        // Handle paginated format: { data: [...] }
+        logger.debug('Found paginated data structure')
         invoiceData = response.data.data
       } else if (Array.isArray(response?.data)) {
-        // Handle direct array format
+        logger.debug('Found direct array structure')
         invoiceData = response.data
       } else if (typeof response?.data === 'object') {
-        // If it's an object but not an array, try to extract values
-        invoiceData = Object.values(response.data).filter(item => 
-          item && typeof item === 'object' && item.id
-        )
+        logger.debug('Found object structure, attempting to extract invoice objects')
+        invoiceData = Object.values(response.data)
+          .filter(item => item && typeof item === 'object' && item.id)
       }
+
+      logger.debug('Extracted invoice data:', {
+        count: invoiceData.length,
+        sampleInvoice: invoiceData[0] ? {
+          id: invoiceData[0].id,
+          invoice_number: invoiceData[0].invoice_number,
+          type: invoiceData[0].type
+        } : null
+      })
 
       invoices.value = invoiceData
       
