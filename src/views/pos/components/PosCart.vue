@@ -204,6 +204,8 @@ const editItem = (item, index) => {
   overflow: hidden;
   width: 100% !important;
   padding: 1rem;
+  position: relative;
+  contain: strict;
 }
 
 .cart-header {
@@ -253,11 +255,14 @@ const editItem = (item, index) => {
 /* Mobile Optimizations */
 @media (max-width: 600px) {
   .pos-cart-container {
-    height: calc(50vh - 44px); /* Account for footer height */
+    height: calc(50vh - 32px); /* Account for footer height */
+    min-height: 300px;
+    max-height: calc(100vh - 64px);
   }
 
   .cart-scrollable-content {
-    height: calc(100% - 120px); /* Adjust for mobile header + summary */
+    height: calc(100% - 100px); /* Adjust for mobile header + summary */
+    min-height: 200px;
   }
 }
 

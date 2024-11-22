@@ -306,15 +306,16 @@ onMounted(async () => {
 
 @media (max-width: 600px) {
   :deep(.v-main) {
-    height: calc(100% - 88px);
-    margin-bottom: 88px;
+    height: calc(100% - 64px);
+    margin-bottom: 64px;
   }
 
   .pos-cart-mobile .cart-container, 
   .pos-products-mobile .products-container {
     height: 50vh;
-    max-height: calc(100vh - 176px);
+    max-height: calc(100vh - 128px);
     overflow-y: auto;
+    position: relative;
   }
 
   .pos-cart-mobile {
