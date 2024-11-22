@@ -1,6 +1,21 @@
 <!-- src/views/pos/components/held-orders/components/OrderInvoicesTable.vue -->
 <template>
-  <v-container class="px-2">
+  <v-container class="px-2" v-if="loading">
+    <v-skeleton-loader
+      type="table-heading, table-row-divider, table-row@6"
+      class="mx-auto"
+    ></v-skeleton-loader>
+  </v-container>
+  
+  <v-container class="px-2" v-else-if="!invoices.length">
+    <v-row>
+      <v-col cols="12" class="text-center">
+        <p>No invoices found</p>
+      </v-col>
+    </v-row>
+  </v-container>
+
+  <v-container class="px-2" v-else>
     <v-table fixed-header height="600px" class="elevation-1 w-100">
       <thead>
         <tr>
@@ -58,7 +73,13 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
+  loading: {
+    type: Boolean,
+    default: false
+  },
   invoices: {
     type: Array,
     required: true

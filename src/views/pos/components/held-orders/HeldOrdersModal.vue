@@ -208,17 +208,14 @@
                   />
                 </v-container>
 
-                <v-row>
-                  <v-col cols="12">
-                    <OrderInvoicesTable
-                      :invoices="filteredInvoiceOrders"
-                      :getOrderType="getOrderType"
-                      :getOrderTypeColor="getOrderTypeColor"
-                      :formatDate="formatDate"
-                      :formatCurrency="formatCurrency"
-                    />
-                  </v-col>
-                </v-row>
+                <OrderInvoicesTable
+                  :loading="invoicesLoading"
+                  :invoices="filteredInvoiceOrders"
+                  :getOrderType="getOrderType"
+                  :getOrderTypeColor="getOrderTypeColor"
+                  :formatDate="formatDate"
+                  :formatCurrency="formatCurrency"
+                />
               </v-window-item>
             </v-window>
           </v-container>
