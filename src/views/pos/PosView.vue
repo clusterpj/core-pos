@@ -275,12 +275,13 @@ onMounted(async () => {
 }
 
 .pos-container {
-  height: calc(100vh - 88px) !important;
-  min-height: calc(100vh - 88px) !important;
+  height: calc(100vh - 64px) !important;
+  min-height: calc(100vh - 64px) !important;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   width: 100% !important;
+  position: relative;
 }
 
 .pos-main {
