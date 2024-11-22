@@ -49,7 +49,7 @@ export function useInvoices() {
       if (status && status !== 'ALL') params.status = status
       if (invoiceNumber?.trim()) params.invoice_number = invoiceNumber.trim()
 
-      const response = await apiClient.getPaginated('v1/invoices', { params })
+      const response = await apiClient.getPaginated('invoices', { params })
       
       // Check if response exists and has the expected structure
       if (!response || !response.data) {
