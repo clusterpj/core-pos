@@ -362,7 +362,11 @@ const filteredHistoryOrders = computed(() => {
     return []
   }
 
-  let filtered = orderHistory.value
+  // Start with completed/paid orders only
+  let filtered = orderHistory.value.filter(invoice => 
+    invoice?.paid_status === PaidStatus.PAID || 
+    invoice?.status === 'PAID'
+  )
 
   if (historySelectedType.value !== 'ALL') {
     filtered = filtered.filter(invoice => 
@@ -372,7 +376,8 @@ const filteredHistoryOrders = computed(() => {
 
   if (historySelectedStatus.value !== 'ALL') {
     filtered = filtered.filter(invoice => 
-      invoice?.paid_status === historySelectedStatus.value
+      invoice?.paid_status === historySelectedStatus.value ||
+      invoice?.status === historySelectedStatus.value
     )
   }
 
@@ -380,9 +385,17 @@ const filteredHistoryOrders = computed(() => {
     const searchTerm = historySearch.value.toLowerCase()
     filtered = filtered.filter(invoice => 
       invoice?.description?.toLowerCase().includes(searchTerm) ||
-      invoice?.id?.toString().includes(searchTerm)
+      invoice?.id?.toString().includes(searchTerm) ||
+      invoice?.invoice_number?.toLowerCase().includes(searchTerm)
     )
   }
+
+  // Sort by most recent first
+  filtered.sort((a, b) => {
+    const dateA = new Date(a.paid_at || a.created_at)
+    const dateB = new Date(b.paid_at || b.created_at)
+    return dateB - dateA
+  })
 
   // Calculate pagination
   const startIndex = (historyPage.value - 1) * historyItemsPerPage.value

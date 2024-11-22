@@ -6,8 +6,8 @@
       <tr>
         <th class="text-left" style="min-width: 100px">Type</th>
         <th class="text-left" style="min-width: 200px">Description</th>
-        <th class="text-left" style="min-width: 120px">Created</th>
-        <th v-if="hideActions" class="text-left" style="min-width: 120px">Paid</th>
+        <th class="text-left" style="min-width: 120px">Created At</th>
+        <th class="text-left" style="min-width: 120px">Paid At</th>
         <th class="text-left" style="min-width: 100px">Items</th>
         <th class="text-left" style="min-width: 120px">Total</th>
         <th class="text-left" style="min-width: 100px">Status</th>
