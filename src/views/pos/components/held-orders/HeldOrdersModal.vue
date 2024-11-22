@@ -75,6 +75,18 @@
                 ></v-icon>
                 Order History
               </v-tab>
+              <v-tab
+                value="invoices"
+                class="text-subtitle-1"
+                :class="{ 'px-6': !$vuetify.display.mobile }"
+              >
+                <v-icon
+                  start
+                  :icon="activeTab === 'invoices' ? 'mdi-file-document' : 'mdi-file-document-outline'"
+                  class="mr-2"
+                ></v-icon>
+                Order Invoices
+              </v-tab>
             </v-tabs>
 
             <v-window v-model="activeTab" class="mt-6">
@@ -181,6 +193,33 @@
                   </v-row>
                 </template>
               </v-window-item>
+
+              <!-- Order Invoices Tab -->
+              <v-window-item value="invoices">
+                <v-container class="px-2 pb-2">
+                  <HeldOrdersFilters
+                    :search="invoiceSearch"
+                    :selectedType="invoiceSelectedType"
+                    :selectedStatus="invoiceSelectedStatus"
+                    :orderTypes="orderTypes"
+                    @update:search="invoiceSearch = $event"
+                    @update:selectedType="invoiceSelectedType = $event"
+                    @update:selectedStatus="invoiceSelectedStatus = $event"
+                  />
+                </v-container>
+
+                <v-row>
+                  <v-col cols="12">
+                    <OrderInvoicesTable
+                      :invoices="filteredInvoiceOrders"
+                      :getOrderType="getOrderType"
+                      :getOrderTypeColor="getOrderTypeColor"
+                      :formatDate="formatDate"
+                      :formatCurrency="formatCurrency"
+                    />
+                  </v-col>
+                </v-row>
+              </v-window-item>
             </v-window>
           </v-container>
         </v-card-text>
@@ -210,6 +249,7 @@ import HeldOrdersFilters from './components/HeldOrdersFilters.vue'
 import HeldOrdersTable from './components/HeldOrdersTable.vue'
 import DeleteConfirmationDialog from './components/DeleteConfirmationDialog.vue'
 import PaymentDialog from '../dialogs/PaymentDialog.vue'
+import OrderInvoicesTable from './components/OrderInvoicesTable.vue'
 import { PaidStatus } from '../../../../types/order'
 
 const props = defineProps({
@@ -239,6 +279,11 @@ const selectedStatus = ref('ALL')
 const historySearch = ref('')
 const historySelectedType = ref('ALL')
 const historySelectedStatus = ref('ALL')
+
+// Invoice filters
+const invoiceSearch = ref('')
+const invoiceSelectedType = ref('ALL')
+const invoiceSelectedStatus = ref('ALL')
 
 const updateModelValue = (value) => {
   emit('update:model-value', value)
