@@ -49,52 +49,44 @@ export function useInvoices() {
       if (status && status !== 'ALL') params.status = status
       if (invoiceNumber?.trim()) params.invoice_number = invoiceNumber.trim()
 
-      const response = await apiClient.getPaginated('invoices', { params })
+      const response = await apiClient.get('v1/invoices', { params })
       
-      logger.debug('Raw API response structure:', {
+      logger.debug('Raw API response:', {
+        status: response?.status,
         hasData: !!response?.data,
-        dataType: typeof response?.data,
-        isArray: Array.isArray(response?.data),
-        hasNestedInvoices: !!response?.data?.invoices,
-        hasNestedData: !!response?.data?.data,
-        keys: response?.data ? Object.keys(response.data) : [],
-        meta: response?.meta || response?.data?.meta || null
+        dataStructure: {
+          hasInvoices: !!response?.data?.invoices,
+          hasInvoicesData: !!response?.data?.invoices?.data,
+          invoicesDataType: typeof response?.data?.invoices?.data
+        }
       })
 
-      // Handle different response formats
-      let invoiceData = []
-      
-      if (response?.data?.invoices?.data && Array.isArray(response.data.invoices.data)) {
-        logger.debug('Found nested invoices.data structure')
-        invoiceData = response.data.invoices.data
-      } else if (response?.data?.data && Array.isArray(response.data.data)) {
-        logger.debug('Found paginated data structure')
-        invoiceData = response.data.data
-      } else if (Array.isArray(response?.data)) {
-        logger.debug('Found direct array structure')
-        invoiceData = response.data
-      } else if (typeof response?.data === 'object') {
-        logger.debug('Found object structure, attempting to extract invoice objects')
-        invoiceData = Object.values(response.data)
-          .filter(item => item && typeof item === 'object' && item.id)
-      }
+      // Extract invoices from the nested structure
+      const invoiceData = response?.data?.invoices?.data || []
 
       logger.debug('Extracted invoice data:', {
-        count: invoiceData.length,
-        sampleInvoice: invoiceData[0] ? {
+        total: invoiceData.length,
+        sample: invoiceData[0] ? {
           id: invoiceData[0].id,
           invoice_number: invoiceData[0].invoice_number,
-          type: invoiceData[0].type
+          status: invoiceData[0].status,
+          paid_status: invoiceData[0].paid_status
         } : null
       })
 
-      invoices.value = invoiceData
+      invoices.value = invoiceData.map(invoice => ({
+        ...invoice,
+        // Ensure required fields exist
+        invoice_number: invoice.invoice_number || '-',
+        status: invoice.status || 'PENDING',
+        paid_status: invoice.paid_status || 'UNPAID',
+        total: Number(invoice.total || 0),
+        customer: invoice.customer || { name: 'Walk-in Customer' }
+      }))
       
       logger.info('Invoices fetched successfully:', {
-        total: invoiceData.length,
-        firstInvoice: invoiceData[0]?.id,
-        format: Array.isArray(response.data) ? 'array' : 
-                (response.data?.data ? 'paginated' : 'object')
+        total: invoices.value.length,
+        firstInvoice: invoices.value[0]?.id
       })
       return { success: true, data: invoices.value }
     } catch (err) {
