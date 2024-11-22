@@ -190,9 +190,10 @@ const getImageUrl = (item) => {
 .product-grid {
   padding: 2px;
   height: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(0, 1fr));
+  gap: 4px;
+  align-content: start;
 }
 
 .product-grid-item {

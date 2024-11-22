@@ -242,9 +242,9 @@ const quickAdd = (product) => {
   contain: layout size style;
   position: relative;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
+  flex-direction: column;
   overflow-y: auto;
+  padding: 4px;
 }
 
 .products-empty-state {
