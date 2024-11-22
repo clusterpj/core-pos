@@ -39,25 +39,17 @@ export function useInvoices() {
         page
       })
 
-      // Build params object only with defined values
-      const params = {}
+      // Only include essential params
+      const params = {
+        page,
+        limit
+      }
       
-      if (customerId) params.customer_id = customerId
-      if (status) params.status = status
-      if (fromDate) params.from_date = fromDate
-      if (toDate) params.to_date = toDate
-      if (invoiceNumber) params.invoice_number = invoiceNumber
-      if (customcode) params.customcode = customcode
-      if (unit) params.unit = unit
-      if (orderByField) params.order_by_field = orderByField
-      if (orderBy) params.order_by = orderBy
-      
-      // Add required params
-      params.v2 = true
-      params.page = page
-      params.limit = limit
+      // Add filters only if they have actual values
+      if (status && status !== 'ALL') params.status = status
+      if (invoiceNumber?.trim()) params.invoice_number = invoiceNumber.trim()
 
-      const response = await apiClient.getPaginated('/api/v1/invoices', { params })
+      const response = await apiClient.getPaginated('v1/invoices', { params })
 
       invoices.value = response.data.data || []
       logger.info('Invoices fetched successfully:', invoices.value.length)
