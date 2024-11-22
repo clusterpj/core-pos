@@ -39,22 +39,25 @@ export function useInvoices() {
         page
       })
 
-      const response = await apiClient.getPaginated('/api/v1/invoices', {
-        params: {
-          customer_id: customerId,
-          status,
-          from_date: fromDate,
-          to_date: toDate,
-          invoice_number: invoiceNumber,
-          customcode,
-          unit,
-          order_by_field: orderByField,
-          order_by: orderBy,
-          v2: true,
-          page,
-          limit
-        }
-      })
+      // Build params object only with defined values
+      const params = {}
+      
+      if (customerId) params.customer_id = customerId
+      if (status) params.status = status
+      if (fromDate) params.from_date = fromDate
+      if (toDate) params.to_date = toDate
+      if (invoiceNumber) params.invoice_number = invoiceNumber
+      if (customcode) params.customcode = customcode
+      if (unit) params.unit = unit
+      if (orderByField) params.order_by_field = orderByField
+      if (orderBy) params.order_by = orderBy
+      
+      // Add required params
+      params.v2 = true
+      params.page = page
+      params.limit = limit
+
+      const response = await apiClient.getPaginated('/api/v1/invoices', { params })
 
       invoices.value = response.data.data || []
       logger.info('Invoices fetched successfully:', invoices.value.length)
