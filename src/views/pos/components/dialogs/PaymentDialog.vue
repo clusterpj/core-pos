@@ -666,7 +666,7 @@ const processPayment = async () => {
     if (invoiceData.is_hold_invoice) {
       console.log('PaymentDialog: Processing hold invoice conversion')
       
-      // Process hold invoice using the converter
+      // First convert the hold invoice to a regular invoice
       const holdInvoice = {
         ...invoiceData,
         tip: String(Math.round(tipPercentage)),
@@ -685,15 +685,30 @@ const processPayment = async () => {
         throw new Error(invoiceResult.error || 'Failed to create invoice from hold order')
       }
 
+      // Log the conversion result
       console.log('Hold invoice converted successfully:', {
-        originalId: holdInvoice.id,
-        newInvoiceId: invoiceResult.invoice.id
+        holdInvoiceId: holdInvoice.id,
+        newInvoiceId: invoiceResult.invoice.id,
+        invoiceNumber: invoiceResult.invoice.invoice_number
       })
 
-      // Structure the final invoice with the required nested invoice property
+      // Structure the final invoice with the new invoice data
       finalInvoice = {
-        invoice: invoiceResult.invoice,
-        hold_invoice_id: holdInvoice.id // Preserve the original hold invoice ID
+        invoice: {
+          ...invoiceResult.invoice,
+          // Ensure we use the new invoice ID and number
+          id: invoiceResult.invoice.id,
+          invoice_number: invoiceResult.invoice.invoice_number,
+          // Preserve reference to original hold invoice
+          hold_invoice_id: holdInvoice.id,
+          // Include payment-specific fields
+          tip: String(Math.round(tipPercentage)),
+          tip_type: "percentage",
+          tip_val: tipAmount.value,
+          total: totalWithTip,
+          due_amount: totalWithTip,
+          sub_total: invoiceTotal.value
+        }
       }
     } else {
       // Process regular invoice
