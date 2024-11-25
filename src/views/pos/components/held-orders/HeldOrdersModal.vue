@@ -499,13 +499,14 @@ watch(activeTab, async (newValue) => {
 })
 
 // Watch for delivery filters changes
-watch([deliverySearch, deliverySelectedType, deliverySelectedStatus, deliveryPage], async () => {
+watch([deliverySearch, deliverySelectedType, deliverySelectedStatus, deliverySelectedPaymentStatus, deliveryPage], async () => {
   if (activeTab.value === 'delivery') {
     deliveryLoading.value = true
     try {
       await fetchInvoices({
         type: ['DELIVERY', 'PICKUP'],
         status: deliverySelectedStatus.value !== 'ALL' ? deliverySelectedStatus.value : '',
+        paid_status: deliverySelectedPaymentStatus.value !== 'ALL' ? deliverySelectedPaymentStatus.value : '',
         invoiceNumber: deliverySearch.value,
         page: deliveryPage.value,
         orderByField: 'invoice_number',
