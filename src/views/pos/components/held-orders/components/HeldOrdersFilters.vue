@@ -1,56 +1,73 @@
 <!-- src/views/pos/components/held-orders/components/HeldOrdersFilters.vue -->
 <template>
   <v-row>
-    <!-- Search Field -->
-    <v-col cols="12" sm="4">
-      <v-text-field
-        :model-value="search"
-        @update:model-value="$emit('update:search', $event)"
-        label="Search orders"
-        prepend-inner-icon="mdi-magnify"
-        variant="outlined"
-        density="comfortable"
-      ></v-text-field>
-    </v-col>
-    
-    <!-- Type Filter -->
-    <v-col cols="12" sm="4">
-      <v-select
-        :model-value="selectedType"
-        @update:model-value="$emit('update:selectedType', $event)"
-        :items="orderTypes"
-        label="Filter by type"
-        variant="outlined"
-        density="comfortable"
-        prepend-inner-icon="mdi-filter"
-      ></v-select>
-    </v-col>
+    <template v-if="mode === 'active'">
+      <!-- Only Type Filter for DINE IN/TOGO -->
+      <v-col cols="12" sm="4">
+        <v-select
+          :model-value="selectedType"
+          @update:model-value="$emit('update:selectedType', $event)"
+          :items="orderTypes"
+          label="Filter by type"
+          variant="outlined"
+          density="comfortable"
+          prepend-inner-icon="mdi-filter"
+        ></v-select>
+      </v-col>
+    </template>
 
-    <!-- Status Filter -->
-    <v-col cols="12" sm="4">
-      <v-select
-        :model-value="selectedStatus"
-        @update:model-value="$emit('update:selectedStatus', $event)"
-        :items="statusTypes"
-        label="Filter by status"
-        variant="outlined"
-        density="comfortable"
-        prepend-inner-icon="mdi-filter-variant"
-      ></v-select>
-    </v-col>
+    <template v-else>
+      <!-- Search Field -->
+      <v-col cols="12" sm="4">
+        <v-text-field
+          :model-value="search"
+          @update:model-value="$emit('update:search', $event)"
+          label="Search orders"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+        ></v-text-field>
+      </v-col>
+      
+      <!-- Type Filter -->
+      <v-col cols="12" sm="4">
+        <v-select
+          :model-value="selectedType"
+          @update:model-value="$emit('update:selectedType', $event)"
+          :items="orderTypes"
+          label="Filter by type"
+          variant="outlined"
+          density="comfortable"
+          prepend-inner-icon="mdi-filter"
+        ></v-select>
+      </v-col>
 
-    <!-- Payment Status Filter -->
-    <v-col cols="12" sm="4">
-      <v-select
-        :model-value="selectedPaymentStatus"
-        @update:model-value="$emit('update:selectedPaymentStatus', $event)"
-        :items="paymentStatusTypes"
-        label="Filter by payment status"
-        variant="outlined"
-        density="comfortable"
-        prepend-inner-icon="mdi-cash-multiple"
-      ></v-select>
-    </v-col>
+      <!-- Status Filter -->
+      <v-col cols="12" sm="4">
+        <v-select
+          :model-value="selectedStatus"
+          @update:model-value="$emit('update:selectedStatus', $event)"
+          :items="statusTypes"
+          label="Filter by status"
+          variant="outlined"
+          density="comfortable"
+          prepend-inner-icon="mdi-filter-variant"
+        ></v-select>
+      </v-col>
+
+      <!-- Payment Status Filter -->
+      <v-col cols="12" sm="4">
+        <v-select
+          :model-value="selectedPaymentStatus"
+          @update:model-value="$emit('update:selectedPaymentStatus', $event)"
+          :items="paymentStatusTypes"
+          label="Filter by payment status"
+          variant="outlined"
+          density="comfortable"
+          prepend-inner-icon="mdi-cash-multiple"
+        ></v-select>
+      </v-col>
+    </template>
   </v-row>
 </template>
 
