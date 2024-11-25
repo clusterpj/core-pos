@@ -111,6 +111,7 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { parseOrderNotes } from '../../../../../stores/cart/helpers'
 
 const props = defineProps({
