@@ -25,6 +25,7 @@
           <th class="text-left" style="min-width: 120px">Status</th>
           <th class="text-left" style="min-width: 120px">Payment Status</th>
           <th class="text-right" style="min-width: 150px">Total</th>
+          <th class="text-center" style="min-width: 100px">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -55,6 +56,18 @@
           <td class="text-right">
             {{ invoice?.total ? formatCurrency(invoice.total / 100) : formatCurrency(0) }}
           </td>
+          <td class="text-center">
+            <v-btn
+              v-if="invoice.paid_status === 'UNPAID'"
+              color="success"
+              size="small"
+              variant="elevated"
+              @click="handlePayClick(invoice)"
+            >
+              <v-icon size="small" class="mr-1">mdi-cash-register</v-icon>
+              Pay
+            </v-btn>
+          </td>
         </tr>
       </tbody>
     </v-table>
@@ -69,10 +82,49 @@
       ></v-pagination>
     </div>
   </v-container>
+  <!-- Payment Confirmation Dialog -->
+  <v-dialog v-model="showConfirmDialog" max-width="400">
+    <v-card>
+      <v-card-title class="text-h6">
+        Confirm Payment
+      </v-card-title>
+      <v-card-text>
+        Are you sure you want to process payment for invoice #{{ selectedInvoice?.invoice_number }}?
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn
+          color="grey-darken-1"
+          variant="text"
+          @click="showConfirmDialog = false"
+        >
+          Cancel
+        </v-btn>
+        <v-btn
+          color="success"
+          @click="confirmPayment"
+        >
+          Proceed to Payment
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Payment Dialog -->
+  <PaymentDialog
+    v-model="showPaymentDialog"
+    :invoice="{
+      invoice: selectedInvoice,
+      invoicePrefix: selectedInvoice?.invoice_prefix || 'INV',
+      nextInvoiceNumber: selectedInvoice?.id
+    }"
+    @payment-complete="handlePaymentComplete"
+  />
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import PaymentDialog from '../../../dialogs/PaymentDialog.vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps({
   loading: {
@@ -148,9 +200,29 @@ const getPaidStatusColor = (status) => {
   }
 }
 
-const viewInvoice = (invoice) => {
-  // TODO: Implement invoice viewing functionality
-  console.log('Viewing invoice:', invoice)
+// Payment Dialog
+const showPaymentDialog = ref(false)
+const showConfirmDialog = ref(false)
+const selectedInvoice = ref(null)
+
+const handlePayClick = (invoice) => {
+  selectedInvoice.value = invoice
+  showConfirmDialog.value = true
+}
+
+const confirmPayment = () => {
+  showConfirmDialog.value = false
+  showPaymentDialog.value = true
+}
+
+const handlePaymentComplete = async (result) => {
+  showPaymentDialog.value = false
+  selectedInvoice.value = null
+  if (result) {
+    window.toastr?.['success']('Payment processed successfully')
+    // Emit refresh event
+    emit('refresh')
+  }
 }
 </script>
 

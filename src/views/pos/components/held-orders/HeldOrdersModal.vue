@@ -160,6 +160,7 @@
                   :page="deliveryPage"
                   :totalPages="totalDeliveryPages"
                   @update:page="deliveryPage = $event"
+                  @refresh="fetchInvoices()"
                 />
               </v-window-item>
 
@@ -191,6 +192,7 @@
                   :page="invoicePage"
                   :totalPages="totalInvoicePages"
                   @update:page="invoicePage = $event"
+                  @refresh="fetchInvoices()"
                 />
               </v-window-item>
             </v-window>
