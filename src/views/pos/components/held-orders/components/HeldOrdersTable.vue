@@ -4,14 +4,13 @@
     <v-table fixed-header height="600px" class="elevation-1 w-100">
     <thead>
       <tr>
-        <th class="text-left" style="min-width: 100px">Type</th>
+        <th class="text-left" style="min-width: 120px">Order Type</th>
         <th class="text-left" style="min-width: 200px">Description</th>
-        <th class="text-left" style="min-width: 120px">Created At</th>
-        <th class="text-left" style="min-width: 120px">Paid At</th>
+        <th class="text-left" style="min-width: 150px">Created</th>
         <th class="text-left" style="min-width: 100px">Items</th>
-        <th class="text-left" style="min-width: 120px">Total</th>
-        <th class="text-left" style="min-width: 100px">Status</th>
-        <th v-if="!hideActions" class="text-left" style="min-width: 300px">Actions</th>
+        <th class="text-right" style="min-width: 120px">Total</th>
+        <th class="text-left" style="min-width: 120px">Status</th>
+        <th v-if="!hideActions" class="text-center" style="min-width: 300px">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -20,6 +19,7 @@
           <v-chip
             :color="getOrderTypeColor(getOrderType(invoice))"
             size="small"
+            class="text-uppercase"
           >
             {{ getOrderType(invoice) }}
           </v-chip>
@@ -46,9 +46,8 @@
           </v-tooltip>
         </td>
         <td>{{ formatDate(invoice.created_at) }}</td>
-        <td v-if="hideActions">{{ formatDate(invoice.paid_at) }}</td>
-        <td>{{ invoice.hold_items?.length || 0 }} items</td>
-        <td>{{ formatCurrency(invoice.total / 100) }}</td>
+        <td class="text-center">{{ invoice.hold_items?.length || 0 }}</td>
+        <td class="text-right">{{ formatCurrency(invoice.total / 100) }}</td>
         <td>
           <v-chip
             :color="getStatusColor(invoice.paid_status)"
@@ -58,7 +57,7 @@
             {{ invoice.paid_status || 'UNPAID' }}
           </v-chip>
         </td>
-        <td v-if="!hideActions">
+        <td v-if="!hideActions" class="text-center">
           <div class="d-flex gap-2">
             <v-btn
               size="small"
