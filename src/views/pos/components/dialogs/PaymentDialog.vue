@@ -772,11 +772,18 @@ const processPayment = async () => {
     
     // Ensure we have the correct invoice ID and number
     const invoiceId = finalInvoice.invoice?.id || finalInvoice.id
-    const invoiceNumber = finalInvoice.invoice?.invoice_number || finalInvoice.invoice_number
+    const invoiceNumber = finalInvoice.invoice?.invoice_number || finalInvoice.invoice_number || invoiceId
     
     if (!invoiceId) {
       throw new Error('Invalid invoice: missing ID')
     }
+
+    console.log('Processing payment with:', {
+      invoiceId,
+      invoiceNumber,
+      finalInvoice,
+      payments: formattedPayments
+    })
 
     // Create payment with the correct invoice reference
     const result = await createPayment({
