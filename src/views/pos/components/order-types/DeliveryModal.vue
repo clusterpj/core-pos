@@ -339,12 +339,18 @@ const onCustomerSearch = async (search) => {
       const customers = response.data.customers?.data || []
       
       // Update the search results with properly formatted data for v-autocomplete
-      searchResults.value = customers.map(customer => ({
-        ...customer,
-        title: customer.name || customer.customer_username || 'Unknown',
-        subtitle: `${customer.phone || 'No phone'}${customer.email ? ` • ${customer.email}` : ''}`,
-        value: customer.id
-      }))
+      searchResults.value = customers.map(customer => {
+        const displayName = customer.name || customer.customer_username || 'Unknown'
+        const displayPhone = customer.phone ? customer.phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') : 'No phone'
+        const displayEmail = customer.email ? ` • ${customer.email}` : ''
+        
+        return {
+          ...customer,
+          title: isPhoneSearch ? `${displayPhone} - ${displayName}` : displayName,
+          subtitle: isPhoneSearch ? displayEmail : `${displayPhone}${displayEmail}`,
+          value: customer.id
+        }
+      })
       
       logger.debug('Customer search results:', {
         searchTerm,
