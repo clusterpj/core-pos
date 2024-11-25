@@ -616,20 +616,20 @@ const processOrder = async () => {
       invoice_date: currentDate.toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
       invoice_number: `DEL-${Date.now()}`, // Temporary invoice number
-      sub_total: Math.round(Number(cartStore.subtotal) || 0),
-      total: Math.round(Number(cartStore.total) || 0),
-      tax: Math.round(Number(cartStore.taxAmount) || 0),
+      sub_total: Math.round(Number(cartStore.subtotal * 100) || 0),
+      total: Math.round(Number(cartStore.total * 100) || 0),
+      tax: Math.round(Number(cartStore.taxAmount * 100) || 0),
       send_sms: sendSms.value ? 1 : 0,
       items: cartStore.items.map(item => ({
         item_id: item.id,
         name: item.name,
         description: item.description || '',
-        price: Math.round(Number(item.price) || 0),
+        price: Math.round(Number(item.price * 100) || 0),
         quantity: Math.round(Number(item.quantity) || 1),
         unit_name: item.unit_name || 'units',
-        sub_total: Math.round(Number(item.subtotal) || 0),
-        total: Math.round(Number(item.total) || 0),
-        tax: Math.round(Number(item.tax) || 0)
+        sub_total: Math.round(Number(item.subtotal * 100) || 0),
+        total: Math.round(Number(item.total * 100) || 0),
+        tax: Math.round(Number(item.tax * 100) || 0)
       })),
 
       // Boolean flags
