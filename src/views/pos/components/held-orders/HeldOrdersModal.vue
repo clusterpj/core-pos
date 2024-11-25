@@ -85,7 +85,7 @@
                   :icon="activeTab === 'invoices' ? 'mdi-file-document' : 'mdi-file-document-outline'"
                   class="mr-2"
                 ></v-icon>
-                Order Invoices
+                ORDER HISTORY
               </v-tab>
             </v-tabs>
 
