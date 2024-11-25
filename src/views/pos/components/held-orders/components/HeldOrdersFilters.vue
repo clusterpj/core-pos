@@ -42,15 +42,9 @@
 </template>
 
 <script setup>
-import { PaidStatus } from '../../../../../types/order'
+import { PaidStatus, InvoiceStatus } from '../../../../../types/order'
 
-const statusTypes = [
-  { title: 'All Status', value: 'ALL' },
-  { title: 'Paid', value: PaidStatus.PAID },
-  { title: 'Unpaid', value: PaidStatus.UNPAID }
-]
-
-defineProps({
+const props = defineProps({
   search: {
     type: String,
     required: true
@@ -67,6 +61,35 @@ defineProps({
   orderTypes: {
     type: Array,
     required: true
+  },
+  mode: {
+    type: String,
+    default: 'active', // 'active', 'delivery', or 'history'
+    required: false
+  }
+})
+
+const statusTypes = computed(() => {
+  switch (props.mode) {
+    case 'active':
+      return [
+        { title: 'All Status', value: 'ALL' },
+        { title: 'Paid', value: PaidStatus.PAID },
+        { title: 'Unpaid', value: PaidStatus.UNPAID }
+      ]
+    case 'delivery':
+    case 'history':
+      return [
+        { title: 'All Status', value: 'ALL' },
+        { title: 'Pending', value: InvoiceStatus.PENDING },
+        { title: 'Generated', value: InvoiceStatus.GENERATED },
+        { title: 'Failed', value: InvoiceStatus.FAILED },
+        { title: 'Cancelled', value: InvoiceStatus.CANCELLED }
+      ]
+    default:
+      return [
+        { title: 'All Status', value: 'ALL' }
+      ]
   }
 })
 
