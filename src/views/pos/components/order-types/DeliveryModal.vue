@@ -318,11 +318,44 @@ const showCreateCustomer = ref(false)
 const onCustomerSearch = async (search) => {
   customerSearch.value = search // Maintain search text
   if (search && search.length >= 3) {
-    // Check if search is a phone number (contains only digits, spaces, dashes or parentheses)
-    const isPhoneSearch = /^[\d\s\-()]+$/.test(search)
-    // If it's a phone search, clean up the format before searching
-    const searchTerm = isPhoneSearch ? search.replace(/[\s\-()]/g, '') : search
-    await searchCustomers(searchTerm)
+    try {
+      // Check if search is a phone number (contains only digits, spaces, dashes or parentheses)
+      const isPhoneSearch = /^[\d\s\-()]+$/.test(search)
+      // If it's a phone search, clean up the format before searching
+      const searchTerm = isPhoneSearch ? search.replace(/[\s\-()]/g, '') : search
+      
+      // Get the search results
+      const response = await apiClient.get('/v1/customers', {
+        params: {
+          search: searchTerm,
+          status_customer: 'A',
+          orderByField: 'created_at',
+          orderBy: 'desc',
+          page: 1
+        }
+      })
+      
+      // Extract and format the customers from the paginated response
+      const customers = response.data.customers?.data || []
+      
+      // Update the search results with properly formatted data for v-autocomplete
+      searchResults.value = customers.map(customer => ({
+        ...customer,
+        title: customer.name,
+        value: customer.id
+      }))
+      
+      logger.debug('Customer search results:', {
+        searchTerm,
+        isPhoneSearch,
+        results: searchResults.value
+      })
+    } catch (error) {
+      logger.error('Customer search failed:', error)
+      searchResults.value = []
+    }
+  } else {
+    searchResults.value = []
   }
 }
 
