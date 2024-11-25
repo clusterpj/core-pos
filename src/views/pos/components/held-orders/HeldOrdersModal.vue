@@ -332,37 +332,11 @@ const filteredDeliveryOrders = computed(() => {
     logger.warn('Invoices is not an array:', invoices.value)
     return []
   }
-
-  let filtered = invoices.value.filter(invoice => 
-    invoice?.type === 'DELIVERY' || invoice?.type === 'PICKUP'
-  )
-
-  if (deliverySelectedType.value !== 'ALL') {
-    filtered = filtered.filter(invoice => 
-      invoice?.type === deliverySelectedType.value
-    )
-  }
-
-  if (deliverySelectedStatus.value !== 'ALL') {
-    filtered = filtered.filter(invoice => 
-      invoice?.status === deliverySelectedStatus.value
-    )
-  }
-
-  if (deliverySearch.value) {
-    const searchTerm = deliverySearch.value.toLowerCase()
-    filtered = filtered.filter(invoice => 
-      invoice?.invoice_number?.toLowerCase().includes(searchTerm) ||
-      invoice?.customer?.name?.toLowerCase().includes(searchTerm) ||
-      invoice?.id?.toString().includes(searchTerm)
-    )
-  }
-
-  return filtered
+  return invoices.value
 })
 
 const totalDeliveryPages = computed(() => {
-  return Math.ceil(filteredDeliveryOrders.value.length / invoiceItemsPerPage.value)
+  return invoicesPagination.value.lastPage || 1
 })
 
 
@@ -498,7 +472,29 @@ watch(activeTab, async (newValue) => {
       await fetchInvoices({
         type: ['DELIVERY', 'PICKUP'],
         status: deliverySelectedStatus.value !== 'ALL' ? deliverySelectedStatus.value : '',
-        invoiceNumber: deliverySearch.value
+        invoiceNumber: deliverySearch.value,
+        page: deliveryPage.value,
+        orderByField: 'invoice_number',
+        orderBy: 'desc'
+      })
+    } finally {
+      deliveryLoading.value = false
+    }
+  }
+})
+
+// Watch for delivery filters changes
+watch([deliverySearch, deliverySelectedType, deliverySelectedStatus, deliveryPage], async () => {
+  if (activeTab.value === 'delivery') {
+    deliveryLoading.value = true
+    try {
+      await fetchInvoices({
+        type: ['DELIVERY', 'PICKUP'],
+        status: deliverySelectedStatus.value !== 'ALL' ? deliverySelectedStatus.value : '',
+        invoiceNumber: deliverySearch.value,
+        page: deliveryPage.value,
+        orderByField: 'invoice_number',
+        orderBy: 'desc'
       })
     } finally {
       deliveryLoading.value = false
