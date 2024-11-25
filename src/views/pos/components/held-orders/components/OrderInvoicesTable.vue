@@ -165,7 +165,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['update:page'])
+defineEmits(['update:page', 'refresh'])
 
 const getStatusColor = (status) => {
   switch (status?.toUpperCase()) {
