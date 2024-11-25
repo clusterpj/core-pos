@@ -509,12 +509,13 @@ watch([deliverySearch, deliverySelectedType, deliverySelectedStatus, deliverySel
         
       await fetchInvoices({
         type,
-        status: deliverySelectedStatus.value !== 'ALL' ? deliverySelectedStatus.value : undefined,
-        paid_status: deliverySelectedPaymentStatus.value !== 'ALL' ? deliverySelectedPaymentStatus.value : undefined,
+        status: deliverySelectedStatus.value !== 'ALL' ? deliverySelectedStatus.value : '',
+        paid_status: deliverySelectedPaymentStatus.value !== 'ALL' ? deliverySelectedPaymentStatus.value : '',
         invoiceNumber: deliverySearch.value,
         page: deliveryPage.value,
         orderByField: 'invoice_number',
-        orderBy: 'desc'
+        orderBy: 'desc',
+        per_page: 10
       })
     } finally {
       deliveryLoading.value = false
