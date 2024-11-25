@@ -1,8 +1,13 @@
 const environment = import.meta.env.MODE
-const isProd = environment === 'production'
+
+const API_URLS = {
+  production: 'https://yukikaze/api',
+  qa: 'https://qa.corebill.co/api',
+  development: 'http://localhost/api'
+}
 
 export const apiConfig = {
-  baseURL: isProd ? 'https://yukikaze/api' : 'http://localhost/api',
+  baseURL: API_URLS[environment] || API_URLS.development,
   version: 'v1',
   timeout: 30000,
   endpoints: {
