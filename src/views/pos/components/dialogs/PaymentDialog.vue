@@ -194,12 +194,18 @@
                     ></v-text-field>
 
                     <!-- Change Amount Display -->
-                    <div v-if="payment.returned > 0" class="text-caption mb-2">
-                      <div class="d-flex justify-space-between">
-                        <span>Change:</span>
-                        <strong>{{ formatCurrency(payment.returned / 100) }}</strong>
-                      </div>
-                    </div>
+                    <v-card
+                      v-if="payment.returned > 0"
+                      color="primary"
+                      class="change-amount-card mb-2"
+                    >
+                      <v-card-text class="pa-3">
+                        <div class="d-flex justify-space-between align-center">
+                          <span class="text-h6 font-weight-medium">Change Due:</span>
+                          <span class="text-h5 font-weight-bold">{{ formatCurrency(payment.returned / 100) }}</span>
+                        </div>
+                      </v-card-text>
+                    </v-card>
                   </template>
 
                   <!-- Payment Fees -->
@@ -1005,6 +1011,24 @@ watch(() => dialog.value, async (newValue) => {
   font-weight: 500;
   border-radius: 12px;
   text-transform: none;
+}
+
+.change-amount-card {
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
+  color: white !important;
+  
+  .v-card-text {
+    color: white !important;
+  }
+  
+  .text-h5 {
+    color: white !important;
+  }
+  
+  .text-h6 {
+    color: white !important;
+  }
 }
 
 /* Additional spacing improvements */
