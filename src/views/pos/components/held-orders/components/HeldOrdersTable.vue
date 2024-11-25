@@ -164,7 +164,36 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['load', 'convert', 'delete', 'update:page'])
+const emit = defineEmits(['load', 'convert', 'delete', 'update:page', 'refresh'])
+
+// Payment Dialog
+const showPaymentDialog = ref(false)
+const showConfirmDialog = ref(false)
+const selectedInvoice = ref(null)
+
+const handlePayClick = (invoice) => {
+  selectedInvoice.value = invoice
+  showConfirmDialog.value = true
+}
+
+const confirmPayment = () => {
+  showConfirmDialog.value = false
+  showPaymentDialog.value = true
+}
+
+const handlePaymentComplete = async (result) => {
+  try {
+    showPaymentDialog.value = false
+    selectedInvoice.value = null
+    if (result) {
+      window.toastr?.['success']('Payment processed successfully')
+      emit('refresh')
+    }
+  } catch (error) {
+    console.error('Payment completion error:', error)
+    window.toastr?.['error']('Failed to complete payment process')
+  }
+}
 
 const hasNotes = (invoice) => {
   const notes = parseOrderNotes(invoice.notes)
