@@ -503,10 +503,14 @@ watch([deliverySearch, deliverySelectedType, deliverySelectedStatus, deliverySel
   if (activeTab.value === 'delivery') {
     deliveryLoading.value = true
     try {
+      const type = deliverySelectedType.value === 'ALL' 
+        ? ['DELIVERY', 'PICKUP']
+        : [deliverySelectedType.value]
+        
       await fetchInvoices({
-        type: ['DELIVERY', 'PICKUP'],
-        status: deliverySelectedStatus.value !== 'ALL' ? deliverySelectedStatus.value : '',
-        paid_status: deliverySelectedPaymentStatus.value !== 'ALL' ? deliverySelectedPaymentStatus.value : '',
+        type,
+        status: deliverySelectedStatus.value !== 'ALL' ? deliverySelectedStatus.value : undefined,
+        paid_status: deliverySelectedPaymentStatus.value !== 'ALL' ? deliverySelectedPaymentStatus.value : undefined,
         invoiceNumber: deliverySearch.value,
         page: deliveryPage.value,
         orderByField: 'invoice_number',
