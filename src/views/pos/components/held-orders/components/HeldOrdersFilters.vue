@@ -42,6 +42,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { PaidStatus, InvoiceStatus } from '../../../../../types/order'
 
 const props = defineProps({
