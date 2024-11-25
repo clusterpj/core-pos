@@ -79,8 +79,8 @@
               :loading="convertingOrder === invoice.id"
               :disabled="loadingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
             >
-              <v-icon size="small" class="mr-1">mdi-file-document-arrow-right</v-icon>
-              Convert
+              <v-icon size="small" class="mr-1">mdi-cash-register</v-icon>
+              Pay
             </v-btn>
             <v-btn
               size="small"
