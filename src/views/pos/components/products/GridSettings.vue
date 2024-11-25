@@ -152,6 +152,7 @@ const localColumns = ref(props.modelValue.columns)
 const localRows = ref(props.modelValue.rows || defaultSettings.rows)
 
 const columnOptions = [
+  { title: '2 Items', value: 2 },
   { title: '4 Items', value: 4 },
   { title: '6 Items', value: 6 },
   { title: '8 Items', value: 8 }
