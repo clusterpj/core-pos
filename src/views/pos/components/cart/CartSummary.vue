@@ -102,7 +102,7 @@ const formatPrice = (price) => {
 
 <style scoped>
 .order-summary {
-  padding: 8px;
+  padding: 4px;
 }
 
 .summary-row {
@@ -140,8 +140,8 @@ const formatPrice = (price) => {
 .discount-section {
   background-color: rgb(250, 250, 250);
   border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 16px;
+  padding: 8px;
+  margin-bottom: 8px;
 }
 
 .discount-header {

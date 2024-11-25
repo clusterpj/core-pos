@@ -52,7 +52,7 @@
     </v-card>
 
     <v-card
-      class="cart-scrollable-content mx-4 mt-4"
+      class="cart-scrollable-content mx-2 mt-2"
       variant="flat"
       :class="{ 'empty-cart': cartStore.isEmpty }"
     >
@@ -85,7 +85,7 @@
     <!-- Order Notes -->
     <v-card
       v-if="!cartStore.isEmpty"
-      class="mx-4 mt-4"
+      class="mx-2 mt-2"
       variant="flat"
     >
       <order-notes />
@@ -93,7 +93,7 @@
 
     <!-- Order Summary -->
     <v-card
-      class="cart-summary-wrapper mx-4 mt-4 mb-4"
+      class="cart-summary-wrapper mx-2 mt-2 mb-2"
       elevation="2"
       rounded="lg"
     >
@@ -203,7 +203,7 @@ const editItem = (item, index) => {
   background-color: rgb(245, 245, 245);
   overflow: hidden;
   width: 100% !important;
-  padding: 1rem;
+  padding: 0.5rem;
   position: relative;
   contain: strict;
 }

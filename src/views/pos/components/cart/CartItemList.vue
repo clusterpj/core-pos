@@ -100,7 +100,7 @@ const formatPrice = (price) => {
 }
 
 .cart-item {
-  padding: 8px 12px;
+  padding: 4px 8px;
   transition: all 0.2s ease;
   border-radius: 4px;
 }
