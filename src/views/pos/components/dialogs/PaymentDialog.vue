@@ -664,6 +664,7 @@ const processPayment = async () => {
 
     // Check if we're dealing with a hold invoice or a regular invoice
     if (invoiceData.is_hold_invoice) {
+      console.log('PaymentDialog: Processing hold invoice conversion')
       // Process hold invoice
       const holdInvoice = { ...invoiceData }
       
@@ -674,6 +675,17 @@ const processPayment = async () => {
       holdInvoice.total = totalWithTip
       holdInvoice.due_amount = totalWithTip
       holdInvoice.sub_total = invoiceTotal.value
+      
+      // Add required fields for invoice conversion
+      holdInvoice.is_invoice_pos = 1
+      holdInvoice.is_pdf_pos = true
+      holdInvoice.package_bool = false
+      holdInvoice.print_pdf = false
+      holdInvoice.save_as_draft = false
+      holdInvoice.send_email = false
+      holdInvoice.not_charge_automatically = false
+      holdInvoice.avalara_bool = false
+      holdInvoice.banType = true
       
       // Set required fields for hold invoice conversion
       holdInvoice.is_hold_invoice = false
