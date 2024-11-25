@@ -3,7 +3,7 @@
   <v-dialog 
     v-model="dialog" 
     :fullscreen="$vuetify.display.mobile"
-    :max-width="$vuetify.display.mobile ? '100%' : '600px'"
+    :max-width="$vuetify.display.mobile ? '100%' : '500px'"
     persistent
     scrollable
     transition="dialog-bottom-transition"
@@ -49,24 +49,18 @@
               <v-col cols="12">
                 <v-card
                   variant="elevated"
-                  class="invoice-summary-card mb-4"
-                  elevation="2"
+                  class="invoice-summary-card mb-2"
+                  elevation="1"
                 >
-                  <v-card-item>
-                    <template v-slot:prepend>
+                  <v-card-text class="pa-2">
+                    <div class="d-flex align-center mb-2">
                       <v-icon
                         icon="mdi-receipt"
-                        size="large"
                         color="primary"
-                        class="mr-4"
+                        class="mr-2"
                       ></v-icon>
-                    </template>
-                    <v-card-title class="text-h6 pb-2">
-                      Invoice Summary
-                    </v-card-title>
-                  </v-card-item>
-                  <v-divider></v-divider>
-                  <v-card-text class="py-2">
+                      <span class="text-subtitle-1 font-weight-medium">Invoice Summary</span>
+                    </div>
                     <div class="d-flex justify-space-between mb-2">
                       <span>Invoice Number:</span>
                       <strong>{{ invoiceNumber }}</strong>
@@ -826,7 +820,7 @@ watch(() => dialog.value, async (newValue) => {
   border-top-right-radius: 8px;
   background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
   backdrop-filter: blur(10px);
-  height: 56px !important;
+  height: 48px !important;
 }
 
 .invoice-summary-card {
@@ -843,16 +837,17 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .payment-method-btn {
-  min-height: 48px;
+  min-height: 40px;
   border-radius: 8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 0.95rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.85rem;
   letter-spacing: 0.25px;
   border: 1px solid rgba(var(--v-border-color), 0.05);
+  padding: 0 8px !important;
   
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   }
   
   &.v-btn--active {
@@ -1033,15 +1028,15 @@ watch(() => dialog.value, async (newValue) => {
 
 /* Additional spacing improvements */
 .v-container {
-  padding: 12px;
+  padding: 8px;
 }
 
 .v-row {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .v-col {
-  padding: 4px;
+  padding: 2px;
 }
 
 .mb-2 {
