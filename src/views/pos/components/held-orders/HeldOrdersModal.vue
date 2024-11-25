@@ -64,6 +64,18 @@
                 DINE IN | TOGO
               </v-tab>
               <v-tab
+                value="delivery"
+                class="text-subtitle-1"
+                :class="{ 'px-6': !$vuetify.display.mobile }"
+              >
+                <v-icon
+                  start
+                  :icon="activeTab === 'delivery' ? 'mdi-bike-fast' : 'mdi-bike'"
+                  class="mr-2"
+                ></v-icon>
+                DELIVERY | PICKUP
+              </v-tab>
+              <v-tab
                 value="invoices"
                 class="text-subtitle-1"
                 :class="{ 'px-6': !$vuetify.display.mobile }"
@@ -119,6 +131,33 @@
                 </template>
               </v-window-item>
 
+              <!-- Delivery & Pickup Tab -->
+              <v-window-item value="delivery">
+                <v-container class="px-2 pb-2">
+                  <HeldOrdersFilters
+                    :search="deliverySearch"
+                    :selectedType="deliverySelectedType"
+                    :selectedStatus="deliverySelectedStatus"
+                    :orderTypes="orderTypes"
+                    @update:search="deliverySearch = $event"
+                    @update:selectedType="deliverySelectedType = $event"
+                    @update:selectedStatus="deliverySelectedStatus = $event"
+                  />
+                </v-container>
+
+                <OrderInvoicesTable
+                  :loading="deliveryLoading"
+                  :invoices="filteredDeliveryOrders"
+                  :getOrderType="getOrderType"
+                  :getOrderTypeColor="getOrderTypeColor"
+                  :formatDate="formatDate"
+                  :formatCurrency="formatCurrency"
+                  :showPagination="true"
+                  :page="deliveryPage"
+                  :totalPages="totalDeliveryPages"
+                  @update:page="deliveryPage = $event"
+                />
+              </v-window-item>
 
               <!-- Order Invoices Tab -->
               <v-window-item value="invoices">
@@ -211,6 +250,13 @@ const invoiceSelectedStatus = ref('ALL')
 const invoicePage = ref(1)
 const invoiceItemsPerPage = ref(10)
 
+// Delivery & Pickup filters
+const deliverySearch = ref('')
+const deliverySelectedType = ref('ALL')
+const deliverySelectedStatus = ref('ALL')
+const deliveryPage = ref(1)
+const deliveryLoading = ref(false)
+
 const updateModelValue = (value) => {
   emit('update:model-value', value)
 }
@@ -279,6 +325,44 @@ const filteredActiveOrders = computed(() => {
 
 const totalInvoicePages = computed(() => {
   return invoicesPagination.value.lastPage || 1
+})
+
+const filteredDeliveryOrders = computed(() => {
+  if (!Array.isArray(invoices.value)) {
+    logger.warn('Invoices is not an array:', invoices.value)
+    return []
+  }
+
+  let filtered = invoices.value.filter(invoice => 
+    invoice?.type === 'DELIVERY' || invoice?.type === 'PICKUP'
+  )
+
+  if (deliverySelectedType.value !== 'ALL') {
+    filtered = filtered.filter(invoice => 
+      invoice?.type === deliverySelectedType.value
+    )
+  }
+
+  if (deliverySelectedStatus.value !== 'ALL') {
+    filtered = filtered.filter(invoice => 
+      invoice?.status === deliverySelectedStatus.value
+    )
+  }
+
+  if (deliverySearch.value) {
+    const searchTerm = deliverySearch.value.toLowerCase()
+    filtered = filtered.filter(invoice => 
+      invoice?.invoice_number?.toLowerCase().includes(searchTerm) ||
+      invoice?.customer?.name?.toLowerCase().includes(searchTerm) ||
+      invoice?.id?.toString().includes(searchTerm)
+    )
+  }
+
+  return filtered
+})
+
+const totalDeliveryPages = computed(() => {
+  return Math.ceil(filteredDeliveryOrders.value.length / invoiceItemsPerPage.value)
 })
 
 
@@ -401,13 +485,24 @@ watch(() => props.modelValue, async (newValue) => {
   }
 })
 
-// Watch for invoice tab activation
+// Watch for tab activation
 watch(activeTab, async (newValue) => {
   if (newValue === 'invoices') {
     await fetchInvoices({
       status: invoiceSelectedStatus.value !== 'ALL' ? invoiceSelectedStatus.value : '',
       invoiceNumber: invoiceSearch.value
     })
+  } else if (newValue === 'delivery') {
+    deliveryLoading.value = true
+    try {
+      await fetchInvoices({
+        type: ['DELIVERY', 'PICKUP'],
+        status: deliverySelectedStatus.value !== 'ALL' ? deliverySelectedStatus.value : '',
+        invoiceNumber: deliverySearch.value
+      })
+    } finally {
+      deliveryLoading.value = false
+    }
   }
 })
 
