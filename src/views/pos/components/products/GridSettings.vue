@@ -161,7 +161,8 @@ const columnOptions = [
 const rowOptions = [
   { title: '2 Rows', value: 2 },
   { title: '3 Rows', value: 3 },
-  { title: '4 Rows', value: 4 }
+  { title: '4 Rows', value: 4 },
+  { title: 'Show All', value: -1 }
 ]
 
 watch(() => props.modelValue, (newValue) => {

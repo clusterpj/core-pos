@@ -70,7 +70,7 @@
     </div>
 
     <!-- Pagination -->
-    <div class="pagination-wrapper">
+    <div v-if="props.gridSettings.rows !== -1" class="pagination-wrapper">
       <v-pagination
         v-model="currentPage"
         :length="totalPages"
@@ -109,7 +109,9 @@ const getCardHeight = computed(() => {
 
 // Pagination
 const itemsPerPage = computed(() => {
-  return props.gridSettings.columns * props.gridSettings.rows
+  return props.gridSettings.rows === -1 ? 
+    props.products.length : 
+    props.gridSettings.columns * props.gridSettings.rows
 })
 
 const currentPage = ref(1)
