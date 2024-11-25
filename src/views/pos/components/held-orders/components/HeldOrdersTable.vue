@@ -224,14 +224,21 @@ const handleConvert = (invoice) => {
     return
   }
   
-  console.log('HeldOrdersTable: Convert button clicked for invoice:', invoice)
-  console.log('HeldOrdersTable: Emitting convert event with invoice data:', {
-    id: invoice.id,
-    description: invoice.description,
-    total: invoice.total,
-    items: invoice.hold_items?.length
+  // Add is_hold_invoice flag to identify this as a hold invoice that needs conversion
+  const holdInvoice = {
+    ...invoice,
+    is_hold_invoice: true
+  }
+  
+  console.log('HeldOrdersTable: Convert button clicked for invoice:', holdInvoice)
+  console.log('HeldOrdersTable: Emitting convert event with hold invoice data:', {
+    id: holdInvoice.id,
+    description: holdInvoice.description,
+    total: holdInvoice.total,
+    items: holdInvoice.hold_items?.length,
+    is_hold_invoice: holdInvoice.is_hold_invoice
   })
-  emit('convert', invoice)
+  emit('convert', holdInvoice)
 }
 </script>
 
