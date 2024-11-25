@@ -643,73 +643,78 @@ const processPayment = async () => {
       tipAmount: tipAmount.value
     })
 
-    // Use the prepared invoice data
-    const holdInvoice = props.invoice.invoice
-    if (!holdInvoice) {
+    let finalInvoice
+    const invoiceData = props.invoice.invoice
+
+    if (!invoiceData) {
       throw new Error('Invoice data not provided')
     }
-    
+
     // Calculate the total with tip
     const totalWithTip = invoiceTotal.value + tipAmount.value
-
-    console.log('PaymentDialog: Prepared hold invoice data:', {
-      id: holdInvoice.id,
-      total: totalWithTip,
-      originalTotal: holdInvoice.total,
-      tipAmount: tipAmount.value
-    })
-
-    // Format tip data according to API requirements
     const tipPercentage = selectedTipPercent.value || Number(customTipPercent.value) || 0
-    holdInvoice.tip = String(Math.round(tipPercentage)) // Ensure clean integer string
-    holdInvoice.tip_type = "percentage"
-    holdInvoice.tip_val = tipAmount.value // Amount in cents
-    holdInvoice.total = totalWithTip // Total in cents including tip
-    holdInvoice.due_amount = totalWithTip // Due amount should match total
-    holdInvoice.sub_total = invoiceTotal.value // Original subtotal without tip
-    
-    // Log tip values for debugging
-    console.log('Tip values:', {
-      percentage: holdInvoice.tip,
-      type: holdInvoice.tip_type,
-      amount: holdInvoice.tip_val,
-      total: holdInvoice.total
-    })
-    
-    // Ensure other required fields are present
-    holdInvoice.is_hold_invoice = false
-    holdInvoice.is_invoice_pos = 1
-    holdInvoice.is_pdf_pos = true
-    holdInvoice.package_bool = false
-    holdInvoice.print_pdf = false
-    holdInvoice.save_as_draft = false
-    holdInvoice.send_email = false
-    holdInvoice.not_charge_automatically = false
-    holdInvoice.avalara_bool = false
-    holdInvoice.banType = true
 
-    // Set dates
-    const currentDate = new Date()
-    holdInvoice.invoice_date = currentDate.toISOString().split('T')[0]
-    const dueDate = new Date(currentDate)
-    dueDate.setDate(dueDate.getDate() + 7) // Default to 7 days
-    holdInvoice.due_date = dueDate.toISOString().split('T')[0]
+    // Check if we're dealing with a hold invoice or a regular invoice
+    if (invoiceData.is_hold_invoice) {
+      // Process hold invoice
+      const holdInvoice = { ...invoiceData }
+      
+      // Format tip data according to API requirements
+      holdInvoice.tip = String(Math.round(tipPercentage))
+      holdInvoice.tip_type = "percentage"
+      holdInvoice.tip_val = tipAmount.value
+      holdInvoice.total = totalWithTip
+      holdInvoice.due_amount = totalWithTip
+      holdInvoice.sub_total = invoiceTotal.value
+      
+      // Set required fields for hold invoice conversion
+      holdInvoice.is_hold_invoice = false
+      holdInvoice.is_invoice_pos = 1
+      holdInvoice.is_pdf_pos = true
+      holdInvoice.package_bool = false
+      holdInvoice.print_pdf = false
+      holdInvoice.save_as_draft = false
+      holdInvoice.send_email = false
+      holdInvoice.not_charge_automatically = false
+      holdInvoice.avalara_bool = false
+      holdInvoice.banType = true
 
-    // Create invoice with tip included
-    const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
-    
-    if (!invoiceResult.success) {
-      throw new Error('Failed to create invoice')
+      // Set dates
+      const currentDate = new Date()
+      holdInvoice.invoice_date = currentDate.toISOString().split('T')[0]
+      const dueDate = new Date(currentDate)
+      dueDate.setDate(dueDate.getDate() + 7)
+      holdInvoice.due_date = dueDate.toISOString().split('T')[0]
+
+      // Convert hold invoice to regular invoice
+      const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
+      
+      if (!invoiceResult.success) {
+        throw new Error('Failed to create invoice from hold order')
+      }
+
+      finalInvoice = invoiceResult.invoice
+    } else {
+      // Process regular invoice
+      finalInvoice = {
+        ...invoiceData,
+        tip: String(Math.round(tipPercentage)),
+        tip_type: "percentage",
+        tip_val: tipAmount.value,
+        total: totalWithTip,
+        due_amount: totalWithTip,
+        sub_total: invoiceTotal.value
+      }
     }
 
     // Add to held orders if in create-invoice-only mode
     if (props.createInvoiceOnly) {
       try {
         const heldOrderData = {
-          ...invoiceResult.invoice,
+          ...finalInvoice,
           is_hold_invoice: true,
           status: 'HELD',
-          description: invoiceResult.invoice.description || 'Delivery Order'
+          description: finalInvoice.description || 'Delivery Order'
         }
         
         // Add to held orders through the API
@@ -733,7 +738,7 @@ const processPayment = async () => {
     const formattedPayments = payments.value.map(payment => ({
       method_id: payment.method_id,
       name: getPaymentMethod(payment.method_id).name,
-      amount: payment.amount, // This should match the total with tip
+      amount: payment.amount,
       received: payment.received,
       returned: payment.returned,
       valid: true
@@ -745,11 +750,11 @@ const processPayment = async () => {
       throw new Error('Payment amount must match invoice total including tip')
     }
 
-    // Create payment using the created invoice
-    const result = await createPayment(invoiceResult.invoice, formattedPayments)
+    // Create payment using the final invoice
+    const result = await createPayment(finalInvoice, formattedPayments)
     
     // Release tables if this was a dine-in order
-    if (invoiceResult.invoice.type === 'DINE_IN' && invoiceResult.invoice.tables_selected?.length) {
+    if (finalInvoice.type === 'DINE_IN' && finalInvoice.tables_selected?.length) {
       try {
         await releaseTablesAfterPayment(invoiceResult.invoice.tables_selected)
       } catch (err) {
