@@ -265,6 +265,7 @@
         <v-btn
           block
           color="primary"
+          variant="flat"
           size="large"
           height="56"
           :loading="processing"
