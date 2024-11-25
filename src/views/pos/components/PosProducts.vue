@@ -17,7 +17,10 @@
           <v-row no-gutters align="center" class="mb-4 flex-column flex-sm-row">
             <v-col cols="12" sm="7" md="8" lg="9" class="pe-sm-4 mb-3 mb-sm-0">
               <div class="search-field">
-                <product-search @search="handleSearch" />
+                <product-search 
+                  @search="handleSearch"
+                  @quick-add="handleQuickAdd" 
+                />
               </div>
             </v-col>
             <v-col cols="12" sm="5" md="4" lg="3" class="d-flex justify-end align-center">
