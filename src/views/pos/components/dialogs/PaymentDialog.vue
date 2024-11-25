@@ -261,13 +261,16 @@
         </v-container>
       </v-card-text>
 
-      <v-card-actions>
-        <v-spacer></v-spacer>
+      <v-card-actions class="pa-4">
         <v-btn
+          block
           color="primary"
+          size="large"
+          height="56"
           :loading="processing"
           :disabled="!isValid || processing"
           @click="processPayment"
+          class="process-payment-btn"
         >
           Process Payment
         </v-btn>
@@ -994,6 +997,14 @@ watch(() => dialog.value, async (newValue) => {
     flex: 1;
     overflow-y: auto;
   }
+}
+
+.process-payment-btn {
+  font-size: 1.1rem !important;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+  border-radius: 12px;
+  text-transform: none;
 }
 
 /* Additional spacing improvements */
