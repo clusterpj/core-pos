@@ -693,7 +693,16 @@ const processPayment = async () => {
         throw new Error('Failed to create invoice from hold order')
       }
 
-      finalInvoice = invoiceResult.invoice
+      // Structure the final invoice with the required nested invoice property
+      finalInvoice = {
+        ...invoiceResult.invoice,
+        invoice: {
+          ...invoiceResult.invoice,
+          due_amount: totalWithTip,
+          total: totalWithTip,
+          sub_total: invoiceTotal.value
+        }
+      }
     } else {
       // Process regular invoice
       finalInvoice = {
