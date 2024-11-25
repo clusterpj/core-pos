@@ -626,7 +626,8 @@ const processPayment = async () => {
     processing: processing.value,
     invoiceTotal: invoiceTotal.value,
     tipAmount: tipAmount.value,
-    payments: payments.value
+    payments: payments.value,
+    invoice: props.invoice
   })
 
   if (!isValid.value || processing.value) {
@@ -644,11 +645,18 @@ const processPayment = async () => {
     })
 
     let finalInvoice
-    const invoiceData = props.invoice.invoice
+    const invoiceData = props.invoice?.invoice || props.invoice
 
     if (!invoiceData) {
       throw new Error('Invoice data not provided')
     }
+
+    console.log('PaymentDialog: Processing invoice data:', {
+      invoiceData,
+      isHoldInvoice: invoiceData.is_hold_invoice,
+      total: invoiceData.total,
+      dueAmount: invoiceData.due_amount
+    })
 
     // Calculate the total with tip
     const totalWithTip = invoiceTotal.value + tipAmount.value
@@ -769,6 +777,13 @@ const processPayment = async () => {
     if (!invoiceId) {
       throw new Error('Invalid invoice: missing ID')
     }
+
+    console.log('PaymentDialog: Final invoice details:', {
+      invoiceId,
+      invoiceNumber,
+      total: finalInvoice.total || finalInvoice.invoice?.total,
+      dueAmount: finalInvoice.due_amount || finalInvoice.invoice?.due_amount
+    })
 
     console.log('Processing payment with:', {
       invoiceId,
