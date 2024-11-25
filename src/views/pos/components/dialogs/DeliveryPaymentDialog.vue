@@ -47,13 +47,20 @@
         </v-container>
       </v-card-text>
 
-      <v-card-actions>
+      <v-card-actions class="pa-4">
         <v-spacer></v-spacer>
         <v-btn
           color="primary"
+          size="large"
+          min-width="120"
+          height="48"
           @click="closeDialog"
+          class="text-none px-6"
+          rounded="pill"
+          elevation="2"
         >
-          Close
+          <v-icon start icon="mdi-check" class="mr-1"></v-icon>
+          Done
         </v-btn>
       </v-card-actions>
     </v-card>
