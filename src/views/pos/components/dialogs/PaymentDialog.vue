@@ -665,56 +665,36 @@ const processPayment = async () => {
     // Check if we're dealing with a hold invoice or a regular invoice
     if (invoiceData.is_hold_invoice) {
       console.log('PaymentDialog: Processing hold invoice conversion')
-      // Process hold invoice
-      const holdInvoice = { ...invoiceData }
       
-      // Format tip data according to API requirements
-      holdInvoice.tip = String(Math.round(tipPercentage))
-      holdInvoice.tip_type = "percentage"
-      holdInvoice.tip_val = tipAmount.value
-      holdInvoice.total = totalWithTip
-      holdInvoice.due_amount = totalWithTip
-      holdInvoice.sub_total = invoiceTotal.value
-      
-      // Add required fields for invoice conversion
-      holdInvoice.is_invoice_pos = 1
-      holdInvoice.is_pdf_pos = true
-      holdInvoice.package_bool = false
-      holdInvoice.print_pdf = false
-      holdInvoice.save_as_draft = false
-      holdInvoice.send_email = false
-      holdInvoice.not_charge_automatically = false
-      holdInvoice.avalara_bool = false
-      holdInvoice.banType = true
-      
-      // Set required fields for hold invoice conversion
-      holdInvoice.is_hold_invoice = false
-      holdInvoice.is_invoice_pos = 1
-      holdInvoice.is_pdf_pos = true
-      holdInvoice.package_bool = false
-      holdInvoice.print_pdf = false
-      holdInvoice.save_as_draft = false
-      holdInvoice.send_email = false
-      holdInvoice.not_charge_automatically = false
-      holdInvoice.avalara_bool = false
-      holdInvoice.banType = true
+      // Process hold invoice using the converter
+      const holdInvoice = {
+        ...invoiceData,
+        tip: String(Math.round(tipPercentage)),
+        tip_type: "percentage",
+        tip_val: tipAmount.value,
+        total: totalWithTip,
+        due_amount: totalWithTip,
+        sub_total: invoiceTotal.value
+      }
 
-      // Set dates
-      const currentDate = new Date()
-      holdInvoice.invoice_date = currentDate.toISOString().split('T')[0]
-      const dueDate = new Date(currentDate)
-      dueDate.setDate(dueDate.getDate() + 7)
-      holdInvoice.due_date = dueDate.toISOString().split('T')[0]
-
-      // Convert hold invoice to regular invoice
+      // Convert hold invoice to regular invoice using the converter
       const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
       
       if (!invoiceResult.success) {
-        throw new Error('Failed to create invoice from hold order')
+        console.error('Hold invoice conversion failed:', invoiceResult.error)
+        throw new Error(invoiceResult.error || 'Failed to create invoice from hold order')
       }
 
+      console.log('Hold invoice converted successfully:', {
+        originalId: holdInvoice.id,
+        newInvoiceId: invoiceResult.invoice.id
+      })
+
       // Structure the final invoice with the required nested invoice property
-      finalInvoice = invoiceResult.invoice
+      finalInvoice = {
+        invoice: invoiceResult.invoice,
+        hold_invoice_id: holdInvoice.id // Preserve the original hold invoice ID
+      }
     } else {
       // Process regular invoice
       finalInvoice = {
