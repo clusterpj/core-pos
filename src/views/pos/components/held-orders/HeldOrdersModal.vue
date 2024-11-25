@@ -64,18 +64,6 @@
                 DINE IN | TOGO
               </v-tab>
               <v-tab
-                value="history"
-                class="text-subtitle-1"
-                :class="{ 'px-6': !$vuetify.display.mobile }"
-              >
-                <v-icon
-                  start
-                  :icon="activeTab === 'history' ? 'mdi-history' : 'mdi-history-outline'"
-                  class="mr-2"
-                ></v-icon>
-                Order History
-              </v-tab>
-              <v-tab
                 value="invoices"
                 class="text-subtitle-1"
                 :class="{ 'px-6': !$vuetify.display.mobile }"
@@ -131,61 +119,6 @@
                 </template>
               </v-window-item>
 
-              <!-- Order History Tab -->
-              <v-window-item value="history">
-                <v-row v-if="loading">
-                  <v-col cols="12" class="text-center">
-                    <v-progress-circular indeterminate></v-progress-circular>
-                  </v-col>
-                </v-row>
-
-                <template v-else-if="orderHistory.length">
-                  <v-row class="mb-2">
-                    <v-col cols="12" class="d-flex justify-end px-4">
-                      <v-btn
-                        color="error"
-                        variant="outlined"
-                        prepend-icon="mdi-delete-sweep"
-                        @click="clearOrderHistory"
-                        size="small"
-                      >
-                        Clear History
-                      </v-btn>
-                    </v-col>
-                  </v-row>
-                  <v-container class="px-2 pb-2">
-                    <HeldOrdersFilters
-                      :search="historySearch"
-                      :selectedType="historySelectedType"
-                      :selectedStatus="historySelectedStatus"
-                      :orderTypes="orderTypes"
-                      @update:search="historySearch = $event"
-                      @update:selectedType="historySelectedType = $event"
-                      @update:selectedStatus="historySelectedStatus = $event"
-                    />
-                  </v-container>
-
-                  <v-row>
-                    <v-col cols="12">
-                      <HeldOrdersTable
-                        :invoices="filteredHistoryOrders"
-                        :loadingOrder="loadingOrder"
-                        :convertingOrder="convertingOrder"
-                        :deletingOrder="deletingOrder"
-                        :getOrderType="getOrderType"
-                        :getOrderTypeColor="getOrderTypeColor"
-                        :formatDate="formatDate"
-                        :formatCurrency="formatCurrency"
-                        :hideActions="true"
-                        :showPagination="true"
-                        :page="historyPage"
-                        :totalPages="totalHistoryPages"
-                        @update:page="historyPage = $event"
-                      />
-                    </v-col>
-                  </v-row>
-                </template>
-              </v-window-item>
 
               <!-- Order Invoices Tab -->
               <v-window-item value="invoices">
@@ -270,12 +203,6 @@ const search = ref('')
 const selectedType = ref('ALL')
 const selectedStatus = ref('ALL')
 
-// History filters
-const historySearch = ref('')
-const historySelectedType = ref('ALL')
-const historySelectedStatus = ref('ALL')
-const historyPage = ref(1)
-const historyItemsPerPage = ref(10)
 
 // Invoice filters
 const invoiceSearch = ref('')
@@ -295,7 +222,6 @@ const {
   convertingOrder,
   orderTypes,
   holdInvoices,
-  orderHistory,
   getOrderType,
   getOrderTypeColor,
   formatDate,
@@ -355,82 +281,6 @@ const totalInvoicePages = computed(() => {
   return invoicesPagination.value.lastPage || 1
 })
 
-// Computed properties for history orders
-const filteredHistoryOrders = computed(() => {
-  if (!Array.isArray(orderHistory.value)) {
-    logger.warn('Order history is not an array:', orderHistory.value)
-    return []
-  }
-
-  // Start with completed/paid orders only
-  let filtered = orderHistory.value.filter(invoice => 
-    invoice?.paid_status === PaidStatus.PAID || 
-    invoice?.status === 'PAID'
-  )
-
-  if (historySelectedType.value !== 'ALL') {
-    filtered = filtered.filter(invoice => 
-      invoice?.type === historySelectedType.value
-    )
-  }
-
-  if (historySelectedStatus.value !== 'ALL') {
-    filtered = filtered.filter(invoice => 
-      invoice?.paid_status === historySelectedStatus.value ||
-      invoice?.status === historySelectedStatus.value
-    )
-  }
-
-  if (historySearch.value) {
-    const searchTerm = historySearch.value.toLowerCase()
-    filtered = filtered.filter(invoice => 
-      invoice?.description?.toLowerCase().includes(searchTerm) ||
-      invoice?.id?.toString().includes(searchTerm) ||
-      invoice?.invoice_number?.toLowerCase().includes(searchTerm)
-    )
-  }
-
-  // Sort by most recent first
-  filtered.sort((a, b) => {
-    const dateA = new Date(a.paid_at || a.created_at)
-    const dateB = new Date(b.paid_at || b.created_at)
-    return dateB - dateA
-  })
-
-  // Calculate pagination
-  const startIndex = (historyPage.value - 1) * historyItemsPerPage.value
-  const paginatedData = filtered.slice(startIndex, startIndex + historyItemsPerPage.value)
-
-  logger.debug('Filtered history orders:', {
-    total: orderHistory.value.length,
-    filtered: filtered.length,
-    paginated: paginatedData.length,
-    page: historyPage.value,
-    itemsPerPage: historyItemsPerPage.value,
-    filters: {
-      type: historySelectedType.value,
-      status: historySelectedStatus.value,
-      search: historySearch.value
-    }
-  })
-
-  return paginatedData
-})
-
-const totalHistoryPages = computed(() => {
-  if (!Array.isArray(orderHistory.value)) return 1
-  const filteredLength = orderHistory.value.filter(invoice => {
-    if (historySelectedType.value !== 'ALL' && invoice?.type !== historySelectedType.value) return false
-    if (historySelectedStatus.value !== 'ALL' && invoice?.paid_status !== historySelectedStatus.value) return false
-    if (historySearch.value) {
-      const searchTerm = historySearch.value.toLowerCase()
-      return invoice?.description?.toLowerCase().includes(searchTerm) ||
-             invoice?.id?.toString().includes(searchTerm)
-    }
-    return true
-  }).length
-  return Math.ceil(filteredLength / historyItemsPerPage.value)
-})
 
 // Computed property for filtered invoices
 const filteredInvoiceOrders = computed(() => {
