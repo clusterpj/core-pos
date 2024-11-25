@@ -61,7 +61,7 @@
                   :icon="activeTab === 'active' ? 'mdi-clipboard-list' : 'mdi-clipboard-list-outline'"
                   class="mr-2"
                 ></v-icon>
-                Active Orders
+                DINE IN & TOGO Orders
               </v-tab>
               <v-tab
                 value="history"
