@@ -143,8 +143,8 @@ const { mobile } = useDisplay()
 
 const defaultSettings = {
   layout: 'comfortable',
-  columns: mobile.value ? 4 : 6,
-  rows: mobile.value ? 2 : 3
+  columns: 4,
+  rows: -1
 }
 
 const localLayout = ref(props.modelValue.layout)
@@ -172,10 +172,22 @@ watch(() => props.modelValue, (newValue) => {
 }, { deep: true })
 
 const updateLayout = (value) => {
-  emit('update:modelValue', {
+  const newSettings = {
     ...props.modelValue,
-    layout: value
-  })
+    layout: value,
+  }
+  
+  // Set default columns based on layout
+  if (value === 'list') {
+    newSettings.columns = 2
+  } else {
+    newSettings.columns = 4
+  }
+  
+  // Always show all rows by default
+  newSettings.rows = -1
+  
+  emit('update:modelValue', newSettings)
 }
 
 const updateColumns = (value) => {
