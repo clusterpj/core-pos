@@ -104,7 +104,7 @@
                 <v-row>
                   <v-col v-for="method in paymentMethods" 
                          :key="method.id" 
-                         cols="6" 
+                         cols="4" 
                          sm="4">
                     <v-btn
                       block
