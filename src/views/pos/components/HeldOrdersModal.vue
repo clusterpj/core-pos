@@ -1,13 +1,28 @@
 <!-- src/views/pos/components/HeldOrdersModal.vue -->
 <template>
-  <v-dialog
-    :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
-    fullscreen
-    transition="dialog-bottom-transition"
-    :scrim="true"
-    :persistent="true"
-  >
+  <div class="held-orders-container">
+    <v-btn
+      color="primary"
+      prepend-icon="mdi-clipboard-list"
+      @click="$emit('update:modelValue', true)"
+      :disabled="disabled"
+      class="text-none px-6 text-capitalize"
+      rounded="pill"
+      :elevation="$vuetify.display.mobile ? 1 : 2"
+      size="large"
+      :block="$vuetify.display.mobile"
+    >
+      <span class="text-subtitle-1 font-weight-medium">ORDERS</span>
+    </v-btn>
+
+    <v-dialog
+      :model-value="modelValue"
+      @update:model-value="$emit('update:modelValue', $event)"
+      fullscreen
+      transition="dialog-bottom-transition"
+      :scrim="true"
+      :persistent="true"
+    >
     <v-card class="h-100">
       <!-- Responsive App Bar -->
       <v-app-bar
@@ -59,7 +74,8 @@
         </v-btn>
       </v-bottom-navigation>
     </v-card>
-  </v-dialog>
+    </v-dialog>
+  </div>
 </template>
 
 <script setup>
