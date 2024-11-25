@@ -706,17 +706,13 @@ const processPayment = async () => {
     } else {
       // Process regular invoice
       finalInvoice = {
-        ...invoiceData,
-        tip: String(Math.round(tipPercentage)),
-        tip_type: "percentage",
-        tip_val: tipAmount.value,
-        total: totalWithTip,
-        due_amount: totalWithTip,
-        sub_total: invoiceTotal.value,
         invoice: {
           ...invoiceData,
-          due_amount: totalWithTip,
+          tip: String(Math.round(tipPercentage)),
+          tip_type: "percentage",
+          tip_val: tipAmount.value,
           total: totalWithTip,
+          due_amount: totalWithTip,
           sub_total: invoiceTotal.value
         }
       }
