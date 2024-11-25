@@ -89,6 +89,10 @@ const props = defineProps({
     required: true,
     default: 'ALL'
   },
+  selectedPaymentStatus: {
+    type: String,
+    default: 'ALL'
+  },
   orderTypes: {
     type: Array,
     required: true
@@ -128,5 +132,5 @@ const paymentStatusTypes = computed(() => [
   { title: 'Unpaid', value: 'UNPAID' }
 ])
 
-defineEmits(['update:search', 'update:selectedType', 'update:selectedStatus'])
+defineEmits(['update:search', 'update:selectedType', 'update:selectedStatus', 'update:selectedPaymentStatus'])
 </script>

@@ -168,11 +168,13 @@
                     :search="invoiceSearch"
                     :selectedType="invoiceSelectedType"
                     :selectedStatus="invoiceSelectedStatus"
+                    :selectedPaymentStatus="invoiceSelectedPaymentStatus"
                     :orderTypes="orderTypes"
                     mode="history"
                     @update:search="invoiceSearch = $event"
                     @update:selectedType="invoiceSelectedType = $event"
                     @update:selectedStatus="invoiceSelectedStatus = $event"
+                    @update:selectedPaymentStatus="invoiceSelectedPaymentStatus = $event"
                   />
                 </v-container>
 
@@ -250,6 +252,7 @@ const selectedStatus = ref('ALL')
 const invoiceSearch = ref('')
 const invoiceSelectedType = ref('ALL')
 const invoiceSelectedStatus = ref('ALL')
+const invoiceSelectedPaymentStatus = ref('ALL')
 const invoicePage = ref(1)
 const invoiceItemsPerPage = ref(10)
 
@@ -361,6 +364,12 @@ const filteredInvoiceOrders = computed(() => {
   if (invoiceSelectedStatus.value !== 'ALL') {
     filtered = filtered.filter(invoice => 
       invoice?.status === invoiceSelectedStatus.value
+    )
+  }
+
+  if (invoiceSelectedPaymentStatus.value !== 'ALL') {
+    filtered = filtered.filter(invoice =>
+      invoice?.paid_status === invoiceSelectedPaymentStatus.value
     )
   }
 
