@@ -757,12 +757,33 @@ const processPayment = async () => {
 
     // Validate total payment amount matches invoice total
     const totalPaymentAmount = formattedPayments.reduce((sum, payment) => sum + payment.amount, 0)
-    if (totalPaymentAmount !== totalWithTip) {
-      throw new Error('Payment amount must match invoice total including tip')
+    console.log('Payment validation:', {
+      totalPaymentAmount,
+      totalWithTip,
+      difference: Math.abs(totalPaymentAmount - totalWithTip)
+    })
+    
+    if (Math.abs(totalPaymentAmount - totalWithTip) > 1) { // Allow for 1 cent rounding difference
+      throw new Error(`Payment amount (${totalPaymentAmount}) must match invoice total including tip (${totalWithTip})`)
     }
 
     // Create payment using the final invoice
-    const result = await createPayment(finalInvoice, formattedPayments)
+    console.log('Final invoice for payment:', finalInvoice)
+    
+    // Ensure we have the correct invoice ID and number
+    const invoiceId = finalInvoice.invoice?.id || finalInvoice.id
+    const invoiceNumber = finalInvoice.invoice?.invoice_number || finalInvoice.invoice_number
+    
+    if (!invoiceId) {
+      throw new Error('Invalid invoice: missing ID')
+    }
+
+    // Create payment with the correct invoice reference
+    const result = await createPayment({
+      ...finalInvoice,
+      id: invoiceId,
+      invoice_number: invoiceNumber
+    }, formattedPayments)
     
     // Release tables if this was a dine-in order
     if (finalInvoice.type === 'DINE_IN' && finalInvoice.tables_selected?.length) {
