@@ -22,7 +22,8 @@
           <th class="text-left" style="min-width: 150px">Date</th>
           <th class="text-left" style="min-width: 150px">Invoice Number</th>
           <th class="text-left" style="min-width: 200px">Customer</th>
-          <th class="text-left" style="min-width: 120px">Paid Status</th>
+          <th class="text-left" style="min-width: 120px">Status</th>
+          <th class="text-left" style="min-width: 120px">Payment Status</th>
           <th class="text-right" style="min-width: 150px">Total</th>
         </tr>
       </thead>
@@ -40,6 +41,15 @@
               class="text-uppercase"
             >
               {{ invoice.status }}
+            </v-chip>
+          </td>
+          <td>
+            <v-chip
+              :color="getPaidStatusColor(invoice.paid_status)"
+              size="small"
+              class="text-uppercase"
+            >
+              {{ invoice.paid_status || 'UNPAID' }}
             </v-chip>
           </td>
           <td class="text-right">
@@ -107,14 +117,34 @@ defineEmits(['update:page'])
 
 const getStatusColor = (status) => {
   switch (status?.toUpperCase()) {
-    case 'PAID':
+    case 'COMPLETED':
       return 'success'
-    case 'PENDING':
-      return 'warning'
-    case 'VOID':
+    case 'SENT':
+      return 'info'
+    case 'VIEWED':
+      return 'primary'
+    case 'OVERDUE':
       return 'error'
+    case 'DUE':
+      return 'warning'
+    case 'DRAFT':
+    case 'SAVE_DRAFT':
+      return 'grey'
     default:
       return 'info'
+  }
+}
+
+const getPaidStatusColor = (status) => {
+  switch (status?.toUpperCase()) {
+    case 'PAID':
+      return 'success'
+    case 'PARTIALLY_PAID':
+      return 'warning'
+    case 'UNPAID':
+      return 'error'
+    default:
+      return 'error'
   }
 }
 

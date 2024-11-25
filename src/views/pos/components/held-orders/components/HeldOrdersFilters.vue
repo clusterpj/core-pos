@@ -38,6 +38,19 @@
         prepend-inner-icon="mdi-filter-variant"
       ></v-select>
     </v-col>
+
+    <!-- Payment Status Filter -->
+    <v-col cols="12" sm="4">
+      <v-select
+        :model-value="selectedPaymentStatus"
+        @update:model-value="$emit('update:selectedPaymentStatus', $event)"
+        :items="paymentStatusTypes"
+        label="Filter by payment status"
+        variant="outlined"
+        density="comfortable"
+        prepend-inner-icon="mdi-cash-multiple"
+      ></v-select>
+    </v-col>
   </v-row>
 </template>
 
@@ -72,20 +85,17 @@ const props = defineProps({
 
 const statusTypes = computed(() => {
   switch (props.mode) {
-    case 'active':
-      return [
-        { title: 'All Status', value: 'ALL' },
-        { title: 'Paid', value: PaidStatus.PAID },
-        { title: 'Unpaid', value: PaidStatus.UNPAID }
-      ]
     case 'delivery':
     case 'history':
       return [
         { title: 'All Status', value: 'ALL' },
-        { title: 'Pending', value: InvoiceStatus.PENDING },
-        { title: 'Generated', value: InvoiceStatus.GENERATED },
-        { title: 'Failed', value: InvoiceStatus.FAILED },
-        { title: 'Cancelled', value: InvoiceStatus.CANCELLED }
+        { title: 'Draft', value: 'DRAFT' },
+        { title: 'Save Draft', value: 'SAVE_DRAFT' },
+        { title: 'Sent', value: 'SENT' },
+        { title: 'Viewed', value: 'VIEWED' },
+        { title: 'Overdue', value: 'OVERDUE' },
+        { title: 'Completed', value: 'COMPLETED' },
+        { title: 'Due', value: 'DUE' }
       ]
     default:
       return [
@@ -93,6 +103,13 @@ const statusTypes = computed(() => {
       ]
   }
 })
+
+const paymentStatusTypes = computed(() => [
+  { title: 'All Payment Status', value: 'ALL' },
+  { title: 'Paid', value: 'PAID' },
+  { title: 'Partially Paid', value: 'PARTIALLY_PAID' },
+  { title: 'Unpaid', value: 'UNPAID' }
+])
 
 defineEmits(['update:search', 'update:selectedType', 'update:selectedStatus'])
 </script>
