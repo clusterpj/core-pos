@@ -694,15 +694,7 @@ const processPayment = async () => {
       }
 
       // Structure the final invoice with the required nested invoice property
-      finalInvoice = {
-        ...invoiceResult.invoice,
-        invoice: {
-          ...invoiceResult.invoice,
-          due_amount: totalWithTip,
-          total: totalWithTip,
-          sub_total: invoiceTotal.value
-        }
-      }
+      finalInvoice = invoiceResult.invoice
     } else {
       // Process regular invoice
       finalInvoice = {
