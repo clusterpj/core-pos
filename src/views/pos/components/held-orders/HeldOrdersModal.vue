@@ -507,16 +507,25 @@ watch([deliverySearch, deliverySelectedType, deliverySelectedStatus, deliverySel
         ? ['DELIVERY', 'PICKUP']
         : [deliverySelectedType.value]
         
-      await fetchInvoices({
+      const params = {
         type,
-        status: deliverySelectedStatus.value !== 'ALL' ? deliverySelectedStatus.value : '',
-        paid_status: deliverySelectedPaymentStatus.value !== 'ALL' ? deliverySelectedPaymentStatus.value : '',
         invoiceNumber: deliverySearch.value,
         page: deliveryPage.value,
         orderByField: 'invoice_number',
         orderBy: 'desc',
         per_page: 10
-      })
+      }
+
+      // Only add status and paid_status if they're not 'ALL'
+      if (deliverySelectedStatus.value !== 'ALL') {
+        params.status = deliverySelectedStatus.value
+      }
+      
+      if (deliverySelectedPaymentStatus.value !== 'ALL') {
+        params.paid_status = deliverySelectedPaymentStatus.value
+      }
+
+      await fetchInvoices(params)
     } finally {
       deliveryLoading.value = false
     }
