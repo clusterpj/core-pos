@@ -16,6 +16,7 @@
         clearable
         @update:model-value="handleSearch"
         @click:clear="clearSearch"
+        @keyup.enter="handleEnter"
       >
         <template v-slot:prepend-inner>
           <v-icon
@@ -40,7 +41,7 @@ const { mobile } = useDisplay()
 
 const isMobile = computed(() => mobile.value)
 
-const emit = defineEmits(['search'])
+const emit = defineEmits(['search', 'quickAdd'])
 
 // Debounced search with loading state
 let searchTimeout
@@ -57,6 +58,12 @@ const handleSearch = (value) => {
 const clearSearch = () => {
   searchQuery.value = ''
   emit('search', '')
+}
+
+const handleEnter = () => {
+  if (searchQuery.value.trim()) {
+    emit('quickAdd', searchQuery.value.trim())
+  }
 }
 </script>
 

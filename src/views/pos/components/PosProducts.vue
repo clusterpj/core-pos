@@ -184,6 +184,26 @@ const quickAdd = (product) => {
   logger.info('Quick adding product', { product })
   cartStore.addItem(product, 1)
 }
+
+const handleQuickAdd = (searchTerm) => {
+  logger.startGroup('POS Products: Quick Add by Search')
+  try {
+    // Find the first product that matches the search term
+    const product = posStore.products.find(p => 
+      p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    
+    if (product) {
+      quickAdd(product)
+    } else {
+      logger.warn('No matching product found for quick add', { searchTerm })
+    }
+  } catch (err) {
+    logger.error('Quick add failed', err)
+  } finally {
+    logger.endGroup()
+  }
+}
 </script>
 
 <style scoped>
