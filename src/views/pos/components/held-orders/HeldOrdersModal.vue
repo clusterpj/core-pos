@@ -139,11 +139,13 @@
                     :search="deliverySearch"
                     :selectedType="deliverySelectedType"
                     :selectedStatus="deliverySelectedStatus"
+                    :selectedPaymentStatus="deliverySelectedPaymentStatus"
                     :orderTypes="orderTypes"
                     mode="delivery"
                     @update:search="deliverySearch = $event"
                     @update:selectedType="deliverySelectedType = $event"
                     @update:selectedStatus="deliverySelectedStatus = $event"
+                    @update:selectedPaymentStatus="deliverySelectedPaymentStatus = $event"
                   />
                 </v-container>
 
@@ -260,6 +262,7 @@ const invoiceItemsPerPage = ref(10)
 const deliverySearch = ref('')
 const deliverySelectedType = ref('ALL')
 const deliverySelectedStatus = ref('ALL')
+const deliverySelectedPaymentStatus = ref('ALL')
 const deliveryPage = ref(1)
 const deliveryLoading = ref(false)
 
