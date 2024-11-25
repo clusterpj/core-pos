@@ -318,7 +318,11 @@ const showCreateCustomer = ref(false)
 const onCustomerSearch = async (search) => {
   customerSearch.value = search // Maintain search text
   if (search && search.length >= 3) {
-    await searchCustomers(search)
+    // Check if search is a phone number (contains only digits, spaces, dashes or parentheses)
+    const isPhoneSearch = /^[\d\s\-()]+$/.test(search)
+    // If it's a phone search, clean up the format before searching
+    const searchTerm = isPhoneSearch ? search.replace(/[\s\-()]/g, '') : search
+    await searchCustomers(searchTerm)
   }
 }
 
