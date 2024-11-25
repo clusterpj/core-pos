@@ -61,8 +61,8 @@
                   :loading="isSearching"
                   :error-messages="validationErrors.name"
                   label="Search Customer"
-                  item-title="name"
-                  item-value="id"
+                  item-title="title"
+                  item-value="value"
                   variant="outlined"
                   density="comfortable"
                   persistent-hint
@@ -341,7 +341,8 @@ const onCustomerSearch = async (search) => {
       // Update the search results with properly formatted data for v-autocomplete
       searchResults.value = customers.map(customer => ({
         ...customer,
-        title: customer.name,
+        title: customer.name || customer.customer_username || 'Unknown',
+        subtitle: `${customer.phone || 'No phone'}${customer.email ? ` • ${customer.email}` : ''}`,
         value: customer.id
       }))
       
