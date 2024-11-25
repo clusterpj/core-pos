@@ -3,7 +3,7 @@
   <v-dialog 
     v-model="dialog" 
     :fullscreen="$vuetify.display.mobile"
-    :max-width="$vuetify.display.mobile ? '100%' : '800px'"
+    :max-width="$vuetify.display.mobile ? '100%' : '600px'"
     persistent
     scrollable
     transition="dialog-bottom-transition"
@@ -66,7 +66,7 @@
                     </v-card-title>
                   </v-card-item>
                   <v-divider></v-divider>
-                  <v-card-text class="py-4">
+                  <v-card-text class="py-2">
                     <div class="d-flex justify-space-between mb-2">
                       <span>Invoice Number:</span>
                       <strong>{{ invoiceNumber }}</strong>
@@ -114,9 +114,8 @@
                 <v-row>
                   <v-col v-for="method in paymentMethods" 
                          :key="method.id" 
-                         cols="12" 
-                         sm="6" 
-                         md="4">
+                         cols="6" 
+                         sm="4">
                     <v-btn
                       block
                       :color="isMethodSelected(method.id) ? 'primary' : undefined"
@@ -818,11 +817,11 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .payment-dialog-toolbar {
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
   background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
   backdrop-filter: blur(10px);
-  height: 64px !important;
+  height: 56px !important;
 }
 
 .invoice-summary-card {
@@ -839,11 +838,11 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .payment-method-btn {
-  min-height: 56px;
-  border-radius: 16px;
+  min-height: 48px;
+  border-radius: 8px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 1.1rem;
-  letter-spacing: 0.5px;
+  font-size: 0.95rem;
+  letter-spacing: 0.25px;
   border: 1px solid rgba(var(--v-border-color), 0.05);
   
   &:hover {
@@ -1003,15 +1002,15 @@ watch(() => dialog.value, async (newValue) => {
 
 /* Additional spacing improvements */
 .v-container {
-  padding: 16px;
+  padding: 12px;
 }
 
 .v-row {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .v-col {
-  padding: 8px;
+  padding: 4px;
 }
 
 .mb-2 {
