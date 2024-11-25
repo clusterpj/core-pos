@@ -100,7 +100,7 @@ const formatPrice = (price) => {
 }
 
 .cart-item {
-  padding: 4px 8px;
+  padding: 4px 4px;
   transition: all 0.2s ease;
   border-radius: 4px;
 }
@@ -167,7 +167,7 @@ const formatPrice = (price) => {
 /* Mobile Optimizations */
 @media (max-width: 600px) {
   .cart-item {
-    padding: 8px;
+    padding: 4px;
   }
   
   .quantity-badge {

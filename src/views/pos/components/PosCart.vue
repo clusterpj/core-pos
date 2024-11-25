@@ -234,7 +234,7 @@ const editItem = (item, index) => {
 }
 
 .cart-items-list {
-  padding: 1rem;
+  padding: 0.25rem;
 }
 
 .cart-summary-wrapper {
