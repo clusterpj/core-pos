@@ -703,7 +703,13 @@ const processPayment = async () => {
         tip_val: tipAmount.value,
         total: totalWithTip,
         due_amount: totalWithTip,
-        sub_total: invoiceTotal.value
+        sub_total: invoiceTotal.value,
+        invoice: {
+          ...invoiceData,
+          due_amount: totalWithTip,
+          total: totalWithTip,
+          sub_total: invoiceTotal.value
+        }
       }
     }
 
