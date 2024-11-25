@@ -216,12 +216,17 @@ const confirmPayment = () => {
 }
 
 const handlePaymentComplete = async (result) => {
-  showPaymentDialog.value = false
-  selectedInvoice.value = null
-  if (result) {
-    window.toastr?.['success']('Payment processed successfully')
-    // Emit refresh event
-    emit('refresh')
+  try {
+    showPaymentDialog.value = false
+    selectedInvoice.value = null
+    if (result) {
+      window.toastr?.['success']('Payment processed successfully')
+      // Get emit from defineEmits
+      emits('refresh')
+    }
+  } catch (error) {
+    console.error('Payment completion error:', error)
+    window.toastr?.['error']('Failed to complete payment process')
   }
 }
 </script>
