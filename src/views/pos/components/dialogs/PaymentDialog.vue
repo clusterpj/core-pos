@@ -527,9 +527,8 @@ const selectPaymentMethod = (methodId) => {
 
 const handleDenominationClick = (money, index) => {
   const payment = payments.value[index]
-  const currentReceived = Number(payment.displayReceived || 0)
-  payment.displayReceived = (currentReceived + Number(money.amount)).toString()
-  payment.received = Math.round(Number(payment.displayReceived) * 100)
+  payment.displayReceived = money.amount.toString()
+  payment.received = Math.round(Number(money.amount) * 100)
   calculateChange(index)
 }
 
