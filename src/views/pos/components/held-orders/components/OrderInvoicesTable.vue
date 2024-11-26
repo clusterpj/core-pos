@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-import PaymentDialog from '../../../components/dialogs/PaymentDialog.vue'
+import PaymentDialog from '../../../components/dialogs/PaymentInvoiceDialog.vue'
 import { ref, computed } from 'vue'
 
 const props = defineProps({
