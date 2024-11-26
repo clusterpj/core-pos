@@ -194,10 +194,15 @@ const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder
 
 const handleUpdateInvoice = async () => {
   try {
+    if (!cartStore.items || cartStore.items.length === 0) {
+      window.toastr?.error('Cannot update invoice: Cart is empty')
+      return
+    }
     await cartStore.updateInvoice()
     clearOrder()
   } catch (error) {
     console.error('Failed to update invoice:', error)
+    window.toastr?.error('Failed to update invoice: ' + (error.message || 'Unknown error'))
   }
 }
 
