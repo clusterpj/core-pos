@@ -331,6 +331,9 @@ const processOrder = async () => {
       throw new Error('Failed to get next invoice number')
     }
 
+    // Format full notes with pickup time
+    const fullNotes = `Pickup Time: ${customerInfo.pickupTime}\n${customerInfo.instructions || ''}`.trim()
+
     // Create invoice data
     const orderData = {
       invoice_date: currentDate.toISOString().split('T')[0],
@@ -397,7 +400,7 @@ const processOrder = async () => {
       discount_per_item: "NO",
 
       // Additional info
-      notes: `Pickup Time: ${customerInfo.pickupTime}\n${customerInfo.instructions || ''}`.trim(),
+      notes: fullNotes,
       hold_invoice_id: null,
       tip: "0",
       tip_type: "fixed",
@@ -420,6 +423,13 @@ const processOrder = async () => {
 
     // Show payment dialog
     showPaymentDialog.value = true
+
+    // Log successful order creation
+    logger.info('Pickup order created successfully:', {
+      invoiceNumber: invoiceResult.invoice.invoice_number,
+      total: invoiceResult.invoice.total,
+      pickupTime: customerInfo.pickupTime
+    })
   } catch (err) {
     logger.error('Failed to prepare pickup order:', {
       error: err,
