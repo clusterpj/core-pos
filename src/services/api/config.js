@@ -42,7 +42,8 @@ export const apiConfig = {
       settings: 'company/settings',
       invoice: {
         create: '/invoices',
-        get: '/invoices'
+        get: '/invoices',
+        update: '/invoices'  // Add update endpoint
       },
       payment: {
         methods: 'payments/multiple/get-payment-methods',
