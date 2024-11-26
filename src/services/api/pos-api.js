@@ -286,6 +286,41 @@ const operations = {
       } finally {
         logger.endGroup()
       }
+    },
+
+    async update(id, invoiceData) {
+      logger.startGroup('POS API: Update Invoice')
+      try {
+        const endpoint = `${getApiEndpoint('pos.invoice.update')}/${id}`
+        logger.info('Updating invoice at endpoint:', endpoint)
+        
+        // Format the data according to API requirements
+        const formattedData = {
+          ...invoiceData,
+          id: Number(id),
+          is_edited: 1,
+          status: 'DRAFT',
+          is_invoice_pos: 1,
+          is_pdf_pos: true,
+          banType: true,
+          avalara_bool: false,
+          package_bool: 0,
+          save_as_draft: 0,
+          not_charge_automatically: 0
+        }
+
+        logger.debug('Formatted invoice update data:', formattedData)
+        
+        const response = await apiClient.put(endpoint, formattedData)
+        logger.debug('Invoice update response:', response.data)
+        
+        return response.data
+      } catch (error) {
+        logger.error('Failed to update invoice', error)
+        throw error
+      } finally {
+        logger.endGroup()
+      }
     }
   },
 
