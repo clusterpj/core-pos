@@ -77,7 +77,7 @@
               Details
             </v-btn>
             <v-btn
-              v-if="invoice.status === 'DRAFT'"
+              v-if="['DRAFT', 'SENT'].includes(invoice.status)"
               color="primary"
               size="small"
               variant="elevated"

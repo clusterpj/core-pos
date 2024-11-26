@@ -405,7 +405,7 @@ const payments = ref([])
 const cartStore = useCartStore()
 
 const canLoadToCart = computed(() => {
-  return props.invoice?.invoice?.status === 'DRAFT'
+  return ['DRAFT', 'SENT'].includes(props.invoice?.invoice?.status)
 })
 
 const loadToCart = async () => {
