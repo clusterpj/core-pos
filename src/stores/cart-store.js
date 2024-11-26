@@ -54,6 +54,10 @@ export const useCartStore = defineStore('cart', {
       mutations.clearCart(this)
     },
 
+    loadInvoice(invoice) {
+      actions.loadInvoice(this, invoice)
+    },
+
     // Invoice preparation actions
     prepareInvoiceData(storeId, cashRegisterId, referenceNumber) {
       return invoiceActions.prepareInvoiceData(this, this, { 

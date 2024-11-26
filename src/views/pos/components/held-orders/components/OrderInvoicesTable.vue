@@ -260,6 +260,7 @@
 <script setup>
 import PaymentDialog from '../../../components/dialogs/PaymentInvoiceDialog.vue'
 import { ref, computed } from 'vue'
+import { useCartStore } from '@/stores/cart-store'
 
 const props = defineProps({
   loading: {
