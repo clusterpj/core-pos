@@ -8,13 +8,25 @@
         class="rounded-t-lg"
       >
         <v-toolbar-title class="text-h6 font-weight-medium">
-          Current Order
+          {{ cartStore.isEditingInvoice ? 'Edit Invoice' : 'Current Order' }}
         </v-toolbar-title>
         
         <v-spacer></v-spacer>
+
+        <v-btn
+          v-if="cartStore.canUpdateInvoice"
+          color="white"
+          variant="text"
+          :loading="updating"
+          @click="updateInvoice"
+          prepend-icon="mdi-content-save"
+          class="text-none"
+        >
+          Update Invoice
+        </v-btn>
         
         <v-btn
-          v-if="cartStore.isHoldOrder"
+          v-else-if="cartStore.isHoldOrder"
           color="white"
           variant="text"
           :loading="updating"
@@ -178,7 +190,7 @@ import EditItemDialog from './cart/EditItemDialog.vue'
 import OrderNotes from './cart/OrderNotes.vue'
 import { useCart } from './cart/composables/useCart'
 
-const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder, splitItem } = useCart()
+const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder, updateInvoice, splitItem } = useCart()
 
 
 // Local state for edit dialog
