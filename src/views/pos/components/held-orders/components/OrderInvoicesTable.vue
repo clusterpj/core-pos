@@ -34,8 +34,8 @@
           <td>{{ invoice?.invoice_number || 'N/A' }}</td>
           <td class="text-truncate" style="max-width: 200px">
             {{ invoice?.contact?.name 
-               ? `${invoice.contact.name} ${invoice.contact.last_name}`.trim()
-               : invoice?.customer?.name || 'Walk-in Customer' }}
+               ? `${invoice.contact.name} ${invoice.contact.last_name || ''}`.trim()
+               : invoice?.customer?.name || invoice?.name || 'Walk-in Customer' }}
           </td>
           <td>
             <v-chip
