@@ -9,7 +9,7 @@
       <v-btn
         color="primary"
         v-bind="dialogProps"
-        prepend-icon="mdi-truck-delivery"
+        prepend-icon="mdi-store-clock"
         :loading="loading"
         :disabled="disabled || cartStore.isEmpty"
         class="text-none px-6"
@@ -135,76 +135,33 @@
               </v-col>
             </v-row>
 
-            <!-- Delivery Address Section -->
+            <!-- Pickup Time -->
             <v-row>
               <v-col cols="12">
-                <div class="text-subtitle-1 mb-2">Delivery Address</div>
+                <div class="text-subtitle-1 mb-2">Pickup Time</div>
                 <v-text-field
-                  v-model="customerInfo.address"
-                  label="Street Address"
+                  v-model="customerInfo.pickupTime"
+                  label="Pickup Time"
+                  type="time"
                   variant="outlined"
                   density="comfortable"
-                  :error-messages="validationErrors.address"
-                  @input="clearError('address')"
+                  :error-messages="validationErrors.pickupTime"
+                  @input="clearError('pickupTime')"
                   required
                 ></v-text-field>
               </v-col>
             </v-row>
 
-            <v-row>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="customerInfo.unit"
-                  label="Apt/Suite/Unit (Optional)"
-                  variant="outlined"
-                  density="comfortable"
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="customerInfo.zipCode"
-                  label="ZIP Code"
-                  variant="outlined"
-                  density="comfortable"
-                  :error-messages="validationErrors.zipCode"
-                  @input="clearError('zipCode')"
-                  required
-                ></v-text-field>
-              </v-col>
-            </v-row>
-
-            <v-row>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="customerInfo.city"
-                  label="City"
-                  variant="outlined"
-                  density="comfortable"
-                  :error-messages="validationErrors.city"
-                  @input="clearError('city')"
-                  required
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12" sm="6">
-                <StateDropdown
-                  v-model="customerInfo.state"
-                  :error="validationErrors.state"
-                  @state-selected="onStateSelect"
-                  @update:model-value="clearError('state')"
-                />
-              </v-col>
-            </v-row>
-
-            <!-- Delivery Instructions -->
+            <!-- Pickup Instructions -->
             <v-row>
               <v-col cols="12">
                 <v-textarea
                   v-model="customerInfo.instructions"
-                  label="Delivery Instructions (Optional)"
+                  label="Pickup Instructions (Optional)"
                   variant="outlined"
                   density="comfortable"
                   rows="2"
-                  hint="Special instructions for delivery driver"
+                  hint="Special instructions for pickup"
                 ></v-textarea>
               </v-col>
             </v-row>
@@ -305,10 +262,7 @@ const canProcessOrder = computed(() => {
   return !cartStore.isEmpty && 
          (customerInfo.name || '').trim() && 
          (customerInfo.phone || '').trim() && 
-         (customerInfo.address || '').trim() && 
-         (customerInfo.city || '').trim() && 
-         (customerInfo.state || '').trim() && 
-         (customerInfo.zipCode || '').trim()
+         (customerInfo.pickupTime || '').trim()
 })
 const customerSearch = ref('')
 const selectedCustomer = ref(null)
@@ -478,12 +432,7 @@ const customerInfo = reactive({
   name: '',
   phone: '',
   email: '',
-  address: '',
-  unit: '',
-  zip: '',
-  city: '',
-  state: '',
-  state_id: null,
+  pickupTime: '',
   instructions: ''
 })
 
@@ -530,26 +479,8 @@ const validateForm = () => {
     isValid = false
   }
 
-  if (!customerInfo.address.trim()) {
-    validationErrors.address = 'Delivery address is required for delivery orders'
-    isValid = false
-  }
-
-  if (!customerInfo.zipCode.trim()) {
-    validationErrors.zipCode = 'ZIP code is required'
-    isValid = false
-  } else if (!/^\d{5}(-\d{4})?$/.test(customerInfo.zipCode.trim())) {
-    validationErrors.zipCode = 'Invalid ZIP code format'
-    isValid = false
-  }
-
-  if (!customerInfo.city.trim()) {
-    validationErrors.city = 'City is required'
-    isValid = false
-  }
-
-  if (!customerInfo.state.trim()) {
-    validationErrors.state = 'State is required'
+  if (!customerInfo.pickupTime.trim()) {
+    validationErrors.pickupTime = 'Pickup time is required'
     isValid = false
   }
 
@@ -652,9 +583,9 @@ const processOrder = async () => {
       user_id: selectedCustomer.value?.id || 1,
 
       // Order type and status
-      type: ORDER_TYPES.DELIVERY,
+      type: ORDER_TYPES.PICKUP,
       status: 'HELD',
-      description: 'Pick Up Order',
+      description: `Pick Up Order - ${customerInfo.pickupTime}`,
 
       // Customer contact info
       contact: {
@@ -752,7 +683,7 @@ const processOrder = async () => {
 const onPaymentComplete = async (success) => {
   if (success) {
     dialog.value = false
-    window.toastr?.['success']('Delivery order created successfully')
+    window.toastr?.['success']('Pick up order created successfully')
   }
 }
 

@@ -24,7 +24,7 @@
     <v-card class="rounded-lg">
       <v-toolbar color="primary" density="comfortable">
         <v-toolbar-title class="text-h6 font-weight-medium">
-          Delivery Order
+          Pick Up Order
         </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn icon="mdi-close" variant="text" @click="closeModal" />
