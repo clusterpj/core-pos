@@ -58,6 +58,10 @@ export const useCartStore = defineStore('cart', {
       actions.loadInvoice(this, invoice)
     },
 
+    async updateInvoice() {
+      return actions.updateInvoice(this)
+    },
+
     // Invoice preparation actions
     prepareInvoiceData(storeId, cashRegisterId, referenceNumber) {
       return invoiceActions.prepareInvoiceData(this, this, { 

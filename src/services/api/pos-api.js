@@ -311,7 +311,29 @@ const operations = {
 
         logger.debug('Formatted invoice update data:', formattedData)
         
-        const response = await apiClient.put(endpoint, formattedData)
+        // Format the data according to API requirements
+        const updateData = {
+          ...formattedData,
+          id: Number(id),
+          is_edited: 1,
+          status: 'DRAFT',
+          is_invoice_pos: 1,
+          is_pdf_pos: true,
+          banType: true,
+          avalara_bool: false,
+          package_bool: 0,
+          save_as_draft: 0,
+          not_charge_automatically: 0,
+          items: formattedData.items.map(item => ({
+            ...item,
+            price: Math.round(Number(item.price * 100)),
+            sub_total: Math.round(Number(item.sub_total * 100)),
+            total: Math.round(Number(item.total * 100)),
+            tax: Math.round(Number(item.tax * 100))
+          }))
+        }
+
+        const response = await apiClient.put(endpoint, updateData)
         logger.debug('Invoice update response:', response.data)
         
         return response.data

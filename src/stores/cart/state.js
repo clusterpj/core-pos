@@ -12,7 +12,8 @@ export const state = () => ({
   holdInvoiceId: null,
   holdOrderDescription: null,
   type: null, // Add type to state
-  editingInvoiceId: null // Track which invoice is being edited
+  editingInvoiceId: null, // Track which invoice is being edited
+  editingInvoiceNumber: null // Track invoice number being edited
 })
 
 export const mutations = {

@@ -144,8 +144,9 @@ export const actions = {
       // Clear existing cart first
       this.clearCart(state)
         
-      // Set editing invoice ID
+      // Set editing invoice ID and number
       state.editingInvoiceId = invoice.id
+      state.editingInvoiceNumber = invoice.invoice_number
 
       // Load items
       state.items = invoice.items.map(item => ({
@@ -173,6 +174,53 @@ export const actions = {
       })
     } catch (error) {
       logger.error('Failed to load invoice into cart:', error)
+      throw error
+    } finally {
+      logger.endGroup()
+    }
+  },
+
+  async updateInvoice(state) {
+    logger.startGroup('Cart Store: Updating Invoice')
+    try {
+      if (!state.editingInvoiceId) {
+        throw new Error('No invoice being edited')
+      }
+
+      // Prepare invoice data
+      const invoiceData = {
+        items: state.items.map(item => ({
+          item_id: item.id,
+          name: item.name,
+          description: item.description || '',
+          price: item.price,
+          quantity: item.quantity,
+          unit_name: item.unit_name || 'units',
+          sub_total: item.price * item.quantity,
+          total: item.total,
+          tax: item.tax || 0
+        })),
+        notes: state.notes,
+        type: state.type,
+        discount_type: state.discountType,
+        discount_value: state.discountValue,
+        invoice_number: state.editingInvoiceNumber
+      }
+
+      // Call API to update invoice
+      const response = await posApi.invoice.update(state.editingInvoiceId, invoiceData)
+      
+      if (!response?.success) {
+        throw new Error(response?.message || 'Failed to update invoice')
+      }
+
+      // Clear editing state after successful update
+      state.editingInvoiceId = null
+      state.editingInvoiceNumber = null
+
+      return response
+    } catch (error) {
+      logger.error('Failed to update invoice:', error)
       throw error
     } finally {
       logger.endGroup()
