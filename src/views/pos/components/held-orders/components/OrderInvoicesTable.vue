@@ -56,7 +56,7 @@
           <td class="text-right">
             {{ invoice?.total ? formatCurrency(invoice.total / 100) : formatCurrency(0) }}
           </td>
-          <td class="text-center">
+          <td class="text-center d-flex justify-center gap-2">
             <v-btn
               v-if="invoice.paid_status === 'UNPAID'"
               color="success"
@@ -66,6 +66,15 @@
             >
               <v-icon size="small" class="mr-1">mdi-cash-register</v-icon>
               Pay
+            </v-btn>
+            <v-btn
+              color="info"
+              size="small"
+              variant="elevated"
+              @click="showInvoiceDetails(invoice)"
+            >
+              <v-icon size="small" class="mr-1">mdi-information</v-icon>
+              Details
             </v-btn>
           </td>
         </tr>
@@ -120,6 +129,122 @@
     }"
     @payment-complete="handlePaymentComplete"
   />
+
+  <!-- Invoice Details Dialog -->
+  <v-dialog v-model="showDetailsDialog" max-width="700">
+    <v-card>
+      <v-toolbar color="primary" density="comfortable">
+        <v-toolbar-title class="text-h6">
+          Invoice Details
+        </v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn icon="mdi-close" variant="text" @click="showDetailsDialog = false" />
+      </v-toolbar>
+
+      <v-card-text class="pa-4">
+        <template v-if="selectedInvoiceDetails">
+          <!-- Basic Information -->
+          <v-row>
+            <v-col cols="12" sm="6">
+              <div class="text-subtitle-1 font-weight-bold mb-2">Basic Information</div>
+              <div class="mb-2">
+                <strong>Invoice Number:</strong> {{ selectedInvoiceDetails.invoice_number }}
+              </div>
+              <div class="mb-2">
+                <strong>Date:</strong> {{ formatDate(selectedInvoiceDetails.created_at) }}
+              </div>
+              <div class="mb-2">
+                <strong>Status:</strong>
+                <v-chip
+                  :color="getStatusColor(selectedInvoiceDetails.status)"
+                  size="small"
+                  class="text-uppercase ml-2"
+                >
+                  {{ selectedInvoiceDetails.status }}
+                </v-chip>
+              </div>
+              <div class="mb-2">
+                <strong>Payment Status:</strong>
+                <v-chip
+                  :color="getPaidStatusColor(selectedInvoiceDetails.paid_status)"
+                  size="small"
+                  class="text-uppercase ml-2"
+                >
+                  {{ selectedInvoiceDetails.paid_status || 'UNPAID' }}
+                </v-chip>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="6">
+              <div class="text-subtitle-1 font-weight-bold mb-2">Customer Information</div>
+              <div class="mb-2">
+                <strong>Name:</strong> {{ selectedInvoiceDetails.contact?.name || 'N/A' }}
+              </div>
+              <div class="mb-2">
+                <strong>Phone:</strong> {{ selectedInvoiceDetails.contact?.phone || 'N/A' }}
+              </div>
+              <div class="mb-2">
+                <strong>Email:</strong> {{ selectedInvoiceDetails.contact?.email || 'N/A' }}
+              </div>
+            </v-col>
+          </v-row>
+
+          <!-- Items Table -->
+          <v-row class="mt-4">
+            <v-col cols="12">
+              <div class="text-subtitle-1 font-weight-bold mb-2">Order Items</div>
+              <v-table density="comfortable">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th class="text-right">Quantity</th>
+                    <th class="text-right">Price</th>
+                    <th class="text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in selectedInvoiceDetails.items" :key="item.id">
+                    <td>{{ item.name }}</td>
+                    <td class="text-right">{{ item.quantity }}</td>
+                    <td class="text-right">{{ formatCurrency(item.price / 100) }}</td>
+                    <td class="text-right">{{ formatCurrency(item.total / 100) }}</td>
+                  </tr>
+                </tbody>
+              </v-table>
+            </v-col>
+          </v-row>
+
+          <!-- Totals -->
+          <v-row class="mt-4">
+            <v-col cols="12" sm="6" offset-sm="6">
+              <div class="d-flex justify-space-between mb-2">
+                <strong>Subtotal:</strong>
+                <span>{{ formatCurrency(selectedInvoiceDetails.sub_total / 100) }}</span>
+              </div>
+              <div class="d-flex justify-space-between mb-2">
+                <strong>Tax:</strong>
+                <span>{{ formatCurrency(selectedInvoiceDetails.tax / 100) }}</span>
+              </div>
+              <v-divider class="my-2"></v-divider>
+              <div class="d-flex justify-space-between">
+                <strong>Total:</strong>
+                <span class="text-h6">{{ formatCurrency(selectedInvoiceDetails.total / 100) }}</span>
+              </div>
+            </v-col>
+          </v-row>
+
+          <!-- Notes -->
+          <v-row v-if="selectedInvoiceDetails.notes" class="mt-4">
+            <v-col cols="12">
+              <div class="text-subtitle-1 font-weight-bold mb-2">Notes</div>
+              <v-card variant="outlined" class="pa-3">
+                {{ selectedInvoiceDetails.notes }}
+              </v-card>
+            </v-col>
+          </v-row>
+        </template>
+      </v-card-text>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -204,6 +329,29 @@ const getPaidStatusColor = (status) => {
 const showPaymentDialog = ref(false)
 const showConfirmDialog = ref(false)
 const selectedInvoice = ref(null)
+
+// Details Dialog
+const showDetailsDialog = ref(false)
+const selectedInvoiceDetails = ref(null)
+
+const showInvoiceDetails = async (invoice) => {
+  try {
+    // If we already have all the needed details in the invoice object
+    selectedInvoiceDetails.value = invoice
+    showDetailsDialog.value = true
+    
+    // Optionally, if you need to fetch more details:
+    /*
+    const response = await posApi.invoice.get(invoice.id)
+    if (response?.invoice) {
+      selectedInvoiceDetails.value = response.invoice
+    }
+    */
+  } catch (error) {
+    logger.error('Failed to load invoice details:', error)
+    window.toastr?.error('Failed to load invoice details')
+  }
+}
 
 const handlePayClick = (invoice) => {
   selectedInvoice.value = invoice
