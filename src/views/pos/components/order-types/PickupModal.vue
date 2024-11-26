@@ -445,10 +445,7 @@ const onStateSelect = (state) => {
 const validationErrors = reactive({
   name: '',
   phone: '',
-  address: '',
-  zip: '',
-  city: '',
-  state: ''
+  pickupTime: ''
 })
 
 // Watch for dialog open to set order type
