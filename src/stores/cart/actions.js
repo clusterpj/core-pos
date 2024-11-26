@@ -144,9 +144,10 @@ export const actions = {
       // Clear existing cart first
       this.clearCart(state)
         
-      // Set editing invoice ID and number
+      // Set editing invoice details
       state.editingInvoiceId = invoice.id
       state.editingInvoiceNumber = invoice.invoice_number
+      state.editingInvoiceStatus = invoice.status
 
       // Load items
       state.items = invoice.items.map(item => ({
@@ -187,25 +188,60 @@ export const actions = {
         throw new Error('No invoice being edited')
       }
 
-      // Prepare invoice data
+      // Get current date and due date
+      const currentDate = new Date()
+      const dueDate = new Date(currentDate)
+      dueDate.setDate(dueDate.getDate() + 7)
+
+      // Prepare invoice data with all required fields
       const invoiceData = {
+        // Basic invoice info
+        invoice_number: state.editingInvoiceNumber,
+        invoice_date: currentDate.toISOString().split('T')[0],
+        due_date: dueDate.toISOString().split('T')[0],
+        
+        // Amounts (convert to cents)
+        sub_total: Math.round(Number(this.subtotal * 100)),
+        total: Math.round(Number(this.total * 100)),
+        tax: Math.round(Number(this.taxAmount * 100)),
+        
+        // Items with proper formatting
         items: state.items.map(item => ({
-          item_id: item.id,
+          item_id: Number(item.id),
           name: item.name,
           description: item.description || '',
-          price: item.price,
-          quantity: item.quantity,
+          price: Math.round(Number(item.price * 100)),
+          quantity: Math.round(Number(item.quantity)),
           unit_name: item.unit_name || 'units',
-          sub_total: item.price * item.quantity,
-          total: item.total,
-          tax: item.tax || 0
+          sub_total: Math.round(Number(item.price * item.quantity * 100)),
+          total: Math.round(Number(item.total * 100)),
+          tax: Math.round(Number(item.tax * 100))
         })),
-        notes: state.notes,
+
+        // Status and type
+        status: state.editingInvoiceStatus,
         type: state.type,
+        
+        // Discount
         discount_type: state.discountType,
-        discount_value: state.discountValue,
-        invoice_number: state.editingInvoiceNumber
+        discount: state.discountValue.toString(),
+        discount_val: Math.round(Number(this.discountAmount * 100)),
+        discount_per_item: "NO",
+
+        // Additional required fields
+        notes: state.notes || '',
+        is_invoice_pos: 1,
+        is_pdf_pos: true,
+        avalara_bool: false,
+        banType: true,
+        package_bool: false,
+        print_pdf: false,
+        save_as_draft: false,
+        send_email: false,
+        not_charge_automatically: false
       }
+
+      logger.debug('Updating invoice with data:', invoiceData)
 
       // Call API to update invoice
       const response = await posApi.invoice.update(state.editingInvoiceId, invoiceData)
@@ -217,6 +253,7 @@ export const actions = {
       // Clear editing state after successful update
       state.editingInvoiceId = null
       state.editingInvoiceNumber = null
+      state.editingInvoiceStatus = null
 
       return response
     } catch (error) {

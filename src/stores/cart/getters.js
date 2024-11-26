@@ -84,5 +84,10 @@ export const getters = {
 
   isEditingInvoice: (state) => {
     return state.editingInvoiceId !== null
+  },
+
+  canUpdateInvoice: (state) => {
+    return state.editingInvoiceId !== null && 
+           ['DRAFT', 'SENT'].includes(state.editingInvoiceStatus)
   }
 }
