@@ -177,13 +177,13 @@
             <v-col cols="12" sm="6">
               <div class="text-subtitle-1 font-weight-bold mb-2">Customer Information</div>
               <div class="mb-2">
-                <strong>Name:</strong> {{ selectedInvoiceDetails.contact?.name || 'N/A' }}
+                <strong>Name:</strong> {{ selectedInvoiceDetails.contact?.name || selectedInvoiceDetails.first_name || selectedInvoiceDetails.name || 'N/A' }}
               </div>
               <div class="mb-2">
-                <strong>Phone:</strong> {{ selectedInvoiceDetails.contact?.phone || 'N/A' }}
+                <strong>Phone:</strong> {{ selectedInvoiceDetails.contact?.phone || selectedInvoiceDetails.phone || 'N/A' }}
               </div>
               <div class="mb-2">
-                <strong>Email:</strong> {{ selectedInvoiceDetails.contact?.email || 'N/A' }}
+                <strong>Email:</strong> {{ selectedInvoiceDetails.contact?.email || selectedInvoiceDetails.email || 'N/A' }}
               </div>
             </v-col>
           </v-row>
