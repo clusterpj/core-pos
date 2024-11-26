@@ -205,9 +205,9 @@ export const actions = {
         
         // Amounts (convert to cents)
         sub_total: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100)),
-        total: Math.round(Number(this.total * 100)),
-        tax: Math.round(Number(this.taxAmount * 100)),
-        due_amount: Math.round(Number(this.total * 100)),
+        total: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100)),
+        tax: Math.round(Number(state.items.reduce((sum, item) => sum + (item.tax || 0), 0) * 100)),
+        due_amount: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100)),
         
         // Items with proper formatting
         items: state.items.map(item => ({
