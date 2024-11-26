@@ -33,9 +33,7 @@
           <td>{{ invoice?.created_at ? formatDate(invoice.created_at) : 'N/A' }}</td>
           <td>{{ invoice?.invoice_number || 'N/A' }}</td>
           <td class="text-truncate" style="max-width: 200px">
-            {{ invoice?.first_name || invoice?.contact?.name 
-               ? `${invoice.first_name || invoice.contact.name} ${invoice.contact?.last_name || ''}`.trim()
-               : invoice?.customer?.name || invoice?.contact?.phone || 'Walk-in Customer' }}
+            {{ invoice?.contact?.name || invoice?.first_name || invoice?.name || 'Walk-in Customer' }}
           </td>
           <td>
             <v-chip
