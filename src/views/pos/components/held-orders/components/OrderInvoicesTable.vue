@@ -35,7 +35,7 @@
           <td class="text-truncate" style="max-width: 200px">
             {{ invoice?.contact?.name 
                ? `${invoice.contact.name} ${invoice.contact.last_name || ''}`.trim()
-               : invoice?.customer?.name || invoice?.name || 'Walk-in Customer' }}
+               : invoice?.customer?.name || invoice?.contact?.phone || 'Walk-in Customer' }}
           </td>
           <td>
             <v-chip
