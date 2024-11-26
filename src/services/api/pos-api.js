@@ -291,7 +291,7 @@ const operations = {
     async update(id, invoiceData) {
       logger.startGroup('POS API: Update Invoice')
       try {
-        const endpoint = `${getApiEndpoint('pos.invoice.update')}/${id}`
+        const endpoint = `/api/v1/invoices/${id}`
         logger.info('Updating invoice at endpoint:', endpoint)
         
         // Format the data according to API requirements
