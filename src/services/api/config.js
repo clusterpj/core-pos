@@ -41,9 +41,9 @@ export const apiConfig = {
       cashiers: 'core-pos/cash-register/getCashRegistersUser',
       settings: 'company/settings',
       invoice: {
-        create: '/invoices',
-        get: '/invoices',
-        update: '/invoices'  // Add update endpoint
+        create: 'invoices',
+        get: 'invoices',
+        update: 'invoices'
       },
       payment: {
         methods: 'payments/multiple/get-payment-methods',
