@@ -1,5 +1,6 @@
 import { logger } from '../../utils/logger'
 import { priceHelpers } from './helpers'
+import { posApi } from '../../services/api/pos-api'
 
 export const actions = {
   addItem(state, product, quantity = 1) {
@@ -187,9 +188,6 @@ export const actions = {
       if (!state.editingInvoiceId) {
         throw new Error('No invoice being edited')
       }
-
-      // Import posApi
-      const { posApi } = require('../../services/api/pos-api')
 
       // Get current date and due date
       const currentDate = new Date()
