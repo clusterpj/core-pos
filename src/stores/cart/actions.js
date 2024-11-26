@@ -210,24 +210,32 @@ export const actions = {
         due_amount: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100)),
         
         // Items with proper formatting
-        items: state.items.map(item => ({
-          item_id: Number(item.id),
-          name: item.name,
-          description: item.description || '',
-          price: Math.round(Number(item.price * 100)),
-          quantity: Math.round(Number(item.quantity)),
-          unit_name: item.unit_name || 'units',
-          sub_total: Math.round(Number(item.price * item.quantity * 100)),
-          total: Math.round(Number(item.total * 100)),
-          tax: Math.round(Number(item.tax * 100)),
-          discount: "0",
-          discount_val: 0,
-          discount_type: "fixed",
-          retention_amount: 0,
-          retention_concept: null,
-          retention_percentage: null,
-          retentions_id: null
-        })),
+        items: state.items.map(item => {
+          // Calculate tax amount based on price and quantity if not present
+          const itemPrice = Math.round(Number(item.price * 100))
+          const itemQuantity = Math.round(Number(item.quantity))
+          const itemSubtotal = itemPrice * itemQuantity
+          const itemTax = Math.round(Number(item.tax || (itemSubtotal * state.taxRate)) * 100)
+          
+          return {
+            item_id: Number(item.id),
+            name: item.name,
+            description: item.description || '',
+            price: itemPrice,
+            quantity: itemQuantity,
+            unit_name: item.unit_name || 'units',
+            sub_total: itemSubtotal,
+            total: itemSubtotal + itemTax,
+            tax: itemTax,
+            discount: "0",
+            discount_val: 0,
+            discount_type: "fixed",
+            retention_amount: 0,
+            retention_concept: "NO_RETENTION",
+            retention_percentage: 0,
+            retentions_id: null
+          }
+        }),
 
         // Status and type
         status: state.editingInvoiceStatus || 'DRAFT',
