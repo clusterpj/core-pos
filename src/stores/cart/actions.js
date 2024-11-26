@@ -1,6 +1,7 @@
 import { logger } from '../../utils/logger'
 import { priceHelpers } from './helpers'
 import { posApi } from '../../services/api/pos-api'
+import { useCompanyStore } from '../company'
 
 export const actions = {
   addItem(state, product, quantity = 1) {
@@ -184,6 +185,7 @@ export const actions = {
 
   async updateInvoice(state) {
     logger.startGroup('Cart Store: Updating Invoice')
+    const companyStore = useCompanyStore()
     try {
       if (!state.editingInvoiceId) {
         throw new Error('No invoice being edited')
