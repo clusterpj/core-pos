@@ -76,6 +76,16 @@
               <v-icon size="small" class="mr-1">mdi-information</v-icon>
               Details
             </v-btn>
+            <v-btn
+              v-if="invoice.status === 'DRAFT'"
+              color="primary"
+              size="small"
+              variant="elevated"
+              @click="loadInvoiceToCart(invoice)"
+            >
+              <v-icon size="small" class="mr-1">mdi-cart-arrow-down</v-icon>
+              Load to Cart
+            </v-btn>
           </td>
         </tr>
       </tbody>
@@ -291,6 +301,19 @@ const props = defineProps({
 })
 
 const emits = defineEmits(['update:page', 'refresh'])
+
+const cartStore = useCartStore()
+
+const loadInvoiceToCart = async (invoice) => {
+  try {
+    await cartStore.loadInvoice(invoice)
+    window.toastr?.success('Invoice loaded to cart successfully')
+    dialog.value = false
+  } catch (error) {
+    console.error('Failed to load invoice to cart:', error)
+    window.toastr?.error('Failed to load invoice to cart')
+  }
+}
 
 const getStatusColor = (status) => {
   switch (status?.toUpperCase()) {

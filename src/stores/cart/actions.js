@@ -136,5 +136,43 @@ export const actions = {
     state.holdInvoiceId = null
     state.holdOrderDescription = null
     state.type = null // Clear type when clearing cart
+  },
+
+  loadInvoice(state, invoice) {
+    logger.startGroup('Cart Store: Loading Invoice')
+    try {
+      // Clear existing cart first
+      this.clearCart(state)
+
+      // Load items
+      state.items = invoice.items.map(item => ({
+        id: item.item_id,
+        name: item.name,
+        description: item.description || '',
+        price: priceHelpers.toDollars(item.price),
+        quantity: item.quantity,
+        unit_name: item.unit_name || 'units',
+        tax: priceHelpers.toDollars(item.tax || 0),
+        total: priceHelpers.toDollars(item.total || 0),
+        sub_total: priceHelpers.toDollars(item.sub_total || 0)
+      }))
+
+      // Set other invoice properties
+      state.notes = invoice.notes || ''
+      state.type = invoice.type || null
+      state.discountType = invoice.discount_type || 'fixed'
+      state.discountValue = invoice.discount_val ? priceHelpers.toDollars(invoice.discount_val) : 0
+
+      logger.info('Invoice loaded into cart:', {
+        itemCount: state.items.length,
+        type: state.type,
+        discount: { type: state.discountType, value: state.discountValue }
+      })
+    } catch (error) {
+      logger.error('Failed to load invoice into cart:', error)
+      throw error
+    } finally {
+      logger.endGroup()
+    }
   }
 }
