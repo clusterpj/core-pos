@@ -594,10 +594,29 @@ const processOrder = async () => {
         identification: 'N/A'  // Default value for identification
       },
 
-      // Arrays
+      // Arrays - ensure all required arrays are initialized
       tables_selected: [],
       packages: [],
       taxes: [],
+      retentions: [],
+      items: state.items.map(item => ({
+        item_id: Number(item.id),
+        name: item.name,
+        description: item.description || '',
+        price: Math.round(Number(item.price * 100)),
+        quantity: Math.round(Number(item.quantity)),
+        unit_name: item.unit_name || 'units',
+        sub_total: Math.round(Number(item.price * item.quantity * 100)),
+        total: Math.round(Number(item.price * item.quantity * 100)),
+        tax: Math.round(Number(item.tax || 0)),
+        discount: "0",
+        discount_val: 0,
+        discount_type: "fixed",
+        retention_amount: 0,
+        retention_concept: "NO_RETENTION",
+        retention_percentage: 0,
+        retentions_id: null
+      })),
 
       // Amounts and calculations
       discount: "0",
