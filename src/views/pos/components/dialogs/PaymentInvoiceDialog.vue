@@ -627,7 +627,7 @@ const processPayment = async () => {
     invoiceTotal: invoiceTotal.value,
     tipAmount: tipAmount.value,
     payments: payments.value,
-    invoice: props.invoice // Log full invoice object
+    invoice: props.invoice
   })
 
   if (!isValid.value || processing.value) {
@@ -637,50 +637,120 @@ const processPayment = async () => {
 
   processing.value = true
   try {
-    // Use the prepared invoice data directly from props
-    const invoice = props.invoice.invoice
-    if (!invoice) {
-      throw new Error('Invoice data not provided')
-    }
-
-    // Calculate the total with tip
-    const totalWithTip = invoiceTotal.value + tipAmount.value
-    
-    console.log('PaymentDialog: Processing invoice:', {
-      id: invoice.id,
-      type: invoice.type,
-      tables: invoice.tables_selected,
-      total: totalWithTip,
-      originalTotal: invoice.total,
+    console.log('PaymentDialog: Starting invoice creation with props:', {
+      invoice: props.invoice,
+      hasInvoiceData: !!props.invoice?.invoice,
+      invoiceTotal: invoiceTotal.value,
       tipAmount: tipAmount.value
     })
 
-    // Modify the invoice in place with tip data
-    const tipPercentage = selectedTipPercent.value || Number(customTipPercent.value) || 0
-    invoice.tip = String(Math.round(tipPercentage))
-    invoice.tip_type = "percentage"
-    invoice.tip_val = tipAmount.value
-    invoice.total = totalWithTip
-    invoice.due_amount = totalWithTip
-    invoice.sub_total = invoiceTotal.value
-    
-    // Ensure required fields are set
-    invoice.is_invoice_pos = 1
-    invoice.is_pdf_pos = true
-    invoice.package_bool = false
-    invoice.print_pdf = false
-    invoice.save_as_draft = false
-    invoice.send_email = false
-    invoice.not_charge_automatically = false
-    invoice.avalara_bool = false
-    invoice.banType = true
+    let finalInvoice
+    const invoiceData = props.invoice?.invoice || props.invoice
 
-    // Set dates
-    const currentDate = new Date()
-    invoice.invoice_date = currentDate.toISOString().split('T')[0]
-    const dueDate = new Date(currentDate)
-    dueDate.setDate(dueDate.getDate() + 7)
-    invoice.due_date = dueDate.toISOString().split('T')[0]
+    if (!invoiceData) {
+      throw new Error('Invoice data not provided')
+    }
+
+    console.log('PaymentDialog: Processing invoice data:', {
+      invoiceData,
+      isHoldInvoice: invoiceData.is_hold_invoice,
+      total: invoiceData.total,
+      dueAmount: invoiceData.due_amount
+    })
+
+    // Calculate the total with tip
+    const totalWithTip = invoiceTotal.value + tipAmount.value
+    const tipPercentage = selectedTipPercent.value || Number(customTipPercent.value) || 0
+
+    // Check if we're dealing with a hold invoice or a regular invoice
+    if (invoiceData.is_hold_invoice) {
+      console.log('PaymentDialog: Processing hold invoice conversion')
+      
+      // First convert the hold invoice to a regular invoice
+      const holdInvoice = {
+        ...invoiceData,
+        tip: String(Math.round(tipPercentage)),
+        tip_type: "percentage",
+        tip_val: tipAmount.value,
+        total: totalWithTip,
+        due_amount: totalWithTip,
+        sub_total: invoiceTotal.value
+      }
+
+      // Convert hold invoice to regular invoice using the converter
+      const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
+      
+      if (!invoiceResult.success) {
+        console.error('Hold invoice conversion failed:', invoiceResult.error)
+        throw new Error(invoiceResult.error || 'Failed to create invoice from hold order')
+      }
+
+      // Log the conversion result
+      console.log('Hold invoice converted successfully:', {
+        holdInvoiceId: holdInvoice.id,
+        newInvoiceId: invoiceResult.invoice.id,
+        invoiceNumber: invoiceResult.invoice.invoice_number
+      })
+
+      // Structure the final invoice with the new invoice data
+      finalInvoice = {
+        invoice: {
+          ...invoiceResult.invoice,
+          // Ensure we use the new invoice ID and number
+          id: invoiceResult.invoice.id,
+          invoice_number: invoiceResult.invoice.invoice_number,
+          // Preserve reference to original hold invoice
+          hold_invoice_id: holdInvoice.id,
+          // Include payment-specific fields
+          tip: String(Math.round(tipPercentage)),
+          tip_type: "percentage",
+          tip_val: tipAmount.value,
+          total: totalWithTip,
+          due_amount: totalWithTip,
+          sub_total: invoiceTotal.value
+        }
+      }
+    } else {
+      // Process regular invoice
+      finalInvoice = {
+        invoice: {
+          ...invoiceData,
+          tip: String(Math.round(tipPercentage)),
+          tip_type: "percentage",
+          tip_val: tipAmount.value,
+          total: totalWithTip,
+          due_amount: totalWithTip,
+          sub_total: invoiceTotal.value
+        }
+      }
+    }
+
+    // Add to held orders if in create-invoice-only mode
+    if (props.createInvoiceOnly) {
+      try {
+        const heldOrderData = {
+          ...finalInvoice,
+          is_hold_invoice: true,
+          status: 'HELD',
+          description: finalInvoice.description || 'Delivery Order'
+        }
+        
+        // Add to held orders through the API
+        const holdResult = await posApi.holdInvoice.create(heldOrderData)
+        
+        if (!holdResult.success) {
+          throw new Error('Failed to add invoice to held orders')
+        }
+
+        window.toastr?.['success']('Invoice created and added to held orders')
+        emit('payment-complete', true)
+        dialog.value = false
+        return
+      } catch (err) {
+        console.error('Failed to add to held orders:', err)
+        throw new Error('Failed to add invoice to held orders')
+      }
+    }
 
     // Format payments for API - amounts are already in cents
     const formattedPayments = payments.value.map(payment => ({
@@ -694,32 +764,64 @@ const processPayment = async () => {
 
     // Validate total payment amount matches invoice total
     const totalPaymentAmount = formattedPayments.reduce((sum, payment) => sum + payment.amount, 0)
+    console.log('Payment validation:', {
+      totalPaymentAmount,
+      totalWithTip,
+      difference: Math.abs(totalPaymentAmount - totalWithTip)
+    })
+    
     if (Math.abs(totalPaymentAmount - totalWithTip) > 1) { // Allow for 1 cent rounding difference
       throw new Error(`Payment amount (${totalPaymentAmount}) must match invoice total including tip (${totalWithTip})`)
     }
 
-    // Create payment
+    // Create payment using the final invoice
+    console.log('Final invoice for payment:', finalInvoice)
+    
+    // Ensure we have the correct invoice ID and number
+    const invoiceId = finalInvoice.invoice?.id || finalInvoice.id
+    const invoiceNumber = finalInvoice.invoice?.invoice_number || finalInvoice.invoice_number || invoiceId
+    
+    if (!invoiceId) {
+      throw new Error('Invalid invoice: missing ID')
+    }
+
+    console.log('PaymentDialog: Final invoice details:', {
+      invoiceId,
+      invoiceNumber,
+      total: finalInvoice.total || finalInvoice.invoice?.total,
+      dueAmount: finalInvoice.due_amount || finalInvoice.invoice?.due_amount
+    })
+
     console.log('Processing payment with:', {
-      invoice,
+      invoiceId,
+      invoiceNumber,
+      finalInvoice,
       payments: formattedPayments
     })
 
-    const result = await createPayment(invoice, formattedPayments)
-
+    // Create payment with the correct invoice reference
+    const result = await createPayment({
+      ...finalInvoice,
+      id: invoiceId,
+      invoice_number: invoiceNumber
+    }, formattedPayments)
+    
     // Release tables if this was a dine-in order
-    if (invoice.type === 'DINE_IN' && invoice.tables_selected?.length) {
+    if (finalInvoice.type === 'DINE_IN' && finalInvoice.tables_selected?.length) {
       try {
-        await releaseTablesAfterPayment(invoice.tables_selected)
+        await releaseTablesAfterPayment(invoiceResult.invoice.tables_selected)
       } catch (err) {
         console.error('Failed to release tables:', err)
+        // Don't throw error here, as payment was successful
         window.toastr?.['warning']('Payment successful, but failed to update table status')
       }
     }
-
-    // Emit success and close dialog
+    
+    // Emit success
     emit('payment-complete', result)
+    
+    // Close dialog
     dialog.value = false
-
   } catch (err) {
     console.error('Payment failed:', err)
     window.toastr?.['error'](err.message || 'Failed to process payment')
