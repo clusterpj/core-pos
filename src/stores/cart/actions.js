@@ -207,7 +207,7 @@ export const actions = {
         sub_total: Math.round(Number(this.subtotal * 100)),
         total: Math.round(Number(this.total * 100)),
         tax: Math.round(Number(this.taxAmount * 100)),
-        due_amount: Math.round(Number(this.total * 100)), // Add due_amount
+        due_amount: Math.round(Number(this.total * 100)),
         
         // Items with proper formatting
         items: state.items.map(item => ({
@@ -233,10 +233,10 @@ export const actions = {
         status: state.editingInvoiceStatus || 'DRAFT',
         type: state.type,
         
-        // Discount
-        discount_type: state.discountType,
-        discount: state.discountValue.toString(),
-        discount_val: Math.round(Number(this.discountAmount * 100)),
+        // Discount - ensure all discount fields are properly set
+        discount_type: state.discountType || 'fixed',
+        discount: (state.discountValue || 0).toString(),
+        discount_val: Math.round(Number(state.discountValue || 0) * 100),
         discount_per_item: "NO",
 
         // Additional required fields
@@ -275,7 +275,17 @@ export const actions = {
         late_fee_taxes: 0,
         pbx_service_price: 0,
         sent: 0,
-        viewed: 0
+        viewed: 0,
+        
+        // Ensure these required fields are set
+        tax_per_item: "NO",
+        retention_active: "NO",
+        retention_percentage: 0,
+        retention_concept: null,
+        retention_amount: 0,
+        package_bool: 0,
+        save_as_draft: 0,
+        not_charge_automatically: 0
       }
 
       logger.debug('Updating invoice with data:', invoiceData)
