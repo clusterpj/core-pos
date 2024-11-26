@@ -188,6 +188,9 @@ export const actions = {
         throw new Error('No invoice being edited')
       }
 
+      // Import posApi
+      const { posApi } = require('../../services/api/pos-api')
+
       // Get current date and due date
       const currentDate = new Date()
       const dueDate = new Date(currentDate)
@@ -238,24 +241,34 @@ export const actions = {
         print_pdf: false,
         save_as_draft: false,
         send_email: false,
-        not_charge_automatically: false
+        not_charge_automatically: false,
+        is_edited: 1
       }
 
       logger.debug('Updating invoice with data:', invoiceData)
 
-      // Call API to update invoice
-      const response = await posApi.invoice.update(state.editingInvoiceId, invoiceData)
-      
-      if (!response?.success) {
-        throw new Error(response?.message || 'Failed to update invoice')
+      try {
+        // Call API to update invoice
+        const response = await posApi.invoice.update(state.editingInvoiceId, invoiceData)
+        
+        if (!response?.success) {
+          throw new Error(response?.message || 'Failed to update invoice')
+        }
+
+        // Clear editing state after successful update
+        state.editingInvoiceId = null
+        state.editingInvoiceNumber = null
+        state.editingInvoiceStatus = null
+
+        // Show success message
+        window.toastr?.success('Invoice updated successfully')
+
+        return response
+      } catch (error) {
+        // Show error message
+        window.toastr?.error(error.message || 'Failed to update invoice')
+        throw error
       }
-
-      // Clear editing state after successful update
-      state.editingInvoiceId = null
-      state.editingInvoiceNumber = null
-      state.editingInvoiceStatus = null
-
-      return response
     } catch (error) {
       logger.error('Failed to update invoice:', error)
       throw error

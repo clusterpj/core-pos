@@ -18,7 +18,7 @@
           color="white"
           variant="text"
           :loading="updating"
-          @click="updateInvoice"
+          @click="handleUpdateInvoice"
           prepend-icon="mdi-content-save"
           class="text-none"
         >
@@ -190,7 +190,16 @@ import EditItemDialog from './cart/EditItemDialog.vue'
 import OrderNotes from './cart/OrderNotes.vue'
 import { useCart } from './cart/composables/useCart'
 
-const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder, updateInvoice, splitItem } = useCart()
+const { cartStore, updating, clearOrder, updateQuantity, removeItem, updateOrder, splitItem } = useCart()
+
+const handleUpdateInvoice = async () => {
+  try {
+    await cartStore.updateInvoice()
+    clearOrder()
+  } catch (error) {
+    console.error('Failed to update invoice:', error)
+  }
+}
 
 
 // Local state for edit dialog
