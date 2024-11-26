@@ -1,6 +1,6 @@
 <template>
   <v-dialog v-model="dialog" max-width="600" :scrim="true" transition="dialog-bottom-transition" class="rounded-lg">
-    <PaymentInvoiceDialog
+    <DeliveryPaymentDialog
       v-model="showPaymentDialog"
       :invoice="invoiceData"
       @payment-complete="onPaymentComplete"
@@ -9,26 +9,26 @@
       <v-btn
         color="primary"
         v-bind="dialogProps"
-        prepend-icon="mdi-store-clock"
+        prepend-icon="mdi-truck-delivery"
         :loading="loading"
-        :disabled="disabled"
+        :disabled="disabled || cartStore.isEmpty"
         class="text-none px-6"
         rounded="pill"
         elevation="2"
         size="large"
       >
-        PICKUP
+        PICK UP
       </v-btn>
     </template>
 
-    <v-card>
-      <v-card-title class="text-h5">
-        Pickup Order
+    <v-card class="rounded-lg">
+      <v-toolbar color="primary" density="comfortable">
+        <v-toolbar-title class="text-h6 font-weight-medium">
+          Pick Up Order
+        </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn icon @click="closeModal">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
+        <v-btn icon="mdi-close" variant="text" @click="closeModal" />
+      </v-toolbar>
 
       <v-card-text>
         <v-container>
@@ -48,21 +48,76 @@
             </v-col>
           </v-row>
 
-          <!-- Pickup Information Form -->
+          <!-- Delivery Information Form -->
           <template v-else>
             <!-- Customer Information Section -->
             <v-row>
               <v-col cols="12">
                 <div class="text-subtitle-1 mb-2">Customer Information</div>
-                <v-text-field
-                  v-model="customerInfo.name"
-                  label="Customer Name"
+                <v-autocomplete
+                  v-model="selectedCustomer"
+                  v-model:search="customerSearch"
+                  :items="searchResults"
+                  :loading="isSearching"
+                  :error-messages="validationErrors.name"
+                  label="Search Customer"
+                  item-title="title"
+                  item-value="value"
                   variant="outlined"
                   density="comfortable"
-                  :error-messages="validationErrors.name"
-                  @input="clearError('name')"
-                  required
-                ></v-text-field>
+                  persistent-hint
+                  hint="Search by name, phone, or email (min. 3 characters)"
+                  return-object
+                  @update:search="onCustomerSearch"
+                  @update:model-value="onCustomerSelect"
+                >
+                  <template v-slot:append-inner>
+                    <v-icon
+                      v-if="selectedCustomer"
+                      color="error"
+                      @click.stop="clearSelectedCustomer"
+                    >
+                      mdi-close
+                    </v-icon>
+                  </template>
+                  <template v-slot:no-data>
+                    <v-list-item>
+                      <v-list-item-title>
+                        No customers found
+                      </v-list-item-title>
+                      <template v-slot:append>
+                        <v-btn
+                          color="primary"
+                          variant="text"
+                          @click="showCreateCustomer = true"
+                        >
+                          Create New
+                        </v-btn>
+                      </template>
+                    </v-list-item>
+                  </template>
+                  <template v-slot:item="{ props, item }">
+                    <v-list-item v-bind="props">
+                      <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ item.raw.phone || 'No phone' }}
+                        {{ item.raw.email ? `• ${item.raw.email}` : '' }}
+                      </v-list-item-subtitle>
+                      <v-list-item-subtitle v-if="item.raw.address_street_1">
+                        {{ item.raw.address_street_1 }}
+                        {{ item.raw.address_street_2 ? `, ${item.raw.address_street_2}` : '' }}
+                        {{ item.raw.city ? `, ${item.raw.city}` : '' }}
+                        {{ item.raw.state ? ` ${item.raw.state}` : '' }}
+                        {{ item.raw.zip_code ? ` ${item.raw.zip_code}` : '' }}
+                      </v-list-item-subtitle>
+                    </v-list-item>
+                  </template>
+                </v-autocomplete>
+
+                <CreateCustomerDialog
+                  v-model="showCreateCustomer"
+                  @customer-created="onCustomerCreated"
+                />
               </v-col>
             </v-row>
 
@@ -80,49 +135,108 @@
               </v-col>
             </v-row>
 
-            <!-- Pickup Time Section -->
+            <!-- Delivery Address Section -->
             <v-row>
               <v-col cols="12">
-                <div class="text-subtitle-1 mb-2">Pickup Time</div>
-                <v-select
-                  v-model="customerInfo.pickupTime"
-                  :items="pickupTimeOptions"
-                  label="Select Pickup Time"
+                <div class="text-subtitle-1 mb-2">Delivery Address</div>
+                <v-text-field
+                  v-model="customerInfo.address"
+                  label="Street Address"
                   variant="outlined"
                   density="comfortable"
-                  :error-messages="validationErrors.pickupTime"
-                  @update:modelValue="clearError('pickupTime')"
+                  :error-messages="validationErrors.address"
+                  @input="clearError('address')"
                   required
-                ></v-select>
+                ></v-text-field>
               </v-col>
             </v-row>
 
-            <!-- Special Instructions -->
+            <v-row>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="customerInfo.unit"
+                  label="Apt/Suite/Unit (Optional)"
+                  variant="outlined"
+                  density="comfortable"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="customerInfo.zipCode"
+                  label="ZIP Code"
+                  variant="outlined"
+                  density="comfortable"
+                  :error-messages="validationErrors.zipCode"
+                  @input="clearError('zipCode')"
+                  required
+                ></v-text-field>
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="customerInfo.city"
+                  label="City"
+                  variant="outlined"
+                  density="comfortable"
+                  :error-messages="validationErrors.city"
+                  @input="clearError('city')"
+                  required
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <StateDropdown
+                  v-model="customerInfo.state"
+                  :error="validationErrors.state"
+                  @state-selected="onStateSelect"
+                  @update:model-value="clearError('state')"
+                />
+              </v-col>
+            </v-row>
+
+            <!-- Delivery Instructions -->
             <v-row>
               <v-col cols="12">
                 <v-textarea
                   v-model="customerInfo.instructions"
-                  label="Special Instructions (Optional)"
+                  label="Delivery Instructions (Optional)"
                   variant="outlined"
                   density="comfortable"
                   rows="2"
-                  hint="Any special instructions for pickup"
+                  hint="Special instructions for delivery driver"
                 ></v-textarea>
+              </v-col>
+            </v-row>
+
+            <!-- SMS Toggle -->
+            <v-row>
+              <v-col cols="12">
+                <v-switch
+                  v-model="sendSms"
+                  color="primary"
+                  label="Send invoice via SMS"
+                  hint="Customer will receive an SMS with the invoice link"
+                  persistent-hint
+                ></v-switch>
               </v-col>
             </v-row>
 
             <!-- Submit Button -->
             <v-row class="mt-4">
-              <v-col cols="12" class="text-center">
+              <v-col cols="12">
                 <v-btn
                   color="primary"
                   size="large"
                   block
+                  height="56"
                   @click="processOrder"
                   :loading="processing"
-                  :disabled="processing"
+                  :disabled="!canProcessOrder || processing"
+                  elevation="2"
                 >
-                  Create Pickup Order
+                  <v-icon start>mdi-check-circle</v-icon>
+                  Process Order
                 </v-btn>
               </v-col>
             </v-row>
@@ -135,14 +249,18 @@
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
+import StateDropdown from '@/components/common/StateDropdown.vue'
+import CreateCustomerDialog from '../customer/CreateCustomerDialog.vue'
+import DeliveryPaymentDialog from '../dialogs/DeliveryPaymentDialog.vue'
 import { useOrderType } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
-import { usePosStore } from '../../../../stores/pos-store'
-import { useCartStore } from '../../../../stores/cart-store'
-import { useCompanyStore } from '../../../../stores/company'
+import { usePosStore } from '@/stores/pos-store'
+import { useCartStore } from '@/stores/cart-store'
+import { useCompanyStore } from '@/stores/company'
 import { logger } from '../../../../utils/logger'
-import { posApi } from '../../../../services/api/pos-api'
-import PaymentInvoiceDialog from '../dialogs/PaymentInvoiceDialog.vue'
+import { apiClient } from '@/services/api/client'
+import { posApi } from '@/services/api/pos-api'
+import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
 
 // Props
 const props = defineProps({
@@ -156,14 +274,6 @@ const props = defineProps({
 const posStore = usePosStore()
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
-
-// Payment dialog state
-const showPaymentDialog = ref(false)
-const invoiceData = ref({
-  invoice: null,
-  invoicePrefix: '',
-  nextInvoiceNumber: ''
-})
 
 // Composables
 const { 
@@ -179,30 +289,142 @@ const {
   searchResults,
   isSearching,
   searchError,
-  searchCustomers
+  searchCustomers,
+  createCustomer
 } = useCustomerSearch()
 
 // Local state
 const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
+const sendSms = ref(false)
+const showPaymentDialog = ref(false)
 const error = computed(() => orderError.value || searchError.value)
+
+const canProcessOrder = computed(() => {
+  return !cartStore.isEmpty && 
+         (customerInfo.name || '').trim() && 
+         (customerInfo.phone || '').trim() && 
+         (customerInfo.address || '').trim() && 
+         (customerInfo.city || '').trim() && 
+         (customerInfo.state || '').trim() && 
+         (customerInfo.zipCode || '').trim()
+})
 const customerSearch = ref('')
 const selectedCustomer = ref(null)
+const showCreateCustomer = ref(false)
 
 // Customer search handlers
 const onCustomerSearch = async (search) => {
-  customerSearch.value = search
+  customerSearch.value = search // Maintain search text
   if (search && search.length >= 3) {
-    await searchCustomers(search)
+    try {
+      // Check if search is a phone number (contains only digits, spaces, dashes or parentheses)
+      const isPhoneSearch = /^[\d\s\-()]+$/.test(search)
+      // If it's a phone search, clean up the format before searching
+      const searchTerm = isPhoneSearch ? search.replace(/[\s\-()]/g, '') : search
+      
+      // Get the search results
+      const response = await apiClient.get('/v1/customers', {
+        params: {
+          search: searchTerm,
+          status_customer: 'A',
+          orderByField: 'created_at',
+          orderBy: 'desc',
+          page: 1
+        }
+      })
+      
+      // Extract and format the customers from the paginated response
+      const customers = response.data.customers?.data || []
+      
+      // Update the search results with properly formatted data for v-autocomplete
+      searchResults.value = customers.map(customer => {
+        const displayName = customer.name || customer.customer_username || 'Unknown'
+        const displayPhone = customer.phone ? customer.phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') : 'No phone'
+        const displayEmail = customer.email ? ` • ${customer.email}` : ''
+        
+        return {
+          ...customer,
+          title: isPhoneSearch ? `${displayPhone} - ${displayName}` : displayName,
+          subtitle: isPhoneSearch ? displayEmail : `${displayPhone}${displayEmail}`,
+          value: customer.id
+        }
+      })
+      
+      logger.debug('Customer search results:', {
+        searchTerm,
+        isPhoneSearch,
+        results: searchResults.value
+      })
+    } catch (error) {
+      logger.error('Customer search failed:', error)
+      searchResults.value = []
+    }
+  } else {
+    searchResults.value = []
   }
 }
 
-const onCustomerSelect = (customer) => {
+const onCustomerSelect = async (customer) => {
   if (customer) {
-    customerInfo.name = customer.name
-    customerInfo.phone = customer.phone || ''
-    customerSearch.value = customer.name
+    logger.debug('Customer selected:', customer)
+
+    try {
+      // Fetch full customer details including addresses
+      const response = await apiClient.get(`/v1/customers/${customer.id}`, {
+        params: {
+          include: 'billing_address,addresses'
+        }
+      })
+      
+      const fullCustomer = response.data.customer
+      const billingAddress = fullCustomer.billing_address || {}
+      
+      logger.debug('Full customer data:', fullCustomer)
+      logger.debug('Billing address:', billingAddress)
+
+      // Populate all available customer information with null checks
+      customerInfo.name = fullCustomer?.name?.trim() || fullCustomer?.first_name?.trim() || ''
+      customerInfo.phone = fullCustomer?.phone?.trim() || ''
+      customerInfo.email = fullCustomer?.email?.trim() || ''
+      
+      // Set address information from billing address with null checks
+      customerInfo.address = billingAddress?.address_street_1?.trim() || ''
+      customerInfo.unit = billingAddress?.address_street_2?.trim() || ''
+      customerInfo.city = billingAddress?.city?.trim() || ''
+      customerInfo.zipCode = billingAddress?.zip?.trim() || ''
+      
+      // Handle state information
+      if (billingAddress.state) {
+        customerInfo.state = billingAddress.state.code || ''
+        customerInfo.state_id = billingAddress.state.id || null
+      } else {
+        customerInfo.state = ''
+        customerInfo.state_id = null
+      }
+    
+      customerInfo.instructions = customer.notes || ''
+      
+      // Keep the search value after selection
+      customerSearch.value = customer.name
+      
+      // Log the populated data for debugging
+      logger.debug('Customer selected:', customer)
+      logger.debug('Billing address:', billingAddress)
+      logger.info('Customer data populated:', { 
+        customer: customer.id,
+        fields: { ...customerInfo }
+      })
+
+      // Clear any existing validation errors
+      clearAllErrors()
+    } catch (error) {
+      logger.error('Error fetching customer details:', error)
+      if (window.toastr) {
+        window.toastr.error('Failed to load customer details')
+      }
+    }
   }
 }
 
@@ -214,61 +436,76 @@ const clearSelectedCustomer = () => {
   })
 }
 
+const onCustomerCreated = async (customer) => {
+  try {
+    logger.info('New customer created:', customer)
+    
+    // Close the create customer dialog
+    showCreateCustomer.value = false
+    
+    // Set the selected customer and populate the form
+    selectedCustomer.value = customer
+    customerSearch.value = customer.name
+    
+    // Populate delivery form with customer data
+    customerInfo.name = customer.name
+    customerInfo.phone = customer.phone || ''
+    customerInfo.email = customer.email || ''
+    customerInfo.address = customer.address_street_1 || ''
+    customerInfo.unit = customer.address_street_2 || ''
+    customerInfo.city = customer.city || ''
+    customerInfo.state = customer.state || ''
+    customerInfo.zipCode = customer.zip || ''
+    customerInfo.instructions = customer.notes || ''
+    
+    // Clear any existing validation errors
+    clearAllErrors()
+    
+    // Show success message
+    if (window.toastr) {
+      window.toastr.success('Customer created and loaded successfully')
+    }
+  } catch (error) {
+    logger.error('Error handling new customer:', error)
+    if (window.toastr) {
+      window.toastr.error('Error loading customer data')
+    }
+  }
+}
+
 // Form state
 const customerInfo = reactive({
   name: '',
   phone: '',
-  pickupTime: '',
+  email: '',
+  address: '',
+  unit: '',
+  zip: '',
+  city: '',
+  state: '',
+  state_id: null,
   instructions: ''
 })
+
+const onStateSelect = (state) => {
+  customerInfo.state_id = state.id
+  customerInfo.state = state.code
+}
 
 // Validation
 const validationErrors = reactive({
   name: '',
   phone: '',
-  pickupTime: ''
+  address: '',
+  zip: '',
+  city: '',
+  state: ''
 })
-
-// Generate pickup time options (next 2 hours in 15-minute intervals)
-const pickupTimeOptions = computed(() => {
-  const options = []
-  const now = new Date()
-  const currentHour = now.getHours()
-  const currentMinute = now.getMinutes()
-  
-  // Round up to next 15-minute interval
-  const startMinute = Math.ceil(currentMinute / 15) * 15
-  let hour = currentHour
-  let minute = startMinute
-
-  // Generate times for the next 2 hours
-  for (let i = 0; i < 8; i++) { // 8 fifteen-minute intervals = 2 hours
-    if (minute >= 60) {
-      hour++
-      minute = 0
-    }
-
-    const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-    const label = formatTimeLabel(hour, minute)
-    options.push({ title: label, value: timeString })
-
-    minute += 15
-  }
-
-  return options
-})
-
-// Format time label with AM/PM
-const formatTimeLabel = (hour, minute) => {
-  const period = hour >= 12 ? 'PM' : 'AM'
-  const displayHour = hour % 12 || 12
-  return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`
-}
 
 // Watch for dialog open to set order type
 watch(dialog, (newValue) => {
   if (newValue) {
-    setOrderType(ORDER_TYPES.PICKUP)
+    setOrderType(ORDER_TYPES.DELIVERY)
   } else {
     // Reset form when dialog closes
     Object.keys(customerInfo).forEach(key => {
@@ -293,8 +530,26 @@ const validateForm = () => {
     isValid = false
   }
 
-  if (!customerInfo.pickupTime) {
-    validationErrors.pickupTime = 'Pickup time is required'
+  if (!customerInfo.address.trim()) {
+    validationErrors.address = 'Delivery address is required for delivery orders'
+    isValid = false
+  }
+
+  if (!customerInfo.zipCode.trim()) {
+    validationErrors.zipCode = 'ZIP code is required'
+    isValid = false
+  } else if (!/^\d{5}(-\d{4})?$/.test(customerInfo.zipCode.trim())) {
+    validationErrors.zipCode = 'Invalid ZIP code format'
+    isValid = false
+  }
+
+  if (!customerInfo.city.trim()) {
+    validationErrors.city = 'City is required'
+    isValid = false
+  }
+
+  if (!customerInfo.state.trim()) {
+    validationErrors.state = 'State is required'
     isValid = false
   }
 
@@ -313,45 +568,68 @@ const clearAllErrors = () => {
 }
 
 // Process the order
+// Add reactive invoice data state
+const invoiceData = ref({
+  invoice: null,
+  invoicePrefix: '',
+  nextInvoiceNumber: ''
+})
+
 const processOrder = async () => {
   if (!validateForm()) return
 
   processing.value = true
 
   try {
+    // Format full address
+    const fullAddress = [
+      customerInfo.address.trim(),
+      customerInfo.unit.trim(),
+      customerInfo.zipCode.trim()
+    ].filter(Boolean).join(', ')
+
+    // Update customer info in the order type composable
+    const customerData = {
+      customer_id: selectedCustomer.value?.id || null,
+      name: (customerInfo.name || '').trim(),
+      phone: (customerInfo.phone || '').trim(),
+      address: (customerInfo.address || '').trim(),
+      unit: (customerInfo.unit || '').trim(),
+      zip: (customerInfo.zipCode || '').trim(),
+      city: (customerInfo.city || '').trim(),
+      state: (customerInfo.state || '').trim(),
+      state_id: customerInfo.state_id,
+      email: (customerInfo.email || '').trim(),
+      instructions: (customerInfo.instructions || '').trim(),
+      send_sms: sendSms.value ? 1 : 0
+    }
+    setCustomerInfo(customerData)
+
     // Get current date and due date
     const currentDate = new Date()
     const dueDate = new Date(currentDate)
-    dueDate.setDate(dueDate.getDate() + 7)
+    dueDate.setDate(dueDate.getDate() + 7) // Set due date to 7 days from now
 
-    // Get next invoice number
-    const nextInvoice = await posApi.invoice.getNextNumber()
-    
-    if (!nextInvoice) {
-      throw new Error('Failed to get next invoice number')
-    }
-
-    // Format full notes with pickup time
-    const fullNotes = `Pickup Time: ${customerInfo.pickupTime}\n${customerInfo.instructions || ''}`.trim()
-
-    // Create invoice data
+    // Create invoice data with required fields
     const orderData = {
+      // Required fields first
       invoice_date: currentDate.toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
-      invoice_number: `${nextInvoice.prefix}-${nextInvoice.nextNumber}`,
-      sub_total: Math.round(Number(cartStore.subtotal) || 0),
-      total: Math.round(Number(cartStore.total) || 0),
-      tax: Math.round(Number(cartStore.taxAmount) || 0),
+      invoice_number: `DEL-${Date.now()}`, // Temporary invoice number
+      sub_total: Math.round(Number(cartStore.subtotal * 100) || 0),
+      total: Math.round(Number(cartStore.total * 100) || 0),
+      tax: Math.round(Number(cartStore.taxAmount * 100) || 0),
+      send_sms: sendSms.value ? 1 : 0,
       items: cartStore.items.map(item => ({
         item_id: item.id,
         name: item.name,
         description: item.description || '',
-        price: Math.round(Number(item.price) || 0),
+        price: Math.round(Number(item.price * 100) || 0),
         quantity: Math.round(Number(item.quantity) || 1),
         unit_name: item.unit_name || 'units',
-        sub_total: Math.round(Number(item.subtotal) || 0),
-        total: Math.round(Number(item.total) || 0),
-        tax: Math.round(Number(item.tax) || 0)
+        sub_total: Math.round(Number(item.subtotal * 100) || 0),
+        total: Math.round(Number(item.total * 100) || 0),
+        tax: Math.round(Number(item.tax * 100) || 0)
       })),
 
       // Boolean flags
@@ -374,18 +652,18 @@ const processOrder = async () => {
       user_id: selectedCustomer.value?.id || 1,
 
       // Order type and status
-      type: ORDER_TYPES.PICKUP,
+      type: ORDER_TYPES.DELIVERY,
       status: 'HELD',
-      description: 'Pickup Order',
+      description: 'Pick Up Order',
 
       // Customer contact info
       contact: {
         name: customerInfo.name.trim().split(' ')[0] || customerInfo.name.trim(),
         last_name: customerInfo.name.trim().split(' ').slice(1).join(' ') || 'N/A',
-        email: '',
+        email: customerInfo.email.trim(),
         phone: customerInfo.phone.trim(),
-        second_phone: 'N/A',
-        identification: 'N/A'
+        second_phone: 'N/A',  // Default value for second_phone
+        identification: 'N/A'  // Default value for identification
       },
 
       // Arrays
@@ -398,45 +676,74 @@ const processOrder = async () => {
       discount_type: "fixed",
       discount_val: Math.round(Number(0)),
       discount_per_item: "NO",
+      
+      // SMS notification
+      send_sms: sendSms.value ? 1 : 0,
 
-      // Additional info
-      notes: fullNotes,
+      // Additional required fields
+      notes: customerInfo.instructions || '',
       hold_invoice_id: null,
       tip: "0",
       tip_type: "fixed",
       tip_val: 0
     }
 
-    // Create invoice
+    logger.debug('Creating hold order with data:', orderData)
+
+    // Get next invoice number
+    const nextInvoice = await posApi.invoice.getNextNumber()
+    
+    if (!nextInvoice) {
+      throw new Error('Failed to get next invoice number')
+    }
+
+    // Add invoice number to order data
+    orderData.invoice_number = `${nextInvoice.prefix}-${nextInvoice.nextNumber}`
+    
+    // Create invoice directly
     const invoiceResult = await posApi.invoice.create(orderData)
     
+    // Check if we have an invoice object, regardless of success flag
     if (!invoiceResult?.invoice) {
-      throw new Error('No invoice data received')
+      const errorMsg = 'No invoice data received'
+      logger.error('Failed to create invoice:', {
+        result: invoiceResult,
+        orderData: orderData
+      })
+      throw new Error(errorMsg)
     }
+
+    logger.debug('Invoice created successfully:', invoiceResult.invoice)
+
+    const convertedInvoiceData = {
+      success: true,
+      invoice: invoiceResult.invoice
+    }
+    
+    if (!convertedInvoiceData.success) {
+      throw new Error('Failed to prepare invoice data')
+    }
+
+    logger.debug('Converted invoice data:', convertedInvoiceData)
 
     // Update invoice data ref
     invoiceData.value = {
-      invoice: invoiceResult.invoice,
+      invoice: convertedInvoiceData.invoice,
       invoicePrefix: nextInvoice.prefix,
       nextInvoiceNumber: nextInvoice.nextNumber
     }
 
     // Show payment dialog
     showPaymentDialog.value = true
-
-    // Log successful order creation
-    logger.info('Pickup order created successfully:', {
-      invoiceNumber: invoiceResult.invoice.invoice_number,
-      total: invoiceResult.invoice.total,
-      pickupTime: customerInfo.pickupTime
-    })
   } catch (err) {
-    logger.error('Failed to prepare pickup order:', {
+    logger.error('Failed to prepare delivery order:', {
       error: err,
       message: err.message,
-      data: { customerInfo }
+      data: {
+        customerInfo
+      }
     })
-    window.toastr?.error(err.message || 'Failed to prepare pickup order')
+    window.toastr?.error(err.message || 'Failed to prepare delivery order')
   } finally {
     processing.value = false
   }
@@ -445,7 +752,7 @@ const processOrder = async () => {
 const onPaymentComplete = async (success) => {
   if (success) {
     dialog.value = false
-    window.toastr?.['success']('Pickup order created successfully')
+    window.toastr?.['success']('Delivery order created successfully')
   }
 }
 
