@@ -21,6 +21,16 @@
         </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn
+          color="primary"
+          variant="text"
+          class="mr-2"
+          @click="loadToCart"
+          :disabled="!canLoadToCart"
+        >
+          <v-icon start>mdi-cart-arrow-down</v-icon>
+          Load to Cart
+        </v-btn>
+        <v-btn
           icon="mdi-close"
           variant="text"
           @click="closeDialog"
@@ -344,6 +354,7 @@
 import { ref, computed, watch } from 'vue'
 import { usePayment } from '../../composables/usePayment'
 import { useTableManagement } from '../../composables/useTableManagement'
+import { useCartStore } from '@/stores/cart-store'
 import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
 import { posApi } from '@/services/api/pos-api'
 
@@ -391,6 +402,22 @@ const error = computed(() => paymentError.value || tableError.value)
 
 const processing = ref(false)
 const payments = ref([])
+const cartStore = useCartStore()
+
+const canLoadToCart = computed(() => {
+  return props.invoice?.invoice?.status === 'DRAFT'
+})
+
+const loadToCart = async () => {
+  try {
+    await cartStore.loadInvoice(props.invoice.invoice)
+    window.toastr?.success('Invoice loaded to cart successfully')
+    dialog.value = false
+  } catch (error) {
+    console.error('Failed to load invoice to cart:', error)
+    window.toastr?.error('Failed to load invoice to cart')
+  }
+}
 
 // Tip related state
 const showTipDialog = ref(false)
