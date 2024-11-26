@@ -3,7 +3,7 @@
   <v-dialog 
     v-model="dialog" 
     :fullscreen="$vuetify.display.mobile"
-    :max-width="$vuetify.display.mobile ? '100%' : '500px'"
+    :max-width="$vuetify.display.mobile ? '100%' : '800px'"
     persistent
     scrollable
     transition="dialog-bottom-transition"
@@ -49,18 +49,24 @@
               <v-col cols="12">
                 <v-card
                   variant="elevated"
-                  class="invoice-summary-card mb-2"
-                  elevation="1"
+                  class="invoice-summary-card mb-4"
+                  elevation="2"
                 >
-                  <v-card-text class="pa-2">
-                    <div class="d-flex align-center mb-2">
+                  <v-card-item>
+                    <template v-slot:prepend>
                       <v-icon
                         icon="mdi-receipt"
+                        size="large"
                         color="primary"
-                        class="mr-2"
+                        class="mr-4"
                       ></v-icon>
-                      <span class="text-subtitle-1 font-weight-medium">Invoice Summary</span>
-                    </div>
+                    </template>
+                    <v-card-title class="text-h6 pb-2">
+                      Invoice Summary
+                    </v-card-title>
+                  </v-card-item>
+                  <v-divider></v-divider>
+                  <v-card-text class="py-4">
                     <div class="d-flex justify-space-between mb-2">
                       <span>Invoice Number:</span>
                       <strong>{{ invoiceNumber }}</strong>
@@ -73,9 +79,13 @@
                       <span>Tip:</span>
                       <strong>{{ formatCurrency(tipAmount / 100) }}</strong>
                     </div>
-                    <div class="d-flex justify-space-between">
+                    <div class="d-flex justify-space-between mb-2">
                       <span>Total Amount:</span>
                       <strong>{{ formatCurrency((invoiceTotal + tipAmount) / 100) }}</strong>
+                    </div>
+                    <div class="d-flex justify-space-between">
+                      <span>Remaining:</span>
+                      <strong>{{ formatCurrency(remainingAmount / 100) }}</strong>
                     </div>
                   </v-card-text>
                 </v-card>
@@ -104,8 +114,9 @@
                 <v-row>
                   <v-col v-for="method in paymentMethods" 
                          :key="method.id" 
-                         cols="4" 
-                         sm="4">
+                         cols="12" 
+                         sm="6" 
+                         md="4">
                     <v-btn
                       block
                       :color="isMethodSelected(method.id) ? 'primary' : undefined"
@@ -188,18 +199,12 @@
                     ></v-text-field>
 
                     <!-- Change Amount Display -->
-                    <v-card
-                      v-if="payment.returned > 0"
-                      color="primary"
-                      class="change-amount-card mb-2"
-                    >
-                      <v-card-text class="pa-3">
-                        <div class="d-flex justify-space-between align-center">
-                          <span class="text-h6 font-weight-medium">Change Due:</span>
-                          <span class="text-h5 font-weight-bold">{{ formatCurrency(payment.returned / 100) }}</span>
-                        </div>
-                      </v-card-text>
-                    </v-card>
+                    <div v-if="payment.returned > 0" class="text-caption mb-2">
+                      <div class="d-flex justify-space-between">
+                        <span>Change:</span>
+                        <strong>{{ formatCurrency(payment.returned / 100) }}</strong>
+                      </div>
+                    </div>
                   </template>
 
                   <!-- Payment Fees -->
@@ -212,6 +217,17 @@
                       {{ getFeeDescription(payment.method_id, payment.amount) }}
                     </div>
                   </div>
+
+                  <!-- Remove Payment Button -->
+                  <v-btn
+                    color="error"
+                    variant="outlined"
+                    size="small"
+                    class="mb-2"
+                    @click="removePayment(index)"
+                  >
+                    Remove Payment Method
+                  </v-btn>
 
                   <v-divider v-if="index < payments.length - 1" class="my-4"></v-divider>
                   </v-card>
@@ -261,17 +277,13 @@
         </v-container>
       </v-card-text>
 
-      <v-card-actions class="pa-4">
+      <v-card-actions>
+        <v-spacer></v-spacer>
         <v-btn
-          block
           color="primary"
-          variant="flat"
-          size="large"
-          height="56"
           :loading="processing"
           :disabled="!isValid || processing"
           @click="processPayment"
-          class="process-payment-btn"
         >
           Process Payment
         </v-btn>
@@ -527,8 +539,9 @@ const selectPaymentMethod = (methodId) => {
 
 const handleDenominationClick = (money, index) => {
   const payment = payments.value[index]
-  payment.displayReceived = money.amount.toString()
-  payment.received = Math.round(Number(money.amount) * 100)
+  const currentReceived = Number(payment.displayReceived || 0)
+  payment.displayReceived = (currentReceived + Number(money.amount)).toString()
+  payment.received = Math.round(Number(payment.displayReceived) * 100)
   calculateChange(index)
 }
 
@@ -626,8 +639,7 @@ const processPayment = async () => {
     processing: processing.value,
     invoiceTotal: invoiceTotal.value,
     tipAmount: tipAmount.value,
-    payments: payments.value,
-    invoice: props.invoice
+    payments: payments.value
   })
 
   if (!isValid.value || processing.value) {
@@ -644,95 +656,73 @@ const processPayment = async () => {
       tipAmount: tipAmount.value
     })
 
-    let finalInvoice
-    const invoiceData = props.invoice?.invoice || props.invoice
-
-    if (!invoiceData) {
+    // Use the prepared invoice data
+    const holdInvoice = props.invoice.invoice
+    if (!holdInvoice) {
       throw new Error('Invoice data not provided')
     }
-
-    console.log('PaymentDialog: Processing invoice data:', {
-      invoiceData,
-      isHoldInvoice: invoiceData.is_hold_invoice,
-      total: invoiceData.total,
-      dueAmount: invoiceData.due_amount
-    })
-
+    
     // Calculate the total with tip
     const totalWithTip = invoiceTotal.value + tipAmount.value
+
+    console.log('PaymentDialog: Prepared hold invoice data:', {
+      id: holdInvoice.id,
+      total: totalWithTip,
+      originalTotal: holdInvoice.total,
+      tipAmount: tipAmount.value
+    })
+
+    // Format tip data according to API requirements
     const tipPercentage = selectedTipPercent.value || Number(customTipPercent.value) || 0
+    holdInvoice.tip = String(Math.round(tipPercentage)) // Ensure clean integer string
+    holdInvoice.tip_type = "percentage"
+    holdInvoice.tip_val = tipAmount.value // Amount in cents
+    holdInvoice.total = totalWithTip // Total in cents including tip
+    holdInvoice.due_amount = totalWithTip // Due amount should match total
+    holdInvoice.sub_total = invoiceTotal.value // Original subtotal without tip
+    
+    // Log tip values for debugging
+    console.log('Tip values:', {
+      percentage: holdInvoice.tip,
+      type: holdInvoice.tip_type,
+      amount: holdInvoice.tip_val,
+      total: holdInvoice.total
+    })
+    
+    // Ensure other required fields are present
+    holdInvoice.is_hold_invoice = false
+    holdInvoice.is_invoice_pos = 1
+    holdInvoice.is_pdf_pos = true
+    holdInvoice.package_bool = false
+    holdInvoice.print_pdf = false
+    holdInvoice.save_as_draft = false
+    holdInvoice.send_email = false
+    holdInvoice.not_charge_automatically = false
+    holdInvoice.avalara_bool = false
+    holdInvoice.banType = true
 
-    // Check if we're dealing with a hold invoice or a regular invoice
-    if (invoiceData.is_hold_invoice) {
-      console.log('PaymentDialog: Processing hold invoice conversion')
-      
-      // First convert the hold invoice to a regular invoice
-      const holdInvoice = {
-        ...invoiceData,
-        tip: String(Math.round(tipPercentage)),
-        tip_type: "percentage",
-        tip_val: tipAmount.value,
-        total: totalWithTip,
-        due_amount: totalWithTip,
-        sub_total: invoiceTotal.value
-      }
+    // Set dates
+    const currentDate = new Date()
+    holdInvoice.invoice_date = currentDate.toISOString().split('T')[0]
+    const dueDate = new Date(currentDate)
+    dueDate.setDate(dueDate.getDate() + 7) // Default to 7 days
+    holdInvoice.due_date = dueDate.toISOString().split('T')[0]
 
-      // Convert hold invoice to regular invoice using the converter
-      const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
-      
-      if (!invoiceResult.success) {
-        console.error('Hold invoice conversion failed:', invoiceResult.error)
-        throw new Error(invoiceResult.error || 'Failed to create invoice from hold order')
-      }
-
-      // Log the conversion result
-      console.log('Hold invoice converted successfully:', {
-        holdInvoiceId: holdInvoice.id,
-        newInvoiceId: invoiceResult.invoice.id,
-        invoiceNumber: invoiceResult.invoice.invoice_number
-      })
-
-      // Structure the final invoice with the new invoice data
-      finalInvoice = {
-        invoice: {
-          ...invoiceResult.invoice,
-          // Ensure we use the new invoice ID and number
-          id: invoiceResult.invoice.id,
-          invoice_number: invoiceResult.invoice.invoice_number,
-          // Preserve reference to original hold invoice
-          hold_invoice_id: holdInvoice.id,
-          // Include payment-specific fields
-          tip: String(Math.round(tipPercentage)),
-          tip_type: "percentage",
-          tip_val: tipAmount.value,
-          total: totalWithTip,
-          due_amount: totalWithTip,
-          sub_total: invoiceTotal.value
-        }
-      }
-    } else {
-      // Process regular invoice
-      finalInvoice = {
-        invoice: {
-          ...invoiceData,
-          tip: String(Math.round(tipPercentage)),
-          tip_type: "percentage",
-          tip_val: tipAmount.value,
-          total: totalWithTip,
-          due_amount: totalWithTip,
-          sub_total: invoiceTotal.value
-        }
-      }
+    // Create invoice with tip included
+    const invoiceResult = await convertHeldOrderToInvoice(holdInvoice)
+    
+    if (!invoiceResult.success) {
+      throw new Error('Failed to create invoice')
     }
 
     // Add to held orders if in create-invoice-only mode
     if (props.createInvoiceOnly) {
       try {
         const heldOrderData = {
-          ...finalInvoice,
+          ...invoiceResult.invoice,
           is_hold_invoice: true,
           status: 'HELD',
-          description: finalInvoice.description || 'Delivery Order'
+          description: invoiceResult.invoice.description || 'Delivery Order'
         }
         
         // Add to held orders through the API
@@ -756,7 +746,7 @@ const processPayment = async () => {
     const formattedPayments = payments.value.map(payment => ({
       method_id: payment.method_id,
       name: getPaymentMethod(payment.method_id).name,
-      amount: payment.amount,
+      amount: payment.amount, // This should match the total with tip
       received: payment.received,
       returned: payment.returned,
       valid: true
@@ -764,50 +754,15 @@ const processPayment = async () => {
 
     // Validate total payment amount matches invoice total
     const totalPaymentAmount = formattedPayments.reduce((sum, payment) => sum + payment.amount, 0)
-    console.log('Payment validation:', {
-      totalPaymentAmount,
-      totalWithTip,
-      difference: Math.abs(totalPaymentAmount - totalWithTip)
-    })
-    
-    if (Math.abs(totalPaymentAmount - totalWithTip) > 1) { // Allow for 1 cent rounding difference
-      throw new Error(`Payment amount (${totalPaymentAmount}) must match invoice total including tip (${totalWithTip})`)
+    if (totalPaymentAmount !== totalWithTip) {
+      throw new Error('Payment amount must match invoice total including tip')
     }
 
-    // Create payment using the final invoice
-    console.log('Final invoice for payment:', finalInvoice)
-    
-    // Ensure we have the correct invoice ID and number
-    const invoiceId = finalInvoice.invoice?.id || finalInvoice.id
-    const invoiceNumber = finalInvoice.invoice?.invoice_number || finalInvoice.invoice_number || invoiceId
-    
-    if (!invoiceId) {
-      throw new Error('Invalid invoice: missing ID')
-    }
-
-    console.log('PaymentDialog: Final invoice details:', {
-      invoiceId,
-      invoiceNumber,
-      total: finalInvoice.total || finalInvoice.invoice?.total,
-      dueAmount: finalInvoice.due_amount || finalInvoice.invoice?.due_amount
-    })
-
-    console.log('Processing payment with:', {
-      invoiceId,
-      invoiceNumber,
-      finalInvoice,
-      payments: formattedPayments
-    })
-
-    // Create payment with the correct invoice reference
-    const result = await createPayment({
-      ...finalInvoice,
-      id: invoiceId,
-      invoice_number: invoiceNumber
-    }, formattedPayments)
+    // Create payment using the created invoice
+    const result = await createPayment(invoiceResult.invoice, formattedPayments)
     
     // Release tables if this was a dine-in order
-    if (finalInvoice.type === 'DINE_IN' && finalInvoice.tables_selected?.length) {
+    if (invoiceResult.invoice.type === 'DINE_IN' && invoiceResult.invoice.tables_selected?.length) {
       try {
         await releaseTablesAfterPayment(invoiceResult.invoice.tables_selected)
       } catch (err) {
@@ -874,11 +829,11 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .payment-dialog-toolbar {
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
   background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
   backdrop-filter: blur(10px);
-  height: 48px !important;
+  height: 64px !important;
 }
 
 .invoice-summary-card {
@@ -895,17 +850,16 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .payment-method-btn {
-  min-height: 40px;
-  border-radius: 8px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 0.85rem;
-  letter-spacing: 0.25px;
+  min-height: 56px;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
   border: 1px solid rgba(var(--v-border-color), 0.05);
-  padding: 0 8px !important;
   
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
   }
   
   &.v-btn--active {
@@ -1058,43 +1012,17 @@ watch(() => dialog.value, async (newValue) => {
   }
 }
 
-.process-payment-btn {
-  font-size: 1.1rem !important;
-  letter-spacing: 0.5px;
-  font-weight: 500;
-  border-radius: 12px;
-  text-transform: none;
-}
-
-.change-amount-card {
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
-  color: white !important;
-  
-  .v-card-text {
-    color: white !important;
-  }
-  
-  .text-h5 {
-    color: white !important;
-  }
-  
-  .text-h6 {
-    color: white !important;
-  }
-}
-
 /* Additional spacing improvements */
 .v-container {
-  padding: 8px;
+  padding: 16px;
 }
 
 .v-row {
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .v-col {
-  padding: 2px;
+  padding: 8px;
 }
 
 .mb-2 {
