@@ -180,7 +180,7 @@
                 <strong>Name:</strong> {{ selectedInvoiceDetails.contact?.name || selectedInvoiceDetails.first_name || selectedInvoiceDetails.name || 'N/A' }}
               </div>
               <div class="mb-2">
-                <strong>Phone:</strong> {{ selectedInvoiceDetails.contact?.phone || selectedInvoiceDetails.phone || 'N/A' }}
+                <strong>Phone:</strong> {{ selectedInvoiceDetails.contact?.phone || selectedInvoiceDetails.customer?.phone || selectedInvoiceDetails.phone || 'N/A' }}
               </div>
               <div class="mb-2">
                 <strong>Email:</strong> {{ selectedInvoiceDetails.contact?.email || selectedInvoiceDetails.email || 'N/A' }}
