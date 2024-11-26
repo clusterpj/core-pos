@@ -1,6 +1,6 @@
 <template>
   <v-dialog v-model="dialog" max-width="600" :scrim="true" transition="dialog-bottom-transition" class="rounded-lg">
-    <DeliveryPaymentDialog
+    <PaymentInvoiceDialog
       v-model="showPaymentDialog"
       :invoice="invoiceData"
       @payment-complete="onPaymentComplete"
@@ -142,7 +142,7 @@ import { useCartStore } from '../../../../stores/cart-store'
 import { useCompanyStore } from '../../../../stores/company'
 import { logger } from '../../../../utils/logger'
 import { posApi } from '../../../../services/api/pos-api'
-import DeliveryPaymentDialog from '../dialogs/DeliveryPaymentDialog.vue'
+import PaymentInvoiceDialog from '../dialogs/PaymentInvoiceDialog.vue'
 
 // Props
 const props = defineProps({
