@@ -80,5 +80,9 @@ export const getters = {
 
   isValidOrderType: (state) => {
     return state.type && Object.values(OrderType).includes(state.type)
+  },
+
+  isEditingInvoice: (state) => {
+    return state.editingInvoiceId !== null
   }
 }

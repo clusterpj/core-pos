@@ -143,6 +143,9 @@ export const actions = {
     try {
       // Clear existing cart first
       this.clearCart(state)
+        
+      // Set editing invoice ID
+      state.editingInvoiceId = invoice.id
 
       // Load items
       state.items = invoice.items.map(item => ({

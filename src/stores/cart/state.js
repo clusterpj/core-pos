@@ -11,7 +11,8 @@ export const state = () => ({
   selectedTables: [],
   holdInvoiceId: null,
   holdOrderDescription: null,
-  type: null // Add type to state
+  type: null, // Add type to state
+  editingInvoiceId: null // Track which invoice is being edited
 })
 
 export const mutations = {
@@ -55,5 +56,6 @@ export const mutations = {
     state.holdInvoiceId = null
     state.holdOrderDescription = null
     state.type = null // Reset type when clearing cart
+    state.editingInvoiceId = null // Reset editing invoice ID
   }
 }
