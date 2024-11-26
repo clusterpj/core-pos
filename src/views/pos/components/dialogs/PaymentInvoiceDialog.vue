@@ -779,6 +779,9 @@ const processPayment = async () => {
       }
     }
 
+    // Get current company store
+    const companyStore = useCompanyStore()
+
     // Format payments for API - amounts are already in cents
     const formattedPayments = payments.value.map(payment => ({
       method_id: payment.method_id,

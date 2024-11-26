@@ -240,7 +240,18 @@ export const actions = {
         save_as_draft: false,
         send_email: false,
         not_charge_automatically: false,
-        is_edited: 1
+        is_edited: 1,
+        
+        // Required IDs
+        user_id: companyStore.selectedCustomer?.id || 1,
+        store_id: companyStore.selectedStore?.id || 1,
+        cash_register_id: companyStore.selectedCashier?.id || 1,
+        company_id: companyStore.company?.id || 1,
+        
+        // Required arrays
+        tables_selected: [],
+        packages: [],
+        taxes: []
       }
 
       logger.debug('Updating invoice with data:', invoiceData)
