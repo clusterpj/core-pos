@@ -309,7 +309,6 @@ const loadInvoiceToCart = async (invoice) => {
   try {
     await cartStore.loadInvoice(invoice)
     window.toastr?.success('Invoice loaded to cart successfully')
-    dialog.value = false
   } catch (error) {
     console.error('Failed to load invoice to cart:', error)
     window.toastr?.error('Failed to load invoice to cart')
