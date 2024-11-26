@@ -41,8 +41,8 @@ export const apiConfig = {
       cashiers: 'core-pos/cash-register/getCashRegistersUser',
       settings: 'company/settings',
       invoice: {
-        create: 'invoices',
-        get: 'invoices'
+        create: '/invoices',
+        get: '/invoices'
       },
       payment: {
         methods: 'payments/multiple/get-payment-methods',
