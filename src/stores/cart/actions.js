@@ -207,6 +207,7 @@ export const actions = {
         sub_total: Math.round(Number(this.subtotal * 100)),
         total: Math.round(Number(this.total * 100)),
         tax: Math.round(Number(this.taxAmount * 100)),
+        due_amount: Math.round(Number(this.total * 100)), // Add due_amount
         
         // Items with proper formatting
         items: state.items.map(item => ({
@@ -218,11 +219,18 @@ export const actions = {
           unit_name: item.unit_name || 'units',
           sub_total: Math.round(Number(item.price * item.quantity * 100)),
           total: Math.round(Number(item.total * 100)),
-          tax: Math.round(Number(item.tax * 100))
+          tax: Math.round(Number(item.tax * 100)),
+          discount: "0",
+          discount_val: 0,
+          discount_type: "fixed",
+          retention_amount: 0,
+          retention_concept: null,
+          retention_percentage: null,
+          retentions_id: null
         })),
 
         // Status and type
-        status: state.editingInvoiceStatus,
+        status: state.editingInvoiceStatus || 'DRAFT',
         type: state.type,
         
         // Discount
@@ -249,11 +257,25 @@ export const actions = {
         store_id: companyStore.selectedStore?.id || 1,
         cash_register_id: companyStore.selectedCashier?.id || 1,
         company_id: companyStore.company?.id || 1,
+        invoice_template_id: 1,
+        invoice_pbx_modify: 0,
         
         // Required arrays
         tables_selected: [],
         packages: [],
-        taxes: []
+        taxes: [],
+
+        // Additional required fields
+        tip: "0",
+        tip_type: "fixed", 
+        tip_val: 0,
+        retention: "NO",
+        retention_total: 0,
+        late_fee_amount: 0,
+        late_fee_taxes: 0,
+        pbx_service_price: 0,
+        sent: 0,
+        viewed: 0
       }
 
       logger.debug('Updating invoice with data:', invoiceData)
