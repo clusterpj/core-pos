@@ -204,8 +204,8 @@ export const actions = {
         due_date: dueDate.toISOString().split('T')[0],
         
         // Amounts (convert to cents)
-        sub_total: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100)),
-        total: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100)),
+        sub_total: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity * 100), 0))),                                  
+        total: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity * 100), 0))),
         tax: Math.round(Number(state.items.reduce((sum, item) => sum + (item.tax || 0), 0) * 100)),
         due_amount: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100)),
         
