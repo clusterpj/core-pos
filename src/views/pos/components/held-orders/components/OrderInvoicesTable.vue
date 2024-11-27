@@ -261,6 +261,7 @@
 import PaymentDialog from '../../../components/dialogs/PaymentInvoiceDialog.vue'
 import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart-store'
+import { PriceUtils } from '@/utils/price'
 
 const props = defineProps({
   loading: {
@@ -285,7 +286,7 @@ const props = defineProps({
   },
   formatCurrency: {
     type: Function,
-    required: true
+    default: (cents) => PriceUtils.format(cents)
   },
   showPagination: {
     type: Boolean,
