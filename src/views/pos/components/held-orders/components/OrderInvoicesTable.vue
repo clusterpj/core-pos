@@ -54,7 +54,7 @@
             </v-chip>
           </td>
           <td class="text-right">
-            {{ invoice?.total ? formatCurrency(invoice.total / 100) : formatCurrency(0) }}
+            {{ invoice?.total ? formatCurrency(invoice.total) : formatCurrency(0) }}
           </td>
           <td class="text-center d-flex justify-center gap-2">
             <v-btn
