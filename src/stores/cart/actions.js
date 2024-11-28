@@ -2,6 +2,7 @@ import { logger } from '../../utils/logger'
 import { priceHelpers } from './helpers'
 import { posApi } from '../../services/api/pos-api'
 import { useCompanyStore } from '../company'
+import { PriceUtils } from '../../utils/price'
 
 export const actions = {
   addItem(state, product, quantity = 1) {
@@ -191,10 +192,33 @@ export const actions = {
         throw new Error('No invoice being edited')
       }
 
+      if (!state.items || state.items.length === 0) {
+        throw new Error('Cannot update invoice: Cart is empty')
+      }
+
       // Get current date and due date
       const currentDate = new Date()
       const dueDate = new Date(currentDate)
       dueDate.setDate(dueDate.getDate() + 7)
+
+      // Calculate subtotal first to use in other calculations
+      const subtotal = state.items.reduce((sum, item) => {
+        const itemPrice = PriceUtils.normalizePrice(item.price)
+        const itemQuantity = Math.round(Number(item.quantity))
+        return sum + (itemPrice * itemQuantity)
+      }, 0)
+
+      // Calculate discount
+      const discountAmount = state.discountType === '%'
+        ? Math.round(subtotal * (state.discountValue / 100))
+        : PriceUtils.normalizePrice(state.discountValue)
+
+      // Calculate tax
+      const taxableAmount = subtotal - discountAmount
+      const totalTax = Math.round(taxableAmount * state.taxRate)
+
+      // Calculate final total
+      const totalAmount = taxableAmount + totalTax
 
       // Prepare invoice data with all required fields
       const invoiceData = {
@@ -203,19 +227,18 @@ export const actions = {
         invoice_date: currentDate.toISOString().split('T')[0],
         due_date: dueDate.toISOString().split('T')[0],
         
-        // Amounts (convert to cents)
-        sub_total: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity * 100), 0))),                                  
-        total: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity * 100), 0))),
-        tax: Math.round(Number(state.items.reduce((sum, item) => sum + (item.tax || 0), 0) * 100)),
-        due_amount: Math.round(Number(state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100)),
+        // Amounts
+        sub_total: subtotal,
+        total: totalAmount,
+        tax: totalTax,
+        due_amount: totalAmount,
         
         // Items with proper formatting
         items: state.items.map(item => {
-          // Calculate tax amount based on price and quantity if not present
-          const itemPrice = Math.round(Number(item.price * 100))
+          const itemPrice = PriceUtils.normalizePrice(item.price)
           const itemQuantity = Math.round(Number(item.quantity))
           const itemSubtotal = itemPrice * itemQuantity
-          const itemTax = Math.round(Number(item.tax || (itemSubtotal * state.taxRate)) * 100)
+          const itemTax = Math.round(itemSubtotal * state.taxRate)
           
           return {
             item_id: Number(item.id),
@@ -241,10 +264,10 @@ export const actions = {
         status: state.editingInvoiceStatus || 'DRAFT',
         type: state.type,
         
-        // Discount - ensure all discount fields are properly set
+        // Discount
         discount_type: state.discountType || 'fixed',
-        discount: (state.discountValue || 0).toString(),
-        discount_val: Math.round(Number(state.discountValue || 0) * 100),
+        discount: state.discountValue.toString(),
+        discount_val: discountAmount,
         discount_per_item: "NO",
 
         // Additional required fields
@@ -285,7 +308,7 @@ export const actions = {
         sent: 0,
         viewed: 0,
         
-        // Ensure these required fields are set
+        // Additional mandatory fields
         tax_per_item: "NO",
         retention_active: "NO",
         retention_percentage: 0,

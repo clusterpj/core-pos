@@ -1,92 +1,201 @@
+// src/utils/price.js
+
 /**
- * Comprehensive utility for price handling
- * All prices are managed in cents internally
+ * Utility class for handling price operations throughout the application
+ * All internal calculations are done in cents (integers) to avoid floating point issues
  */
-export const PriceUtils = {
+export class PriceUtils {
   /**
-   * Normalize price input to ensure consistent internal representation
-   * @param {number|string} price - Price in dollars or cents
+   * Converts a decimal dollar amount to cents
+   * @param {number|string} amount - Amount in decimal dollars
+   * @returns {number} Amount in cents as integer
+   */
+  static toCents(amount) {
+    if (!amount) return 0
+    if (typeof amount === 'string') {
+      amount = parseFloat(amount.replace(/[^0-9.-]/g, ''))
+    }
+    return Math.round(amount * 100)
+  }
+
+  /**
+   * Converts a cent amount to decimal dollars
+   * @param {number|string} cents - Amount in cents
+   * @returns {number} Amount in decimal dollars
+   */
+  static toDollars(cents) {
+    if (!cents) return 0
+    if (typeof cents === 'string') {
+      cents = parseInt(cents.replace(/[^0-9.-]/g, ''), 10)
+    }
+    // Handle legacy case where amount might already be in dollars
+    if (Math.abs(cents) <= 100) {
+      return Number(cents.toFixed(2))
+    }
+    return Number((cents / 100).toFixed(2))
+  }
+
+  /**
+   * Formats a price for display with currency symbol
+   * @param {number} amount - Amount in cents
+   * @param {string} [currency='USD'] - Currency code
+   * @returns {string} Formatted price string
+   */
+  static format(amount, currency = 'USD') {
+    const dollars = this.toDollars(amount)
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(dollars)
+  }
+
+  /**
+   * Formats invoice amounts specifically - handles both cent and dollar inputs
+   * @param {number} amount - Amount either in dollars or cents
+   * @returns {string} Formatted price string
+   */
+  static formatInvoiceAmount(amount) {
+    if (!amount) return this.format(0)
+    
+    // If amount is small (like 5.38), it's in dollars - convert to cents
+    if (this.isInDollars(amount)) {
+      return this.format(this.toCents(amount))
+    }
+    
+    // If amount is larger (like 538), it's in cents - use directly
+    return this.format(amount)
+  }
+
+  /**
+   * Detects if a number is likely in dollars or cents
+   * @param {number} amount - Amount to check
+   * @returns {boolean} True if the amount appears to be in dollars
+   */
+  static isInDollars(amount) {
+    if (!amount) return false
+    // If it's a small number with decimal places, it's likely dollars
+    return amount < 100 && amount % 1 !== 0
+  }
+
+  /**
+   * Ensures a number is in cents regardless of input format
+   * @param {number} amount - Amount either in dollars or cents
+   * @returns {number} Amount in cents
+   */
+  static ensureCents(amount) {
+    if (!amount) return 0
+    return this.isInDollars(amount) ? this.toCents(amount) : Math.round(amount)
+  }
+
+  /**
+   * Normalizes a price value to ensure consistent format
+   * Handles both dollar and cent inputs
+   * @param {number|string} price - Price value to normalize
+   * @returns {number} Normalized price in cents
+   */
+  static normalizePrice(price) {
+    if (!price) return 0
+    // If price is a string, clean it and convert to number
+    if (typeof price === 'string') {
+      price = parseFloat(price.replace(/[^0-9.-]/g, ''))
+    }
+    
+    // If price is already in cents (>100), return as is
+    if (price > 100) {
+      return Math.round(price)
+    }
+    // Otherwise convert to cents
+    return this.toCents(price)
+  }
+
+  /**
+   * Safely parses a price value from any input
+   * @param {number|string} value - Price value to parse
    * @returns {number} Price in cents
    */
-  normalize(price) {
-    if (price == null) return 0
-    const value = Number(price)
-    
-    // If price is already in cents (> 100), return as is
-    if (value > 100) return Math.round(value)
-    
-    // Convert dollars to cents
-    return Math.round(value * 100)
-  },
+  static parse(value) {
+    if (!value) return 0
+    if (typeof value === 'string') {
+      // Remove currency symbols and whitespace
+      value = value.replace(/[$,\s]/g, '')
+    }
+    const floatValue = parseFloat(value)
+    return this.normalizePrice(floatValue)
+  }
 
   /**
-   * Convert cents to dollars for display
-   * @param {number} cents - Price in cents
-   * @returns {string} Formatted price in dollars
+   * Validates if a price value is valid
+   * @param {number|string} value - Price value to validate
+   * @returns {boolean} True if valid price
    */
-  toDollars(cents) {
-    if (cents == null) return '0.00'
-    const value = Number(cents)
+  static isValid(value) {
+    if (typeof value === 'string') {
+      value = this.parse(value)
+    }
+    return Number.isFinite(value) && value >= 0
+  }
+
+  /**
+   * Calculates total from an array of items with price and quantity
+   * @param {Array<{price: number, quantity: number}>} items - Array of items
+   * @returns {number} Total in cents
+   */
+  static calculateTotal(items) {
+    if (!Array.isArray(items)) return 0
+    return items.reduce((sum, item) => {
+      const price = this.normalizePrice(item.price)
+      const quantity = Number(item.quantity) || 1
+      return sum + (price * quantity)
+    }, 0)
+  }
+}
+
+// Development environment test cases
+if (process.env.NODE_ENV === 'development') {
+  const runTests = () => {
+    const testCases = [
+      { input: 1.49, expected: 149 },     // Regular price
+      { input: 50.00, expected: 5000 },   // Even dollars
+      { input: 100.00, expected: 10000 }, // Boundary case
+      { input: 999.99, expected: 99999 }, // Large amount
+      { input: 0.99, expected: 99 },      // Sub-dollar
+      { input: '1.49', expected: 149 },   // String input
+      { input: '$1.49', expected: 149 },  // Currency symbol
+      { input: 149, expected: 149 },      // Already in cents
+      { input: '149', expected: 149 },    // String cents
+    ]
+
+    testCases.forEach(({ input, expected }) => {
+      const result = PriceUtils.normalizePrice(input)
+      console.assert(
+        result === expected,
+        `Price normalization failed for ${input}. Expected ${expected}, got ${result}`
+      )
+    })
+
+    // Test formatInvoiceAmount
+    console.assert(PriceUtils.formatInvoiceAmount(5.38) === '$5.38', 'Handle dollar amount')
+    console.assert(PriceUtils.formatInvoiceAmount(538) === '$5.38', 'Handle cent amount')
     
-    // Handle NaN and invalid inputs
-    if (isNaN(value)) return '0.00'
+    // Test isInDollars
+    console.assert(PriceUtils.isInDollars(5.38) === true, 'Detect dollar amount')
+    console.assert(PriceUtils.isInDollars(538) === false, 'Detect cent amount')
     
-    return (value / 100).toFixed(2)
-  },
-
-  /**
-   * Convert dollars to cents
-   * @param {number|string} dollars - Price in dollars
-   * @returns {number} Price in cents
-   */
-  toCents(dollars) {
-    if (dollars == null) return 0
-    const value = Number(dollars)
+    // Test ensureCents
+    console.assert(PriceUtils.ensureCents(5.38) === 538, 'Convert dollars to cents')
+    console.assert(PriceUtils.ensureCents(538) === 538, 'Keep cents as cents')
     
-    // Handle NaN and invalid inputs
-    if (isNaN(value)) return 0
-    
-    return Math.round(value * 100)
-  },
+    // Test edge cases
+    console.assert(PriceUtils.formatInvoiceAmount(0) === '$0.00', 'Handle zero')
+    console.assert(PriceUtils.formatInvoiceAmount(null) === '$0.00', 'Handle null')
+    console.assert(PriceUtils.formatInvoiceAmount(undefined) === '$0.00', 'Handle undefined')
+  }
 
-  /**
-   * Format price for display with currency symbol
-   * @param {number} cents - Price in cents
-   * @returns {string} Formatted price with $ symbol
-   */
-  format(cents) {
-    return `$${this.toDollars(cents)}`
-  },
-
-  /**
-   * Calculate total price with tax
-   * @param {number} subtotal - Subtotal in cents
-   * @param {number} taxRate - Tax rate as decimal
-   * @returns {number} Total price in cents
-   */
-  calculateTotal(subtotal, taxRate) {
-    const taxAmount = Math.round(subtotal * taxRate)
-    return subtotal + taxAmount
-  },
-
-  /**
-   * Compare two prices
-   * @param {number} price1 - First price in cents
-   * @param {number} price2 - Second price in cents
-   * @returns {number} Difference between prices in cents
-   */
-  compare(price1, price2) {
-    const normalizedPrice1 = this.normalize(price1)
-    const normalizedPrice2 = this.normalize(price2)
-    return normalizedPrice1 - normalizedPrice2
-  },
-
-  /**
-   * Add multiple prices
-   * @param {...number} prices - Prices to add in cents or dollars
-   * @returns {number} Total price in cents
-   */
-  add(...prices) {
-    return prices.reduce((total, price) => total + this.normalize(price), 0)
+  try {
+    runTests()
+  } catch (error) {
+    console.error('Price utils test failed:', error)
   }
 }

@@ -1,10 +1,12 @@
+// src/stores/cart/getters.js
 import { OrderType } from '../../types/order'
+import { PriceUtils } from '@/utils/price'
 
 export const getters = {
   subtotal: (state) => {
     return state.items.reduce((sum, item) => {
-      const price = item.price > 100 ? item.price / 100 : item.price
-      const itemTotal = price * item.quantity
+      const itemPrice = PriceUtils.normalizePrice(item.price)
+      const itemTotal = itemPrice * item.quantity
       return sum + itemTotal
     }, 0)
   },
@@ -12,54 +14,54 @@ export const getters = {
   discountAmount: (state) => {
     if (state.discountType === '%') {
       return Math.round(state.items.reduce((sum, item) => {
-        const price = item.price > 100 ? item.price / 100 : item.price
-        return sum + (price * item.quantity)
+        const itemPrice = PriceUtils.normalizePrice(item.price)
+        return sum + (itemPrice * item.quantity)
       }, 0) * (state.discountValue / 100))
     }
-    return Number(state.discountValue) || 0
+    return PriceUtils.toCents(state.discountValue)
   },
 
   taxableAmount: (state) => {
     const subtotal = state.items.reduce((sum, item) => {
-      const price = item.price > 100 ? item.price / 100 : item.price
-      return sum + (price * item.quantity)
+      const itemPrice = PriceUtils.normalizePrice(item.price)
+      return sum + (itemPrice * item.quantity)
     }, 0)
     
     const discount = state.discountType === '%' 
       ? Math.round(subtotal * (state.discountValue / 100))
-      : Number(state.discountValue) || 0
+      : PriceUtils.toCents(state.discountValue)
     
     return subtotal - discount
   },
 
   taxAmount: (state) => {
     const taxableAmount = state.items.reduce((sum, item) => {
-      const price = item.price > 100 ? item.price / 100 : item.price
-      return sum + (price * item.quantity)
+      const itemPrice = PriceUtils.normalizePrice(item.price)
+      return sum + (itemPrice * item.quantity)
     }, 0) - (state.discountType === '%' 
       ? Math.round(state.items.reduce((sum, item) => {
-          const price = item.price > 100 ? item.price / 100 : item.price
-          return sum + (price * item.quantity)
+          const itemPrice = PriceUtils.normalizePrice(item.price)
+          return sum + (itemPrice * item.quantity)
         }, 0) * (state.discountValue / 100))
-      : Number(state.discountValue) || 0)
+      : PriceUtils.toCents(state.discountValue))
     
-    return Math.round(taxableAmount * state.taxRate * 100) / 100
+    return Math.round(taxableAmount * state.taxRate)
   },
 
   total: (state) => {
     const subtotal = state.items.reduce((sum, item) => {
-      const price = item.price > 100 ? item.price / 100 : item.price
-      return sum + (price * item.quantity)
+      const itemPrice = PriceUtils.normalizePrice(item.price)
+      return sum + (itemPrice * item.quantity)
     }, 0)
     
     const discount = state.discountType === '%' 
       ? Math.round(subtotal * (state.discountValue / 100))
-      : Number(state.discountValue) || 0
+      : PriceUtils.toCents(state.discountValue)
     
     const taxableAmount = subtotal - discount
-    const taxAmount = Math.round(taxableAmount * state.taxRate * 100) / 100
+    const taxAmount = Math.round(taxableAmount * state.taxRate)
     
-    return Math.round((taxableAmount + taxAmount) * 100) / 100
+    return Math.round(taxableAmount + taxAmount)
   },
 
   itemCount: (state) => {
