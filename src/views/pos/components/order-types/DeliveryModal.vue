@@ -616,20 +616,20 @@ const processOrder = async () => {
       invoice_date: currentDate.toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
       invoice_number: `DEL-${Date.now()}`, // Temporary invoice number
-      sub_total: Math.round(Number(cartStore.subtotal * 100) || 0),
-      total: Math.round(Number(cartStore.total * 100) || 0),
-      tax: Math.round(Number(cartStore.taxAmount * 100) || 0),
+      sub_total: PriceUtils.toCents(cartStore.subtotal),
+      total: PriceUtils.toCents(cartStore.total),
+      tax: PriceUtils.toCents(cartStore.taxAmount),
       send_sms: sendSms.value ? 1 : 0,
       items: cartStore.items.map(item => ({
         item_id: item.id,
         name: item.name,
         description: item.description || '',
-        price: Math.round(Number(item.price * 100) || 0),
+        price: PriceUtils.toCents(item.price),
         quantity: Math.round(Number(item.quantity) || 1),
         unit_name: item.unit_name || 'units',
-        sub_total: Math.round(Number(item.subtotal * 100) || 0),
-        total: Math.round(Number(item.total * 100) || 0),
-        tax: Math.round(Number(item.tax * 100) || 0)
+        sub_total: PriceUtils.toCents(item.subtotal),
+        total: PriceUtils.toCents(item.total),
+        tax: PriceUtils.toCents(item.tax)
       })),
 
       // Boolean flags
@@ -688,7 +688,23 @@ const processOrder = async () => {
       tip_val: 0
     }
 
-    logger.debug('Creating hold order with data:', orderData)
+    logger.debug('Creating hold order with data:', {
+      ...orderData,
+      debugPrices: {
+        subtotal: {
+          raw: cartStore.subtotal,
+          cents: PriceUtils.toCents(cartStore.subtotal)
+        },
+        total: {
+          raw: cartStore.total,
+          cents: PriceUtils.toCents(cartStore.total)
+        },
+        tax: {
+          raw: cartStore.taxAmount,
+          cents: PriceUtils.toCents(cartStore.taxAmount)
+        }
+      }
+    })
 
     // Get next invoice number
     const nextInvoice = await posApi.invoice.getNextNumber()

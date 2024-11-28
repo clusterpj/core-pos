@@ -203,7 +203,8 @@ export const actions = {
 
       // Calculate subtotal first to use in other calculations
       const subtotal = state.items.reduce((sum, item) => {
-        const itemPrice = PriceUtils.normalizePrice(item.price)
+        // Use toCents to ensure correct conversion
+        const itemPrice = PriceUtils.toCents(item.price)
         const itemQuantity = Math.round(Number(item.quantity))
         return sum + (itemPrice * itemQuantity)
       }, 0)
