@@ -198,7 +198,19 @@ const handleUpdateInvoice = async () => {
       window.toastr?.error('Cannot update invoice: Cart is empty')
       return
     }
-    await cartStore.updateInvoice()
+    
+    // Preserve original customer information
+    const originalInvoice = cartStore.currentInvoice
+    const updateData = {
+      ...cartStore.currentInvoice,
+      contact_id: originalInvoice.contact_id,
+      first_name: originalInvoice.first_name,
+      last_name: originalInvoice.last_name,
+      email: originalInvoice.email,
+      phone: originalInvoice.phone
+    }
+
+    await cartStore.updateInvoice(updateData)
     clearOrder()
   } catch (error) {
     console.error('Failed to update invoice:', error)
