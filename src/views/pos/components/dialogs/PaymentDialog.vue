@@ -376,25 +376,27 @@ import { usePayment } from '../../composables/usePayment'
 import { useTableManagement } from '../../composables/useTableManagement'
 import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
 import { posApi } from '@/services/api/pos-api'
+import { PriceUtils } from '@/utils/price'
 
 const props = defineProps({
   modelValue: Boolean,
-  createInvoiceOnly: {
-    type: Boolean,
-    default: false
-  },
   invoice: {
     type: Object,
-    required: false,
-    default: () => ({
-      invoice: {},
-      invoicePrefix: '',
-      nextInvoiceNumber: ''
-    })
+    required: true
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'payment-complete'])
+// Get invoice total in cents from the invoice object
+const invoiceTotal = computed(() => {
+  const total = props.invoice?.invoice?.total || 0
+  console.log('PaymentDialog - Raw invoice total:', {
+    rawTotal: total,
+    invoice: props.invoice?.invoice,
+    isDollarAmount: PriceUtils.isInDollars(total),
+    isCentsAmount: total > 100
+  })
+  return total // Already in cents
+})
 
 const {
   loading: paymentLoading,
@@ -437,16 +439,17 @@ const invoiceNumber = computed(() => {
          ''
 })
 
-const invoiceTotal = computed(() => {
-  // Convert from cents to dollars (4096 cents becomes 40.96 dollars)
-  const total = props.invoice?.invoice?.total || 0
-  return total / 100
-})
-
 const calculatedTip = computed(() => {
   const percent = selectedTipPercent.value || Number(customTipPercent.value) || 0
-  // Calculate tip based on dollar amount
-  return (invoiceTotal.value * percent) / 100
+  const dollarAmount = PriceUtils.toDollars(invoiceTotal.value)
+  const tipAmount = Math.round((dollarAmount * percent) * 100)
+  console.log('PaymentDialog - Tip calculation:', {
+    percent,
+    invoiceTotalInCents: invoiceTotal.value,
+    invoiceTotalInDollars: dollarAmount,
+    calculatedTipInCents: tipAmount
+  })
+  return tipAmount
 })
 
 // Dialog computed property
@@ -457,16 +460,21 @@ const dialog = computed({
 
 const remainingAmount = computed(() => {
   const totalPaid = payments.value.reduce((sum, payment) => {
-    // payment.amount is in cents, convert to dollars
-    return sum + (payment.amount / 100)
+    return sum + payment.amount // amounts are in cents
   }, 0)
-  return (invoiceTotal.value + tipAmount.value) - totalPaid
+  const remaining = invoiceTotal.value + tipAmount.value - totalPaid
+  console.log('PaymentDialog - Remaining amount:', {
+    invoiceTotalInCents: invoiceTotal.value,
+    tipAmountInCents: tipAmount.value,
+    totalPaidInCents: totalPaid,
+    remainingInCents: remaining
+  })
+  return remaining
 })
 
 const totalPayments = computed(() => {
   return payments.value.reduce((sum, payment) => {
-    // payment.amount is in cents, convert to dollars
-    return sum + (payment.amount / 100)
+    return sum + payment.amount // amounts are in cents
   }, 0)
 })
 
@@ -490,12 +498,13 @@ const isValid = computed(() => {
 
 // Methods
 const formatCurrency = (amount) => {
-  if (!amount) return '$0.00'
-  // Amount is already in dollars, just format it
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
+  console.log('PaymentDialog - Formatting currency:', {
+    inputAmount: amount,
+    isDollarAmount: PriceUtils.isInDollars(amount),
+    isCentsAmount: amount > 100,
+    formattedResult: PriceUtils.format(amount)
+  })
+  return PriceUtils.format(amount) // PriceUtils.format already handles cents to dollars conversion
 }
 
 const hasPaymentFees = (methodId) => {
@@ -546,13 +555,13 @@ const selectPaymentMethod = (methodId) => {
   
   // Add new payment with remaining amount
   const remaining = remainingAmount.value
-  const displayAmount = (remaining).toString()
+  const displayAmount = PriceUtils.toDollars(remaining).toString()
   
   payments.value.push({
     method_id: methodId,
-    amount: remaining * 100, // Convert dollars to cents
+    amount: remaining,
     displayAmount,
-    received: remaining * 100, // Convert dollars to cents
+    received: remaining,
     displayReceived: displayAmount,
     returned: 0,
     fees: 0
@@ -590,21 +599,32 @@ const validateAmount = (index) => {
   if (!payment) return
 
   // Set display amount based on remaining total
-  payment.displayAmount = (invoiceTotal.value + tipAmount.value).toString()
+  const total = invoiceTotal.value + tipAmount.value
+  console.log('PaymentDialog - Validating payment amount:', {
+    paymentIndex: index,
+    totalInCents: total,
+    totalInDollars: PriceUtils.toDollars(total),
+    currentPayment: { ...payment }
+  })
 
-  // Convert display amount to cents for API
-  payment.amount = Math.round(Number(payment.displayAmount) * 100)
+  payment.displayAmount = PriceUtils.toDollars(total).toString()
+  payment.amount = total
 
   // Calculate fees if applicable
   if (hasPaymentFees(payment.method_id)) {
     payment.fees = calculateFees(payment.method_id, payment.amount)
   }
 
-  // For cash payments, handle received amount and change
   const method = paymentMethods.value.find(m => m.id === payment.method_id)
   if (method?.only_cash === 1) {
-    // Convert received amount to cents for API
-    payment.received = Math.round(Number(payment.displayReceived) * 100)
+    // Handle cash payments - received amount is in dollars, convert to cents
+    const receivedInCents = PriceUtils.toCents(payment.displayReceived)
+    console.log('PaymentDialog - Cash payment received:', {
+      displayReceived: payment.displayReceived,
+      receivedInCents,
+      paymentAmount: payment.amount
+    })
+    payment.received = receivedInCents
     payment.returned = Math.max(0, payment.received - payment.amount)
   } else {
     payment.displayReceived = payment.displayAmount
@@ -617,7 +637,7 @@ const addPayment = () => {
   payments.value.push({ 
     method_id: null, 
     amount: 0,
-    displayAmount: (invoiceTotal.value + tipAmount.value).toString(), // Include tip
+    displayAmount: PriceUtils.toDollars(invoiceTotal.value + tipAmount.value).toString(), // Include tip
     received: 0,
     displayReceived: '0',
     returned: 0,
@@ -692,7 +712,7 @@ const processPayment = async () => {
     }
     
     // Calculate the total with tip (convert from dollars to cents for API)
-    const totalWithTip = Math.round((invoiceTotal.value + tipAmount.value) * 100)
+    const totalWithTip = invoiceTotal.value + tipAmount.value
 
     console.log('PaymentDialog: Prepared hold invoice data:', {
       id: holdInvoice.id,
@@ -705,10 +725,10 @@ const processPayment = async () => {
     const tipPercentage = selectedTipPercent.value || Number(customTipPercent.value) || 0
     holdInvoice.tip = String(Math.round(tipPercentage)) // Ensure clean integer string
     holdInvoice.tip_type = "percentage"
-    holdInvoice.tip_val = Math.round(tipAmount.value * 100) // Convert dollars to cents for API
+    holdInvoice.tip_val = tipAmount.value // Convert dollars to cents for API
     holdInvoice.total = totalWithTip // Already in cents
     holdInvoice.due_amount = totalWithTip // Already in cents
-    holdInvoice.sub_total = Math.round(invoiceTotal.value * 100) // Convert dollars to cents for API
+    holdInvoice.sub_total = invoiceTotal.value // Already in cents
     
     // Log tip values for debugging
     console.log('Tip values:', {

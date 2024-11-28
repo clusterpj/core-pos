@@ -11,11 +11,14 @@ export class PriceUtils {
    * @returns {number} Amount in cents as integer
    */
   static toCents(amount) {
+    console.log('PriceUtils.toCents - Input:', { amount, type: typeof amount })
     if (!amount) return 0
     if (typeof amount === 'string') {
       amount = parseFloat(amount.replace(/[^0-9.-]/g, ''))
     }
-    return Math.round(amount * 100)
+    const result = Math.round(amount * 100)
+    console.log('PriceUtils.toCents - Result:', { amount, result })
+    return result
   }
 
   /**
@@ -24,15 +27,14 @@ export class PriceUtils {
    * @returns {number} Amount in decimal dollars
    */
   static toDollars(cents) {
+    console.log('PriceUtils.toDollars - Input:', { cents, type: typeof cents })
     if (!cents) return 0
     if (typeof cents === 'string') {
       cents = parseInt(cents.replace(/[^0-9.-]/g, ''), 10)
     }
-    // Handle legacy case where amount might already be in dollars
-    if (Math.abs(cents) <= 100) {
-      return Number(cents.toFixed(2))
-    }
-    return Number((cents / 100).toFixed(2))
+    const result = Number((cents / 100).toFixed(2))
+    console.log('PriceUtils.toDollars - Result:', { cents, result })
+    return result
   }
 
   /**
@@ -42,13 +44,16 @@ export class PriceUtils {
    * @returns {string} Formatted price string
    */
   static format(amount, currency = 'USD') {
+    console.log('PriceUtils.format - Input:', { amount, type: typeof amount })
     const dollars = this.toDollars(amount)
-    return new Intl.NumberFormat('en-US', {
+    const result = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(dollars)
+    console.log('PriceUtils.format - Result:', { amount, dollars, result })
+    return result
   }
 
   /**
@@ -57,15 +62,20 @@ export class PriceUtils {
    * @returns {string} Formatted price string
    */
   static formatInvoiceAmount(amount) {
+    console.log('PriceUtils.formatInvoiceAmount - Input:', { amount, type: typeof amount })
     if (!amount) return this.format(0)
     
     // If amount is small (like 5.38), it's in dollars - convert to cents
-    if (this.isInDollars(amount)) {
-      return this.format(this.toCents(amount))
-    }
+    const result = this.isInDollars(amount) 
+      ? this.format(this.toCents(amount))
+      : this.format(amount)
     
-    // If amount is larger (like 538), it's in cents - use directly
-    return this.format(amount)
+    console.log('PriceUtils.formatInvoiceAmount - Result:', { 
+      amount, 
+      isInDollars: this.isInDollars(amount),
+      result 
+    })
+    return result
   }
 
   /**
@@ -74,9 +84,12 @@ export class PriceUtils {
    * @returns {boolean} True if the amount appears to be in dollars
    */
   static isInDollars(amount) {
+    console.log('PriceUtils.isInDollars - Input:', { amount, type: typeof amount })
     if (!amount) return false
-    // If it's a small number with decimal places, it's likely dollars
-    return amount < 100 && amount % 1 !== 0
+    // If it has decimal places, it's in dollars
+    const result = amount % 1 !== 0
+    console.log('PriceUtils.isInDollars - Result:', { amount, result })
+    return result
   }
 
   /**
@@ -85,8 +98,11 @@ export class PriceUtils {
    * @returns {number} Amount in cents
    */
   static ensureCents(amount) {
+    console.log('PriceUtils.ensureCents - Input:', { amount, type: typeof amount })
     if (!amount) return 0
-    return this.isInDollars(amount) ? this.toCents(amount) : Math.round(amount)
+    const result = this.isInDollars(amount) ? this.toCents(amount) : Math.round(amount)
+    console.log('PriceUtils.ensureCents - Result:', { amount, result })
+    return result
   }
 
   /**
@@ -96,18 +112,21 @@ export class PriceUtils {
    * @returns {number} Normalized price in cents
    */
   static normalizePrice(price) {
+    console.log('PriceUtils.normalizePrice - Input:', { price, type: typeof price })
     if (!price) return 0
     // If price is a string, clean it and convert to number
     if (typeof price === 'string') {
       price = parseFloat(price.replace(/[^0-9.-]/g, ''))
     }
     
-    // If price is already in cents (>100), return as is
-    if (price > 100) {
-      return Math.round(price)
-    }
-    // Otherwise convert to cents
-    return this.toCents(price)
+    // If price has decimal places, it's in dollars - convert to cents
+    const result = price % 1 !== 0 ? Math.round(price * 100) : Math.round(price)
+    console.log('PriceUtils.normalizePrice - Result:', { 
+      price, 
+      hasDecimals: price % 1 !== 0,
+      result 
+    })
+    return result
   }
 
   /**
@@ -116,13 +135,16 @@ export class PriceUtils {
    * @returns {number} Price in cents
    */
   static parse(value) {
+    console.log('PriceUtils.parse - Input:', { value, type: typeof value })
     if (!value) return 0
     if (typeof value === 'string') {
       // Remove currency symbols and whitespace
       value = value.replace(/[$,\s]/g, '')
     }
     const floatValue = parseFloat(value)
-    return this.normalizePrice(floatValue)
+    const result = this.normalizePrice(floatValue)
+    console.log('PriceUtils.parse - Result:', { value, result })
+    return result
   }
 
   /**
@@ -131,10 +153,13 @@ export class PriceUtils {
    * @returns {boolean} True if valid price
    */
   static isValid(value) {
+    console.log('PriceUtils.isValid - Input:', { value, type: typeof value })
     if (typeof value === 'string') {
       value = this.parse(value)
     }
-    return Number.isFinite(value) && value >= 0
+    const result = Number.isFinite(value) && value >= 0
+    console.log('PriceUtils.isValid - Result:', { value, result })
+    return result
   }
 
   /**
@@ -143,12 +168,15 @@ export class PriceUtils {
    * @returns {number} Total in cents
    */
   static calculateTotal(items) {
+    console.log('PriceUtils.calculateTotal - Input:', { items, type: typeof items })
     if (!Array.isArray(items)) return 0
-    return items.reduce((sum, item) => {
+    const result = items.reduce((sum, item) => {
       const price = this.normalizePrice(item.price)
       const quantity = Number(item.quantity) || 1
       return sum + (price * quantity)
     }, 0)
+    console.log('PriceUtils.calculateTotal - Result:', { items, result })
+    return result
   }
 }
 

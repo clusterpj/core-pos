@@ -4,18 +4,41 @@ import { logger } from '../../utils/logger'
 import { PriceUtils } from '@/utils/price'
 
 export const priceHelpers = {
-  toCents: (amount) => PriceUtils.toCents(amount),
-  toDollars: (amount) => Number(PriceUtils.toDollars(amount)),
-  normalizePrice: (price) => Number(PriceUtils.toDollars(price))
+  toCents: (amount) => {
+    logger.info('priceHelpers.toCents:', { amount })
+    return PriceUtils.toCents(amount)
+  },
+  
+  toDollars: (amount) => {
+    logger.info('priceHelpers.toDollars:', { amount })
+    return Number(PriceUtils.toDollars(amount))
+  },
+  
+  normalizePrice: (price) => {
+    logger.info('priceHelpers.normalizePrice:', { price })
+    return PriceUtils.isInDollars(price) ? 
+      PriceUtils.normalizePrice(price) : 
+      price
+  }
 }
 
 export const prepareItemsForApi = (items) => {
   const companyStore = useCompanyStore()
   
   return items.map(item => {
-    const itemPrice = PriceUtils.toCents(item.price)
+    // Ensure price is in cents
+    const itemPrice = priceHelpers.normalizePrice(item.price)
     const itemQuantity = parseInt(item.quantity)
     const itemTotal = itemPrice * itemQuantity
+    
+    logger.info('Preparing item for API:', {
+      id: item.id,
+      name: item.name,
+      originalPrice: item.price,
+      normalizedPrice: itemPrice,
+      quantity: itemQuantity,
+      total: itemTotal
+    })
     
     return {
       item_id: Number(item.id),
@@ -29,7 +52,7 @@ export const prepareItemsForApi = (items) => {
       discount: "0",
       discount_val: 0,
       discount_type: "fixed",
-      tax: PriceUtils.toCents(item.tax || 0),
+      tax: priceHelpers.normalizePrice(item.tax || 0),
       company_id: Number(companyStore.company?.id) || 1,
       retention_amount: 0,
       retention_concept: 'NO_RETENTION',

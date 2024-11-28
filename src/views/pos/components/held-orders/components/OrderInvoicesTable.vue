@@ -261,31 +261,16 @@
 <script setup>
 import PaymentDialog from '../../../components/dialogs/PaymentInvoiceDialog.vue'
 import { PriceUtils } from '@/utils/price'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useCartStore } from '@/stores/cart-store'
 
 const props = defineProps({
-  loading: {
-    type: Boolean,
-    default: false
-  },
   invoices: {
     type: Array,
-    required: true
+    required: true,
+    default: () => []
   },
-  getOrderType: {
-    type: Function,
-    required: true
-  },
-  getOrderTypeColor: {
-    type: Function,
-    required: true
-  },
-  formatDate: {
-    type: Function,
-    required: true
-  },
-  showPagination: {
+  loading: {
     type: Boolean,
     default: false
   },
@@ -299,94 +284,161 @@ const props = defineProps({
   }
 })
 
-const emits = defineEmits(['update:page', 'refresh'])
-
 const cartStore = useCartStore()
 
-const loadInvoiceToCart = async (invoice) => {
-  try {
-    await cartStore.loadInvoice(invoice)
-    window.toastr?.success('Invoice loaded to cart successfully')
-  } catch (error) {
-    console.error('Failed to load invoice to cart:', error)
-    window.toastr?.error('Failed to load invoice to cart')
-  }
-}
+// Log initial props
+console.log('OrderInvoicesTable - Initial props:', {
+  invoicesCount: props.invoices.length,
+  loading: props.loading,
+  page: props.page,
+  totalPages: props.totalPages
+})
 
-const getStatusColor = (status) => {
-  switch (status?.toUpperCase()) {
-    case 'COMPLETED':
-      return 'success'
-    case 'SENT':
-      return 'info'
-    case 'VIEWED':
-      return 'primary'
-    case 'OVERDUE':
-      return 'error'
-    case 'DUE':
-      return 'warning'
-    case 'DRAFT':
-    case 'SAVE_DRAFT':
-      return 'grey'
-    default:
-      return 'info'
-  }
-}
+// Watch for invoice changes
+watch(() => props.invoices, (newInvoices, oldInvoices) => {
+  console.log('OrderInvoicesTable - Invoices changed:', {
+    oldCount: oldInvoices?.length || 0,
+    newCount: newInvoices.length,
+    invoices: newInvoices.map(invoice => ({
+      id: invoice.id,
+      invoice_number: invoice.invoice_number,
+      status: invoice.status,
+      paid_status: invoice.paid_status,
+      total: invoice.total,
+      formatted_total: PriceUtils.format(invoice.total)
+    }))
+  })
+}, { deep: true })
 
-const getPaidStatusColor = (status) => {
-  switch (status?.toUpperCase()) {
-    case 'PAID':
-      return 'success'
-    case 'PARTIALLY_PAID':
-      return 'warning'
-    case 'UNPAID':
-      return 'error'
-    default:
-      return 'error'
-  }
-}
+const emit = defineEmits(['update:page', 'invoice-paid', 'refresh'])
 
 // Payment Dialog
 const showPaymentDialog = ref(false)
 const showConfirmDialog = ref(false)
 const selectedInvoice = ref(null)
-
-// Details Dialog
 const showDetailsDialog = ref(false)
 const selectedInvoiceDetails = ref(null)
 
-const showInvoiceDetails = async (invoice) => {
+// Computed
+const showPagination = computed(() => props.totalPages > 1)
+
+// Format date helper
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const loadInvoiceToCart = async (invoice) => {
+  console.log('OrderInvoicesTable - Loading invoice to cart:', {
+    id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    total: invoice.total,
+    formatted_total: PriceUtils.format(invoice.total),
+    items: invoice.items?.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      formatted_price: PriceUtils.format(item.price),
+      quantity: item.quantity
+    }))
+  })
+
   try {
-    selectedInvoiceDetails.value = invoice
-    showDetailsDialog.value = true
+    await cartStore.loadInvoice(invoice)
+    window.toastr?.success('Invoice loaded to cart successfully')
+    console.log('OrderInvoicesTable - Invoice loaded to cart successfully:', {
+      invoice_id: invoice.id,
+      invoice_number: invoice.invoice_number
+    })
   } catch (error) {
-    console.error('Failed to load invoice details:', error)
-    window.toastr?.error('Failed to load invoice details')
+    console.error('OrderInvoicesTable - Failed to load invoice to cart:', error)
+    window.toastr?.error('Failed to load invoice to cart')
   }
 }
 
+const getStatusColor = (status) => {
+  const color = {
+    'DRAFT': 'grey',
+    'SENT': 'info',
+    'VIEWED': 'warning',
+    'EXPIRED': 'error',
+    'DECLINED': 'error',
+    'ACCEPTED': 'success',
+    'COMPLETED': 'success'
+  }[status?.toUpperCase()] || 'grey'
+
+  console.log('OrderInvoicesTable - Status color:', {
+    status,
+    color
+  })
+  
+  return color
+}
+
+const getPaidStatusColor = (status) => {
+  const color = {
+    'PAID': 'success',
+    'PARTIALLY_PAID': 'warning',
+    'UNPAID': 'error'
+  }[status?.toUpperCase()] || 'error'
+
+  console.log('OrderInvoicesTable - Paid status color:', {
+    status,
+    color
+  })
+  
+  return color
+}
+
+const showInvoiceDetails = async (invoice) => {
+  console.log('OrderInvoicesTable - Showing invoice details:', {
+    id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    status: invoice.status,
+    paid_status: invoice.paid_status,
+    total: invoice.total,
+    formatted_total: PriceUtils.format(invoice.total)
+  })
+  
+  selectedInvoiceDetails.value = invoice
+  showDetailsDialog.value = true
+}
+
 const handlePayClick = (invoice) => {
+  console.log('OrderInvoicesTable - Pay clicked:', {
+    id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    total: invoice.total,
+    formatted_total: PriceUtils.format(invoice.total)
+  })
+  
   selectedInvoice.value = invoice
   showConfirmDialog.value = true
 }
 
 const confirmPayment = () => {
+  console.log('OrderInvoicesTable - Payment confirmed:', {
+    invoice_id: selectedInvoice.value?.id,
+    invoice_number: selectedInvoice.value?.invoice_number
+  })
+  
   showConfirmDialog.value = false
   showPaymentDialog.value = true
 }
 
-const handlePaymentComplete = async (result) => {
-  try {
-    showPaymentDialog.value = false
-    selectedInvoice.value = null
-    if (result) {
-      window.toastr?.['success']('Payment processed successfully')
-      emits('refresh')
-    }
-  } catch (error) {
-    console.error('Payment completion error:', error)
-    window.toastr?.['error']('Failed to complete payment process')
-  }
+const handlePaymentComplete = (result) => {
+  console.log('OrderInvoicesTable - Payment completed:', {
+    result,
+    invoice_id: selectedInvoice.value?.id,
+    invoice_number: selectedInvoice.value?.invoice_number
+  })
+  
+  showPaymentDialog.value = false
+  selectedInvoice.value = null
+  emit('invoice-paid', result)
 }
 </script>
 

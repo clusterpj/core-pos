@@ -96,8 +96,8 @@ export const convertHeldOrderToInvoice = async (invoice) => {
     // Format items according to API requirements
     console.log('Formatting items data')
     const formattedItems = invoice.items.map(item => {
-      // Convert price to cents if needed
-      const itemPrice = toCents(item.price)
+      // Price is already in cents from prepareHoldInvoiceData
+      const itemPrice = Math.round(Number(item.price))
       const itemQuantity = parseInt(item.quantity)
       const itemTotal = itemPrice * itemQuantity
 
@@ -113,7 +113,7 @@ export const convertHeldOrderToInvoice = async (invoice) => {
         discount: "0",
         discount_val: 0,
         discount_type: "fixed",
-        tax: toCents(item.tax || 0),
+        tax: Math.round(Number(item.tax || 0)), // Tax is also already in cents
         retention_amount: 0,
         retention_concept: null,
         retention_percentage: null,
@@ -130,9 +130,9 @@ export const convertHeldOrderToInvoice = async (invoice) => {
     console.log('Invoice data', invoice)
 
     // Ensure all required numeric fields are present and properly formatted
-    const subTotal = Math.round(Number(toCents(invoice.sub_total || 0)))
-    const taxAmount = Math.round(Number(toCents(invoice.tax || 0)))
-    const totalAmount = Math.round(Number(toCents(invoice.total || (subTotal + taxAmount))))
+    const subTotal = Math.round(Number(invoice.sub_total || 0))
+    const taxAmount = Math.round(Number(invoice.tax || 0))
+    const totalAmount = Math.round(Number(invoice.total || (subTotal + taxAmount)))
 
     const invoiceData = {
       // Required fields first

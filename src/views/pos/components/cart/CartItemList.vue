@@ -20,14 +20,14 @@
               {{ item.name }}
             </div>
             <div class="item-price text-caption text-grey-darken-1">
-              ${{ formatPrice(item.price) }} each
+              {{ formatPrice(item.price) }} each
             </div>
           </div>
 
           <!-- Total and Actions -->
           <div class="d-flex align-center gap-1">
             <span class="item-total text-body-2 font-weight-medium">
-              ${{ formatPrice(item.price * item.quantity) }}
+              {{ formatPrice(item.price * item.quantity) }}
             </span>
             
             <div class="action-buttons d-flex">
@@ -38,7 +38,7 @@
                 density="comfortable" 
                 color="primary"
                 :disabled="item.quantity <= 1"
-                @click="emit('updateQuantity', item.id, Math.max(0, item.quantity - 1), index)"
+                @click="handleQuantityUpdate(item.id, Math.max(0, item.quantity - 1), index)"
                 class="touch-btn"
               />
               <v-btn
@@ -47,7 +47,7 @@
                 variant="tonal"
                 density="comfortable"
                 color="primary"
-                @click="emit('updateQuantity', item.id, item.quantity + 1, index)"
+                @click="handleQuantityUpdate(item.id, item.quantity + 1, index)"
                 class="touch-btn"
               />
               <v-btn
@@ -56,7 +56,7 @@
                 variant="tonal"
                 density="comfortable"
                 color="error"
-                @click="emit('remove', item.id, index)"
+                @click="handleRemoveItem(item.id, index)"
                 class="touch-btn"
               />
             </div>
@@ -65,10 +65,13 @@
       </v-list-item>
     </v-list>
   </div>
-
 </template>
 
 <script setup>
+import { computed, watch } from 'vue'
+import { logger } from '@/utils/logger'
+import { PriceUtils } from '@/utils/price'
+
 const props = defineProps({
   items: {
     type: Array,
@@ -78,11 +81,96 @@ const props = defineProps({
 
 const emit = defineEmits(['edit', 'remove', 'updateQuantity'])
 
-// Format price for display, converting from cents to dollars if needed
-import { PriceUtils } from '@/utils/price'
+// Log initial cart state
+console.log('CartItemList - Initial cart state:', {
+  itemCount: props.items.length,
+  items: props.items.map(item => ({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+    total: item.price * item.quantity
+  }))
+})
 
+// Watch for cart changes
+watch(() => props.items, (newItems, oldItems) => {
+  console.log('CartItemList - Cart items changed:', {
+    oldCount: oldItems?.length || 0,
+    newCount: newItems.length,
+    items: newItems.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      formatted_price: PriceUtils.format(item.price),
+      quantity: item.quantity,
+      total: item.price * item.quantity,
+      formatted_total: PriceUtils.format(item.price * item.quantity)
+    }))
+  })
+}, { deep: true })
+
+// Format price for display
 const formatPrice = (cents) => {
-  return PriceUtils.toDollars(cents)
+  console.log('CartItemList - Formatting price:', { 
+    inputCents: cents,
+    isDollarAmount: PriceUtils.isInDollars(cents)
+  })
+
+  return PriceUtils.format(cents)
+}
+
+// Computed total for all items
+const cartTotal = computed(() => {
+  const total = props.items.reduce((sum, item) => {
+    const itemTotal = item.price * item.quantity
+    console.log('CartItemList - Calculating item total:', {
+      itemId: item.id,
+      price: item.price,
+      quantity: item.quantity,
+      itemTotal
+    })
+    return sum + itemTotal
+  }, 0)
+  
+  console.log('CartItemList - Cart total calculated:', {
+    itemCount: props.items.length,
+    total,
+    formattedTotal: PriceUtils.format(total)
+  })
+  return total
+})
+
+// Handlers with logging
+const handleQuantityUpdate = (itemId, newQuantity, index) => {
+  console.log('CartItemList - Updating quantity:', {
+    itemId,
+    index,
+    oldQuantity: props.items[index].quantity,
+    newQuantity,
+    price: props.items[index].price,
+    oldTotal: props.items[index].price * props.items[index].quantity,
+    newTotal: props.items[index].price * newQuantity
+  })
+  emit('updateQuantity', itemId, newQuantity, index)
+}
+
+const handleRemoveItem = (itemId, index) => {
+  console.log('CartItemList - Removing item:', {
+    itemId,
+    index,
+    item: props.items[index]
+  })
+  emit('remove', itemId, index)
+}
+
+const handleEditItem = (itemId, index) => {
+  console.log('CartItemList - Editing item:', {
+    itemId,
+    index,
+    item: props.items[index]
+  })
+  emit('edit', itemId, index)
 }
 </script>
 

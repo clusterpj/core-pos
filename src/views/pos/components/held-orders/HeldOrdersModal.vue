@@ -219,6 +219,7 @@ import { ref, watch, computed } from 'vue'
 import { logger } from '../../../../utils/logger'
 import { useHeldOrders } from './composables/useHeldOrders'
 import { useInvoices } from './composables/useInvoices'
+import { PriceUtils } from '@/utils/price'
 import HeldOrdersFilters from './components/HeldOrdersFilters.vue'
 import HeldOrdersTable from './components/HeldOrdersTable.vue'
 import DeleteConfirmationDialog from './components/DeleteConfirmationDialog.vue'
@@ -415,20 +416,62 @@ const handleLoadOrder = async (invoice) => {
 }
 
 const handleConvertOrder = async (invoice) => {
-  console.log('HeldOrdersModal: handleConvertOrder called with invoice:', {
+  console.log('HeldOrdersModal - Initial invoice data:', {
     id: invoice.id,
     description: invoice.description,
-    total: invoice.total,
-    items: invoice.hold_items?.length
+    rawTotal: invoice.total,
+    isDollarAmount: PriceUtils.isInDollars(invoice.total),
+    isCentsAmount: invoice.total > 100,
+    items: invoice.hold_items?.length,
+    holdItems: invoice.hold_items?.map(item => ({
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity
+    }))
   })
   
+  // Check if the total is already in cents (larger number)
+  let finalTotal = invoice.total
+  if (invoice.total && invoice.total > 1000) {
+    console.log('HeldOrdersModal - Total is already in cents:', {
+      total: invoice.total,
+      asDollars: PriceUtils.toDollars(invoice.total)
+    })
+  } else if (invoice.total) {
+    finalTotal = PriceUtils.toCents(invoice.total)
+    console.log('HeldOrdersModal - Converting total to cents:', {
+      originalTotal: invoice.total,
+      convertedTotal: finalTotal,
+      asDollars: PriceUtils.toDollars(finalTotal)
+    })
+    invoice.total = finalTotal
+  }
+  
+  // Also log individual item prices
+  if (invoice.hold_items) {
+    invoice.hold_items.forEach((item, index) => {
+      console.log(`HeldOrdersModal - Item ${index + 1} price:`, {
+        name: item.name,
+        rawPrice: item.price,
+        isDollarAmount: PriceUtils.isInDollars(item.price),
+        isCentsAmount: item.price > 100,
+        quantity: item.quantity,
+        totalForItem: item.price * item.quantity
+      })
+    })
+  }
+  
   const result = await convertToInvoice(invoice)
-  console.log('HeldOrdersModal: convertToInvoice result:', result)
+  console.log('HeldOrdersModal - Convert to invoice result:', {
+    success: result.success,
+    finalTotal: invoice.total,
+    asDollars: PriceUtils.toDollars(invoice.total)
+  })
   
   if (result.success) {
-    console.log('HeldOrdersModal: Conversion successful, payment dialog should show automatically')
+    console.log('HeldOrdersModal - Conversion successful')
   } else {
-    console.error('HeldOrdersModal: Conversion failed:', result.error)
+    console.error('HeldOrdersModal - Conversion failed:', result.error)
   }
 }
 
