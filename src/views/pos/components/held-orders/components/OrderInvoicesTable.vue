@@ -287,7 +287,14 @@ const props = defineProps({
   },
   formatCurrency: {
     type: Function,
-    default: (value) => value // Default pass-through function
+    default: (value) => {
+      // If value is greater than 100, assume it's in cents and convert to dollars
+      const amount = value > 100 ? value / 100 : value
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(amount)
+    }
   },
   showPagination: {
     type: Boolean,
