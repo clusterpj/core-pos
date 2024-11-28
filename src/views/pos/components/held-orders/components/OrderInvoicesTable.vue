@@ -54,7 +54,7 @@
             </v-chip>
           </td>
           <td class="text-right">
-            {{ formatCurrency(invoice?.total) }}
+            {{ PriceUtils.format(invoice.total) }}
           </td>
           <td class="text-center d-flex justify-center gap-2">
             <v-btn
@@ -216,8 +216,8 @@
                   <tr v-for="item in selectedInvoiceDetails.items" :key="item.id">
                     <td>{{ item.name }}</td>
                     <td class="text-right">{{ item.quantity }}</td>
-                    <td class="text-right">{{ formatCurrency(item.price) }}</td>
-                    <td class="text-right">{{ formatCurrency(item.price) }}</td>
+                    <td class="text-right">{{ PriceUtils.format(item.price) }}</td>
+                    <td class="text-right">{{ PriceUtils.format(item.total) }}</td>
                   </tr>
                 </tbody>
               </v-table>
@@ -229,16 +229,16 @@
             <v-col cols="12" sm="6" offset-sm="6">
               <div class="d-flex justify-space-between mb-2">
                 <strong>Subtotal:</strong>
-                <span>{{ formatCurrency(selectedInvoiceDetails.sub_total) }}</span>
+                <span>{{ PriceUtils.format(selectedInvoiceDetails.sub_total) }}</span>
               </div>
               <div class="d-flex justify-space-between mb-2">
                 <strong>Tax:</strong>
-                <span>{{ formatCurrency(selectedInvoiceDetails.tax) }}</span>
+                <span>{{ PriceUtils.format(selectedInvoiceDetails.tax) }}</span>
               </div>
               <v-divider class="my-2"></v-divider>
               <div class="d-flex justify-space-between">
                 <strong>Total:</strong>
-                <span class="text-h6">{{ formatCurrency(selectedInvoiceDetails.total) }}</span>
+                <span class="text-h6">{{ PriceUtils.format(selectedInvoiceDetails.total) }}</span>
               </div>
             </v-col>
           </v-row>
@@ -260,9 +260,9 @@
 
 <script setup>
 import PaymentDialog from '../../../components/dialogs/PaymentInvoiceDialog.vue'
+import { PriceUtils } from '@/utils/price'
 import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart-store'
-import { PriceUtils } from '@/utils/price'
 
 const props = defineProps({
   loading: {
@@ -285,17 +285,6 @@ const props = defineProps({
     type: Function,
     required: true
   },
-  formatCurrency: {
-    type: Function,
-    default: (value) => {
-      // If value is greater than 100, assume it's in cents and convert to dollars
-      const amount = value > 100 ? value / 100 : value
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-      }).format(amount)
-    }
-  },
   showPagination: {
     type: Boolean,
     default: false
@@ -309,9 +298,6 @@ const props = defineProps({
     default: 1
   }
 })
-
-// New price formatting function
-
 
 const emits = defineEmits(['update:page', 'refresh'])
 

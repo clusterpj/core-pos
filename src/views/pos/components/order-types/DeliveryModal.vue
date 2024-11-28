@@ -617,20 +617,19 @@ const processOrder = async () => {
       invoice_date: currentDate.toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
       invoice_number: `DEL-${Date.now()}`, // Temporary invoice number
-      sub_total: PriceUtils.toCents(cartStore.subtotal),
-      total: PriceUtils.toCents(cartStore.total),
-      tax: PriceUtils.toCents(cartStore.taxAmount),
-      send_sms: sendSms.value ? 1 : 0,
+      sub_total: cartStore.subtotal, // Already in cents from the cart store
+      total: cartStore.total, // Already in cents from the cart store
+      tax: cartStore.taxAmount, // Already in cents from the cart store
       items: cartStore.items.map(item => ({
         item_id: item.id,
         name: item.name,
         description: item.description || '',
-        price: PriceUtils.toCents(item.price),
-        quantity: Math.round(Number(item.quantity) || 1),
+        price: PriceUtils.normalizePrice(item.price),
+        quantity: item.quantity,
         unit_name: item.unit_name || 'units',
-        sub_total: PriceUtils.toCents(item.subtotal),
-        total: PriceUtils.toCents(item.total),
-        tax: PriceUtils.toCents(item.tax)
+        total: PriceUtils.normalizePrice(item.total),
+        sub_total: PriceUtils.normalizePrice(item.sub_total),
+        tax: PriceUtils.normalizePrice(item.tax || 0)
       })),
 
       // Boolean flags
