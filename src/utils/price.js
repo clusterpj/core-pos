@@ -7,18 +7,33 @@
 export class PriceUtils {
   /**
    * Converts a decimal dollar amount to cents
-   * @param {number|string} amount - Amount in decimal dollars
+   * Ensures consistent integer output for price calculations
+   * @param {number|string} amount - Amount in decimal dollars or cents
    * @returns {number} Amount in cents as integer
+   * @throws {Error} If input cannot be converted to a valid number
    */
   static toCents(amount) {
-    console.log('PriceUtils.toCents - Input:', { amount, type: typeof amount })
+    // Handle null, undefined, or zero values
     if (!amount) return 0
+
+    // If already an integer, assume it's in cents
+    if (Number.isInteger(amount)) return Math.round(amount)
+
+    // Handle string inputs
     if (typeof amount === 'string') {
-      amount = parseFloat(amount.replace(/[^0-9.-]/g, ''))
+      // Remove currency symbols, commas, and trim whitespace
+      const cleanAmount = amount.replace(/[$,\s]/g, '')
+      amount = parseFloat(cleanAmount)
     }
-    const result = Math.round(amount * 100)
-    console.log('PriceUtils.toCents - Result:', { amount, result })
-    return result
+
+    // Validate numeric conversion
+    if (isNaN(amount)) {
+      console.error('Invalid price input:', amount)
+      throw new Error(`Cannot convert ${amount} to cents`)
+    }
+
+    // Convert to cents, rounding to handle floating point imprecision
+    return Math.round(amount * 100)
   }
 
   /**
@@ -26,15 +41,29 @@ export class PriceUtils {
    * @param {number|string} cents - Amount in cents
    * @returns {number} Amount in decimal dollars
    */
+  /**
+   * Converts cents to decimal dollars
+   * @param {number|string} cents - Amount in cents
+   * @returns {number} Amount in decimal dollars
+   * @throws {Error} If input cannot be converted to a valid number
+   */
   static toDollars(cents) {
-    console.log('PriceUtils.toDollars - Input:', { cents, type: typeof cents })
+    // Handle null, undefined, or zero values
     if (!cents) return 0
+
+    // Handle string inputs
     if (typeof cents === 'string') {
       cents = parseInt(cents.replace(/[^0-9.-]/g, ''), 10)
     }
-    const result = Number((cents / 100).toFixed(2))
-    console.log('PriceUtils.toDollars - Result:', { cents, result })
-    return result
+
+    // Validate numeric conversion
+    if (isNaN(cents)) {
+      console.error('Invalid cents input:', cents)
+      throw new Error(`Cannot convert ${cents} to dollars`)
+    }
+
+    // Convert to dollars with 2 decimal precision
+    return Number((cents / 100).toFixed(2))
   }
 
   /**
@@ -43,17 +72,24 @@ export class PriceUtils {
    * @param {string} [currency='USD'] - Currency code
    * @returns {string} Formatted price string
    */
+  /**
+   * Formats a price for display with currency symbol
+   * Handles both cent and dollar inputs
+   * @param {number|string} amount - Amount in cents or dollars
+   * @param {string} [currency='USD'] - Currency code
+   * @returns {string} Formatted price string
+   */
   static format(amount, currency = 'USD') {
-    console.log('PriceUtils.format - Input:', { amount, type: typeof amount })
-    const dollars = this.toDollars(amount)
-    const result = new Intl.NumberFormat('en-US', {
+    // Normalize input to cents
+    const cents = this.toCents(amount)
+    const dollars = this.toDollars(cents)
+
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(dollars)
-    console.log('PriceUtils.format - Result:', { amount, dollars, result })
-    return result
   }
 
   /**
