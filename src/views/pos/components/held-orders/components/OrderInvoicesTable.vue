@@ -285,6 +285,10 @@ const props = defineProps({
     type: Function,
     required: true
   },
+  formatCurrency: {
+    type: Function,
+    default: (value) => value // Default pass-through function
+  },
   showPagination: {
     type: Boolean,
     default: false
