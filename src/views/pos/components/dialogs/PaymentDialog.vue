@@ -73,19 +73,19 @@
                     </div>
                     <div class="d-flex justify-space-between mb-2">
                       <span>Subtotal:</span>
-                      <strong>{{ formatCurrency(invoiceTotal / 100) }}</strong>
+                      <strong>{{ formatCurrency(invoiceTotal) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between mb-2" v-if="tipAmount > 0">
                       <span>Tip:</span>
-                      <strong>{{ formatCurrency(tipAmount / 100) }}</strong>
+                      <strong>{{ formatCurrency(tipAmount) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between mb-2">
                       <span>Total Amount:</span>
-                      <strong>{{ formatCurrency((invoiceTotal + tipAmount) / 100) }}</strong>
+                      <strong>{{ formatCurrency(invoiceTotal + tipAmount) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between">
                       <span>Remaining:</span>
-                      <strong>{{ formatCurrency(remainingAmount / 100) }}</strong>
+                      <strong>{{ formatCurrency(remainingAmount) }}</strong>
                     </div>
                   </v-card-text>
                 </v-card>
@@ -102,7 +102,7 @@
                   @click="showTipDialog = true"
                   class="mb-4"
                 >
-                  {{ tipAmount > 0 ? `Update Tip (${formatCurrency(tipAmount / 100)})` : 'Add Tip' }}
+                  {{ tipAmount > 0 ? `Update Tip (${formatCurrency(tipAmount)})` : 'Add Tip' }}
                 </v-btn>
               </v-col>
             </v-row>
@@ -159,7 +159,7 @@
                     :rules="[
                       v => !!v || 'Amount is required',
                       v => v > 0 || 'Amount must be greater than 0',
-                      v => Number(v) === (invoiceTotal + tipAmount) / 100 || 'Full payment is required'
+                      v => Number(v) === (invoiceTotal + tipAmount) || 'Full payment is required'
                     ]"
                     :prefix="'$'"
                     @input="validateAmount(index)"
@@ -202,7 +202,7 @@
                     <div v-if="payment.returned > 0" class="text-caption mb-2">
                       <div class="d-flex justify-space-between">
                         <span>Change:</span>
-                        <strong>{{ formatCurrency(payment.returned / 100) }}</strong>
+                        <strong>{{ formatCurrency(payment.returned) }}</strong>
                       </div>
                     </div>
                   </template>
@@ -211,11 +211,29 @@
                   <div v-if="hasPaymentFees(payment.method_id)" class="text-caption mb-2">
                     <div class="d-flex justify-space-between">
                       <span>Service Fee:</span>
-                      <strong>{{ formatCurrency(payment.fees / 100) }}</strong>
+                      <strong>{{ formatCurrency(payment.fees) }}</strong>
                     </div>
                     <div class="text-grey">
                       {{ getFeeDescription(payment.method_id, payment.amount) }}
                     </div>
+                  </div>
+
+                  <!-- Payment Amount Display -->
+                  <div class="d-flex justify-space-between mb-2">
+                    <span>Payment Amount:</span>
+                    <strong>{{ formatCurrency(payment.amount) }}</strong>
+                  </div>
+                  <div v-if="payment.received" class="d-flex justify-space-between mb-2">
+                    <span>Amount Received:</span>
+                    <strong>{{ formatCurrency(payment.received) }}</strong>
+                  </div>
+                  <div v-if="payment.change" class="d-flex justify-space-between mb-2">
+                    <span>Change:</span>
+                    <strong>{{ formatCurrency(payment.change) }}</strong>
+                  </div>
+                  <div v-if="payment.fees" class="d-flex justify-space-between">
+                    <span>Fees:</span>
+                    <strong>{{ formatCurrency(payment.fees) }}</strong>
                   </div>
 
                   <!-- Remove Payment Button -->
@@ -249,16 +267,16 @@
                 <v-card v-if="totalFees > 0" variant="outlined" class="mt-4">
                   <v-card-text>
                     <div class="d-flex justify-space-between mb-2">
-                      <span>Subtotal:</span>
-                      <strong>{{ formatCurrency(totalPayments / 100) }}</strong>
+                      <span>Total Payments:</span>
+                      <strong>{{ formatCurrency(totalPayments) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between mb-2">
-                      <span>Service Fees:</span>
-                      <strong>{{ formatCurrency(totalFees / 100) }}</strong>
+                      <span>Total Fees:</span>
+                      <strong>{{ formatCurrency(totalFees) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between">
-                      <span>Total:</span>
-                      <strong>{{ formatCurrency((totalPayments + totalFees) / 100) }}</strong>
+                      <span>Total with Fees:</span>
+                      <strong>{{ formatCurrency(totalPayments + totalFees) }}</strong>
                     </div>
                   </v-card-text>
                 </v-card>
@@ -334,7 +352,7 @@
           <v-col cols="12">
             <div class="d-flex justify-space-between">
               <span>Tip Amount:</span>
-              <strong>{{ formatCurrency(calculatedTip / 100) }}</strong>
+              <strong>{{ formatCurrency(calculatedTip) }}</strong>
             </div>
           </v-col>
         </v-row>
@@ -420,13 +438,15 @@ const invoiceNumber = computed(() => {
 })
 
 const invoiceTotal = computed(() => {
-  // Invoice total is already in cents (431 for $4.31)
-  return props.invoice?.invoice?.total || 0
+  // Convert from cents to dollars (4096 cents becomes 40.96 dollars)
+  const total = props.invoice?.invoice?.total || 0
+  return total / 100
 })
 
 const calculatedTip = computed(() => {
   const percent = selectedTipPercent.value || Number(customTipPercent.value) || 0
-  return Math.round((invoiceTotal.value * percent) / 100)
+  // Calculate tip based on dollar amount
+  return (invoiceTotal.value * percent) / 100
 })
 
 // Dialog computed property
@@ -437,14 +457,16 @@ const dialog = computed({
 
 const remainingAmount = computed(() => {
   const totalPaid = payments.value.reduce((sum, payment) => {
-    return sum + payment.amount
+    // payment.amount is in cents, convert to dollars
+    return sum + (payment.amount / 100)
   }, 0)
   return (invoiceTotal.value + tipAmount.value) - totalPaid
 })
 
 const totalPayments = computed(() => {
   return payments.value.reduce((sum, payment) => {
-    return sum + payment.amount
+    // payment.amount is in cents, convert to dollars
+    return sum + (payment.amount / 100)
   }, 0)
 })
 
@@ -468,6 +490,8 @@ const isValid = computed(() => {
 
 // Methods
 const formatCurrency = (amount) => {
+  if (!amount) return '$0.00'
+  // Amount is already in dollars, just format it
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD'
@@ -522,13 +546,13 @@ const selectPaymentMethod = (methodId) => {
   
   // Add new payment with remaining amount
   const remaining = remainingAmount.value
-  const displayAmount = (remaining / 100).toString()
+  const displayAmount = (remaining).toString()
   
   payments.value.push({
     method_id: methodId,
-    amount: remaining,
+    amount: remaining * 100, // Convert dollars to cents
     displayAmount,
-    received: remaining,
+    received: remaining * 100, // Convert dollars to cents
     displayReceived: displayAmount,
     returned: 0,
     fees: 0
@@ -541,7 +565,7 @@ const handleDenominationClick = (money, index) => {
   const payment = payments.value[index]
   const currentReceived = Number(payment.displayReceived || 0)
   payment.displayReceived = (currentReceived + Number(money.amount)).toString()
-  payment.received = Math.round(Number(payment.displayReceived) * 100)
+  payment.received = Math.round(Number(payment.displayReceived))
   calculateChange(index)
 }
 
@@ -549,7 +573,7 @@ const calculateChange = (index) => {
   const payment = payments.value[index]
   if (!payment.displayReceived || !payment.displayAmount) return
 
-  const received = Math.round(Number(payment.displayReceived) * 100)
+  const received = Math.round(Number(payment.displayReceived))
   const amount = payment.amount
   
   payment.received = received
@@ -563,12 +587,12 @@ const calculateChange = (index) => {
 
 const validateAmount = (index) => {
   const payment = payments.value[index]
-  if (!payment.displayAmount) return
+  if (!payment) return
 
-  // Set full payment amount including tip
-  payment.displayAmount = ((invoiceTotal.value + tipAmount.value) / 100).toString()
+  // Set display amount based on remaining total
+  payment.displayAmount = (invoiceTotal.value + tipAmount.value).toString()
 
-  // Convert display amount to cents
+  // Convert display amount to cents for API
   payment.amount = Math.round(Number(payment.displayAmount) * 100)
 
   // Calculate fees if applicable
@@ -576,8 +600,13 @@ const validateAmount = (index) => {
     payment.fees = calculateFees(payment.method_id, payment.amount)
   }
 
-  // Set initial received amount for cash payments
-  if (isCashOnly(payment.method_id)) {
+  // For cash payments, handle received amount and change
+  const method = paymentMethods.value.find(m => m.id === payment.method_id)
+  if (method?.only_cash === 1) {
+    // Convert received amount to cents for API
+    payment.received = Math.round(Number(payment.displayReceived) * 100)
+    payment.returned = Math.max(0, payment.received - payment.amount)
+  } else {
     payment.displayReceived = payment.displayAmount
     payment.received = payment.amount
     payment.returned = 0
@@ -588,7 +617,7 @@ const addPayment = () => {
   payments.value.push({ 
     method_id: null, 
     amount: 0,
-    displayAmount: ((invoiceTotal.value + tipAmount.value) / 100).toString(), // Include tip
+    displayAmount: (invoiceTotal.value + tipAmount.value).toString(), // Include tip
     received: 0,
     displayReceived: '0',
     returned: 0,
@@ -662,8 +691,8 @@ const processPayment = async () => {
       throw new Error('Invoice data not provided')
     }
     
-    // Calculate the total with tip
-    const totalWithTip = invoiceTotal.value + tipAmount.value
+    // Calculate the total with tip (convert from dollars to cents for API)
+    const totalWithTip = Math.round((invoiceTotal.value + tipAmount.value) * 100)
 
     console.log('PaymentDialog: Prepared hold invoice data:', {
       id: holdInvoice.id,
@@ -676,10 +705,10 @@ const processPayment = async () => {
     const tipPercentage = selectedTipPercent.value || Number(customTipPercent.value) || 0
     holdInvoice.tip = String(Math.round(tipPercentage)) // Ensure clean integer string
     holdInvoice.tip_type = "percentage"
-    holdInvoice.tip_val = tipAmount.value // Amount in cents
-    holdInvoice.total = totalWithTip // Total in cents including tip
-    holdInvoice.due_amount = totalWithTip // Due amount should match total
-    holdInvoice.sub_total = invoiceTotal.value // Original subtotal without tip
+    holdInvoice.tip_val = Math.round(tipAmount.value * 100) // Convert dollars to cents for API
+    holdInvoice.total = totalWithTip // Already in cents
+    holdInvoice.due_amount = totalWithTip // Already in cents
+    holdInvoice.sub_total = Math.round(invoiceTotal.value * 100) // Convert dollars to cents for API
     
     // Log tip values for debugging
     console.log('Tip values:', {
@@ -745,14 +774,13 @@ const processPayment = async () => {
     // Format payments for API - amounts are already in cents
     const formattedPayments = payments.value.map(payment => ({
       method_id: payment.method_id,
-      name: getPaymentMethod(payment.method_id).name,
-      amount: payment.amount, // This should match the total with tip
-      received: payment.received,
-      returned: payment.returned,
-      valid: true
+      amount: payment.amount, // Already in cents
+      received: payment.received, // Already in cents
+      returned: payment.returned, // Already in cents
+      fees: payment.fees || 0
     }))
 
-    // Validate total payment amount matches invoice total
+    // Validate total payment amount matches invoice total (in cents)
     const totalPaymentAmount = formattedPayments.reduce((sum, payment) => sum + payment.amount, 0)
     if (totalPaymentAmount !== totalWithTip) {
       throw new Error('Payment amount must match invoice total including tip')
