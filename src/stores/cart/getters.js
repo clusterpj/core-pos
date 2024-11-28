@@ -35,16 +35,10 @@ export const getters = {
   },
 
   taxAmount: (state) => {
-    const taxableAmount = state.items.reduce((sum, item) => {
-      const itemPrice = PriceUtils.normalizePrice(item.price)
-      return sum + (itemPrice * item.quantity)
-    }, 0) - (state.discountType === '%' 
-      ? Math.round(state.items.reduce((sum, item) => {
-          const itemPrice = PriceUtils.normalizePrice(item.price)
-          return sum + (itemPrice * item.quantity)
-        }, 0) * (state.discountValue / 100))
-      : PriceUtils.toCents(state.discountValue))
+    // Use the taxableAmount getter to get the amount after discount
+    const taxableAmount = getters.taxableAmount(state)
     
+    // Use tax rate directly since it's already in decimal form (0.08 = 8%)
     return Math.round(taxableAmount * state.taxRate)
   },
 
@@ -59,6 +53,7 @@ export const getters = {
       : PriceUtils.toCents(state.discountValue)
     
     const taxableAmount = subtotal - discount
+    // Use tax rate directly since it's already in decimal form
     const taxAmount = Math.round(taxableAmount * state.taxRate)
     
     return Math.round(taxableAmount + taxAmount)

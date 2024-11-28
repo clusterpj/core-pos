@@ -92,10 +92,9 @@ const props = defineProps({
 const { discountType, discountValue, updateDiscount } = useCartDiscount()
 
 // Format price for display, converting from cents to dollars if needed
-import { PriceUtils } from '@/utils/price'
-
-const formatPrice = (cents) => {
-  return PriceUtils.toDollars(cents)
+const formatPrice = (amount) => {
+  // Convert the amount to a fixed decimal string
+  return Number(amount / 100).toFixed(2)
 }
 </script>
 

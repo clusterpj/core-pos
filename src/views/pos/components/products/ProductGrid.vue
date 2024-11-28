@@ -192,7 +192,7 @@ const getImageUrl = (item) => {
   height: 100%;
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(v-bind(gridSettings.columns), 1fr);
+  grid-template-columns: repeat(v-bind('gridSettings.columns'), 1fr);
   gap: 8px;
   align-content: flex-start;
 }
@@ -234,6 +234,13 @@ const getImageUrl = (item) => {
   height: auto;
   font-size: 0.95rem;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
+  display: -webkit-box;
+  display: box;
+  -webkit-box-orient: vertical;
+  box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .add-btn {
