@@ -199,15 +199,26 @@ const handleUpdateInvoice = async () => {
       return
     }
     
-    // Preserve original customer information
-    const originalInvoice = cartStore.currentInvoice
+    // Preserve original customer and company information
+    const originalInvoice = cartStore.currentInvoice || {}
     const updateData = {
       ...cartStore.currentInvoice,
-      contact_id: originalInvoice.contact_id,
+      contact_id: originalInvoice.contact_id || originalInvoice.customer_id,
+      company_id: originalInvoice.company_id,
       first_name: originalInvoice.first_name,
       last_name: originalInvoice.last_name,
       email: originalInvoice.email,
       phone: originalInvoice.phone
+    }
+
+    // Defensive checks
+    if (!updateData.company_id) {
+      console.warn('No company_id found in original invoice')
+      updateData.company_id = cartStore.currentCompanyId // Fallback to current company
+    }
+
+    if (!updateData.contact_id) {
+      console.warn('No contact_id found in original invoice')
     }
 
     await cartStore.updateInvoice(updateData)
