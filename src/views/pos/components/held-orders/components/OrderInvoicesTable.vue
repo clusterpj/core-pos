@@ -54,7 +54,7 @@
             </v-chip>
           </td>
           <td class="text-right">
-            {{ invoice?.total ? formatCurrency(invoice.total) : formatCurrency(0) }}
+            {{ PriceUtils.formatInvoiceAmount(invoice?.total) }}
           </td>
           <td class="text-center d-flex justify-center gap-2">
             <v-btn
@@ -101,6 +101,7 @@
       ></v-pagination>
     </div>
   </v-container>
+  
   <!-- Payment Confirmation Dialog -->
   <v-dialog v-model="showConfirmDialog" max-width="400">
     <v-card>
@@ -215,8 +216,8 @@
                   <tr v-for="item in selectedInvoiceDetails.items" :key="item.id">
                     <td>{{ item.name }}</td>
                     <td class="text-right">{{ item.quantity }}</td>
-                    <td class="text-right">{{ formatCurrency(item.price / 100) }}</td>
-                    <td class="text-right">{{ formatCurrency(item.total / 100) }}</td>
+                    <td class="text-right">{{ PriceUtils.formatInvoiceAmount(item.price) }}</td>
+                    <td class="text-right">{{ PriceUtils.formatInvoiceAmount(item.price) }}</td>
                   </tr>
                 </tbody>
               </v-table>
@@ -228,16 +229,16 @@
             <v-col cols="12" sm="6" offset-sm="6">
               <div class="d-flex justify-space-between mb-2">
                 <strong>Subtotal:</strong>
-                <span>{{ formatCurrency(selectedInvoiceDetails.sub_total / 100) }}</span>
+                <span>{{ PriceUtils.formatInvoiceAmount(selectedInvoiceDetails.sub_total) }}</span>
               </div>
               <div class="d-flex justify-space-between mb-2">
                 <strong>Tax:</strong>
-                <span>{{ formatCurrency(selectedInvoiceDetails.tax / 100) }}</span>
+                <span>{{ PriceUtils.formatInvoiceAmount(selectedInvoiceDetails.tax) }}</span>
               </div>
               <v-divider class="my-2"></v-divider>
               <div class="d-flex justify-space-between">
                 <strong>Total:</strong>
-                <span class="text-h6">{{ formatCurrency(selectedInvoiceDetails.total / 100) }}</span>
+                <span class="text-h6">{{ PriceUtils.formatInvoiceAmount(selectedInvoiceDetails.total) }}</span>
               </div>
             </v-col>
           </v-row>
@@ -284,10 +285,6 @@ const props = defineProps({
     type: Function,
     required: true
   },
-  formatCurrency: {
-    type: Function,
-    default: (cents) => PriceUtils.format(cents)
-  },
   showPagination: {
     type: Boolean,
     default: false
@@ -301,6 +298,9 @@ const props = defineProps({
     default: 1
   }
 })
+
+// New price formatting function
+
 
 const emits = defineEmits(['update:page', 'refresh'])
 
@@ -360,19 +360,10 @@ const selectedInvoiceDetails = ref(null)
 
 const showInvoiceDetails = async (invoice) => {
   try {
-    // If we already have all the needed details in the invoice object
     selectedInvoiceDetails.value = invoice
     showDetailsDialog.value = true
-    
-    // Optionally, if you need to fetch more details:
-    /*
-    const response = await posApi.invoice.get(invoice.id)
-    if (response?.invoice) {
-      selectedInvoiceDetails.value = response.invoice
-    }
-    */
   } catch (error) {
-    logger.error('Failed to load invoice details:', error)
+    console.error('Failed to load invoice details:', error)
     window.toastr?.error('Failed to load invoice details')
   }
 }
@@ -393,7 +384,6 @@ const handlePaymentComplete = async (result) => {
     selectedInvoice.value = null
     if (result) {
       window.toastr?.['success']('Payment processed successfully')
-      // Get emit from defineEmits
       emits('refresh')
     }
   } catch (error) {
