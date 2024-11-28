@@ -216,8 +216,8 @@
                   <tr v-for="item in selectedInvoiceDetails.items" :key="item.id">
                     <td>{{ item.name }}</td>
                     <td class="text-right">{{ item.quantity }}</td>
-                    <td class="text-right">{{ PriceUtils.formatInvoiceAmount(item.price) }}</td>
-                    <td class="text-right">{{ PriceUtils.formatInvoiceAmount(item.price) }}</td>
+                    <td class="text-right">{{ formatCurrency(item.price) }}</td>
+                    <td class="text-right">{{ formatCurrency(item.price) }}</td>
                   </tr>
                 </tbody>
               </v-table>
@@ -229,16 +229,16 @@
             <v-col cols="12" sm="6" offset-sm="6">
               <div class="d-flex justify-space-between mb-2">
                 <strong>Subtotal:</strong>
-                <span>{{ PriceUtils.formatInvoiceAmount(selectedInvoiceDetails.sub_total) }}</span>
+                <span>{{ formatCurrency(selectedInvoiceDetails.sub_total) }}</span>
               </div>
               <div class="d-flex justify-space-between mb-2">
                 <strong>Tax:</strong>
-                <span>{{ PriceUtils.formatInvoiceAmount(selectedInvoiceDetails.tax) }}</span>
+                <span>{{ formatCurrency(selectedInvoiceDetails.tax) }}</span>
               </div>
               <v-divider class="my-2"></v-divider>
               <div class="d-flex justify-space-between">
                 <strong>Total:</strong>
-                <span class="text-h6">{{ PriceUtils.formatInvoiceAmount(selectedInvoiceDetails.total) }}</span>
+                <span class="text-h6">{{ formatCurrency(selectedInvoiceDetails.total) }}</span>
               </div>
             </v-col>
           </v-row>
