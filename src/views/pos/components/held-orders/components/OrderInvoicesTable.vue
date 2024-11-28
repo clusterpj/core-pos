@@ -54,7 +54,7 @@
             </v-chip>
           </td>
           <td class="text-right">
-            {{ PriceUtils.formatInvoiceAmount(invoice?.total) }}
+            {{ formatCurrency(invoice?.total) }}
           </td>
           <td class="text-center d-flex justify-center gap-2">
             <v-btn
