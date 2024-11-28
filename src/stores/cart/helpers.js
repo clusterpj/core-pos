@@ -1,37 +1,19 @@
 import { useCompanyStore } from '../company'
 import { logger } from '../../utils/logger'
 
+import { PriceUtils } from '@/utils/price'
+
 export const priceHelpers = {
-  toCents: (amount) => {
-    // Handle null or undefined
-    if (amount == null) return 0
-    // Convert to number and round to avoid floating point issues
-    const value = Number(amount)
-    return Math.round(value * 100)
-  },
-  toDollars: (amount) => {
-    // Handle null or undefined
-    if (amount == null) return 0
-    // Convert to number and divide by 100
-    return Number(amount) / 100
-  },
-  normalizePrice: (price) => {
-    // Handle null or undefined
-    if (price == null) return 0
-    // Convert to number
-    const value = Number(price)
-    // If price is already in cents (> 100), convert to dollars
-    return value > 100 ? value / 100 : value
-  }
+  toCents: (amount) => PriceUtils.toCents(amount),
+  toDollars: (amount) => Number(PriceUtils.toDollars(amount)),
+  normalizePrice: (price) => Number(PriceUtils.toDollars(price))
 }
 
 export const prepareItemsForApi = (items) => {
   const companyStore = useCompanyStore()
   
   return items.map(item => {
-    // Normalize price to dollars first, then convert to cents
-    const normalizedPrice = priceHelpers.normalizePrice(item.price)
-    const itemPrice = priceHelpers.toCents(normalizedPrice)
+    const itemPrice = PriceUtils.toCents(item.price)
     const itemQuantity = parseInt(item.quantity)
     const itemTotal = itemPrice * itemQuantity
     
@@ -47,7 +29,7 @@ export const prepareItemsForApi = (items) => {
       discount: "0",
       discount_val: 0,
       discount_type: "fixed",
-      tax: priceHelpers.toCents(item.tax || 0),
+      tax: PriceUtils.toCents(item.tax || 0),
       company_id: Number(companyStore.company?.id) || 1,
       retention_amount: 0,
       retention_concept: 'NO_RETENTION',

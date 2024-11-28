@@ -11,45 +11,15 @@ export const formatDate = (date) => {
 }
 
 // Format currency
-export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
-}
+export const formatCurrency = (amount) => PriceUtils.format(amount)
+
+import { PriceUtils } from '@/utils/price'
 
 // Convert decimal to cents (biginteger)
-export const toCents = (amount) => {
-  // Handle null or undefined
-  if (amount == null) return 0
-  
-  // Convert to number and handle potential string input
-  const value = Number(amount)
-  
-  // Handle potential NaN
-  if (isNaN(value)) return 0
-  
-  // If value is already in cents (> 100), return as is
-  if (value > 100) return Math.round(value)
-  
-  // Convert to cents and round to avoid floating point issues
-  return Math.round(value * 100)
-}
+export const toCents = (amount) => PriceUtils.toCents(amount)
 
 // Convert cents to dollars
-export const toDollars = (amount) => {
-  // Handle null or undefined
-  if (amount == null) return 0
-  
-  // Convert to number
-  const value = Number(amount)
-  
-  // Handle potential NaN
-  if (isNaN(value)) return 0
-  
-  // Convert to dollars
-  return value / 100
-}
+export const toDollars = (amount) => Number(PriceUtils.toDollars(amount))
 
 // Get order type from invoice
 export const getOrderType = (invoice) => {
