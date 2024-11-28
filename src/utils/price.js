@@ -1,8 +1,24 @@
 /**
- * Utility functions for consistent price handling
+ * Comprehensive utility for price handling
  * All prices are managed in cents internally
  */
 export const PriceUtils = {
+  /**
+   * Normalize price input to ensure consistent internal representation
+   * @param {number|string} price - Price in dollars or cents
+   * @returns {number} Price in cents
+   */
+  normalize(price) {
+    if (price == null) return 0
+    const value = Number(price)
+    
+    // If price is already in cents (> 100), return as is
+    if (value > 100) return Math.round(value)
+    
+    // Convert dollars to cents
+    return Math.round(value * 100)
+  },
+
   /**
    * Convert cents to dollars for display
    * @param {number} cents - Price in cents
@@ -10,8 +26,12 @@ export const PriceUtils = {
    */
   toDollars(cents) {
     if (cents == null) return '0.00'
-    const dollars = Number(cents) / 100
-    return dollars.toFixed(2)
+    const value = Number(cents)
+    
+    // Handle NaN and invalid inputs
+    if (isNaN(value)) return '0.00'
+    
+    return (value / 100).toFixed(2)
   },
 
   /**
@@ -21,7 +41,12 @@ export const PriceUtils = {
    */
   toCents(dollars) {
     if (dollars == null) return 0
-    return Math.round(Number(dollars) * 100)
+    const value = Number(dollars)
+    
+    // Handle NaN and invalid inputs
+    if (isNaN(value)) return 0
+    
+    return Math.round(value * 100)
   },
 
   /**
@@ -42,5 +67,26 @@ export const PriceUtils = {
   calculateTotal(subtotal, taxRate) {
     const taxAmount = Math.round(subtotal * taxRate)
     return subtotal + taxAmount
+  },
+
+  /**
+   * Compare two prices
+   * @param {number} price1 - First price in cents
+   * @param {number} price2 - Second price in cents
+   * @returns {number} Difference between prices in cents
+   */
+  compare(price1, price2) {
+    const normalizedPrice1 = this.normalize(price1)
+    const normalizedPrice2 = this.normalize(price2)
+    return normalizedPrice1 - normalizedPrice2
+  },
+
+  /**
+   * Add multiple prices
+   * @param {...number} prices - Prices to add in cents or dollars
+   * @returns {number} Total price in cents
+   */
+  add(...prices) {
+    return prices.reduce((total, price) => total + this.normalize(price), 0)
   }
 }
