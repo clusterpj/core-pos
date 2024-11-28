@@ -261,6 +261,7 @@ import { logger } from '../../../../utils/logger'
 import { apiClient } from '@/services/api/client'
 import { posApi } from '@/services/api/pos-api'
 import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
+import { PriceUtils } from '@/utils/price'
 
 // Props
 const props = defineProps({
