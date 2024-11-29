@@ -338,6 +338,22 @@ export function useHeldOrders() {
     loadingOrder.value = invoice.id
     logger.startGroup('Loading held order')
 
+    // Helper function to detect and normalize price
+    const normalizePriceFromBackend = (price) => {
+      // If price is a string, convert to number
+      const numPrice = Number(price);
+      
+      // If price is greater than 1000, assume it needs to be normalized down
+      // This handles cases where 149 cents comes as 14900
+      if (numPrice > 1000) {
+        return Math.round(numPrice / 100);
+      }
+      
+      // Otherwise, return the price as is, assuming it's already in cents
+      // This handles cases where 149 cents comes as 149
+      return numPrice;
+    }
+
     try {
       // Validate invoice structure
       validateInvoiceData(invoice)
@@ -358,15 +374,12 @@ export function useHeldOrders() {
       for (const item of invoice.hold_items) {
         validateItemData(item)
 
-        // Ensure price is in cents without double conversion
-        const normalizedPrice = PriceUtils.isInDollars(item.price) ? 
-          PriceUtils.toCents(item.price) : 
-          item.price
+        // Normalize the price from backend
+        const normalizedPrice = normalizePriceFromBackend(item.price);
 
         logger.debug('Processing item price:', {
           itemName: item.name,
           originalPrice: item.price,
-          isInDollars: PriceUtils.isInDollars(item.price),
           normalizedPrice,
           formattedPrice: PriceUtils.format(normalizedPrice)
         })
