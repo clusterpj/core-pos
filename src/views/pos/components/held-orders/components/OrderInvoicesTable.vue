@@ -331,13 +331,40 @@ const formatDate = (date) => {
   })
 }
 
+// Helper function to detect and normalize price
+const normalizePriceFromBackend = (price) => {
+  // If price is a string, convert to number
+  const numPrice = Number(price);
+  
+  // If price is greater than 1000, assume it needs to be normalized down
+  // This handles cases where 149 cents comes as 14900
+  if (numPrice > 1000) {
+    return Math.round(numPrice / 100);
+  }
+  
+  // Otherwise, return the price as is, assuming it's already in cents
+  // This handles cases where 149 cents comes as 149
+  return numPrice;
+}
+
 const loadInvoiceToCart = async (invoice) => {
-  console.log('OrderInvoicesTable - Loading invoice to cart:', {
-    id: invoice.id,
-    invoice_number: invoice.invoice_number,
-    total: invoice.total,
-    formatted_total: PriceUtils.format(invoice.total),
+  // Normalize prices in the invoice before loading
+  const normalizedInvoice = {
+    ...invoice,
+    total: normalizePriceFromBackend(invoice.total),
     items: invoice.items?.map(item => ({
+      ...item,
+      price: normalizePriceFromBackend(item.price),
+      total: normalizePriceFromBackend(item.total)
+    }))
+  }
+
+  console.log('OrderInvoicesTable - Loading invoice to cart:', {
+    id: normalizedInvoice.id,
+    invoice_number: normalizedInvoice.invoice_number,
+    total: normalizedInvoice.total,
+    formatted_total: PriceUtils.format(normalizedInvoice.total),
+    items: normalizedInvoice.items?.map(item => ({
       id: item.id,
       name: item.name,
       price: item.price,
@@ -347,11 +374,11 @@ const loadInvoiceToCart = async (invoice) => {
   })
 
   try {
-    await cartStore.loadInvoice(invoice)
+    await cartStore.loadInvoice(normalizedInvoice)
     window.toastr?.success('Invoice loaded to cart successfully')
     console.log('OrderInvoicesTable - Invoice loaded to cart successfully:', {
-      invoice_id: invoice.id,
-      invoice_number: invoice.invoice_number
+      invoice_id: normalizedInvoice.id,
+      invoice_number: normalizedInvoice.invoice_number
     })
   } catch (error) {
     console.error('OrderInvoicesTable - Failed to load invoice to cart:', error)

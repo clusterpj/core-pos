@@ -353,11 +353,17 @@ export const actions = {
       state.editingInvoiceId = invoice.id
       state.editingInvoiceNumber = invoice.invoice_number
       state.editingInvoiceStatus = invoice.status
+      
+      // Preserve customer information
+      if (invoice.customer) {
+        state.customer = invoice.customer
+      }
 
       // Log incoming invoice data
       logger.info('Loading invoice data:', {
         id: invoice.id,
         invoice_number: invoice.invoice_number,
+        customer: invoice.customer,
         items: invoice.items.map(item => ({
           id: item.item_id,
           price: item.price,
@@ -368,7 +374,7 @@ export const actions = {
 
       // Load items
       state.items = invoice.items.map(item => {
-        // Prices from invoice are already in cents, no need for conversion
+        // Prices should already be normalized by the OrderInvoicesTable component
         const itemPrice = item.price
         const itemQuantity = parseInt(item.quantity)
         const itemTotal = itemPrice * itemQuantity
