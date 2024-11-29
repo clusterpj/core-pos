@@ -341,17 +341,55 @@ export function useHeldOrders() {
     // Helper function to detect and normalize price
     const normalizePriceFromBackend = (price) => {
       // If price is a string, convert to number
-      const numPrice = Number(price);
+      const numPrice = Number(price)
       
-      // If price is greater than 1000, assume it needs to be normalized down
-      // This handles cases where 149 cents comes as 14900
-      if (numPrice > 1000) {
-        return Math.round(numPrice / 100);
+      // Log the incoming price for debugging
+      logger.debug('Normalizing price:', {
+        original: price,
+        asNumber: numPrice,
+        hasDecimals: numPrice % 1 !== 0,
+        isLargeNumber: numPrice > 1000
+      })
+
+      // Handle different price formats:
+      // 1. Prices in cents without decimals (e.g., 2499 for $24.99)
+      // 2. Prices in dollars with decimals (e.g., 24.99)
+      // 3. Prices in cents with decimals (e.g., 24.99 meant to be $0.2499)
+      
+      if (Number.isNaN(numPrice)) {
+        logger.warn('Invalid price value:', price)
+        return 0
       }
-      
-      // Otherwise, return the price as is, assuming it's already in cents
-      // This handles cases where 149 cents comes as 149
-      return numPrice;
+
+      // Case 1: If price is a large number without decimals, assume it's in cents
+      // e.g., 2499 -> $24.99
+      if (numPrice > 100 && Number.isInteger(numPrice)) {
+        const normalized = numPrice / 100
+        logger.debug('Normalized large integer price:', {
+          original: numPrice,
+          normalized,
+          formatted: PriceUtils.format(normalized)
+        })
+        return normalized
+      }
+
+      // Case 2: If price already has decimals, it's likely in the correct format
+      // e.g., 24.99 -> $24.99
+      if (numPrice % 1 !== 0) {
+        logger.debug('Price already has decimals, keeping as is:', {
+          price: numPrice,
+          formatted: PriceUtils.format(numPrice)
+        })
+        return numPrice
+      }
+
+      // Case 3: Small integer prices likely don't need normalization
+      // e.g., 25 -> $25.00
+      logger.debug('Small integer price, keeping as is:', {
+        price: numPrice,
+        formatted: PriceUtils.format(numPrice)
+      })
+      return numPrice
     }
 
     try {
@@ -375,7 +413,7 @@ export function useHeldOrders() {
         validateItemData(item)
 
         // Normalize the price from backend
-        const normalizedPrice = normalizePriceFromBackend(item.price);
+        const normalizedPrice = normalizePriceFromBackend(item.price)
 
         logger.debug('Processing item price:', {
           itemName: item.name,

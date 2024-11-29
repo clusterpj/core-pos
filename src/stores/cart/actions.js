@@ -354,16 +354,22 @@ export const actions = {
       state.editingInvoiceNumber = invoice.invoice_number
       state.editingInvoiceStatus = invoice.status
       
-      // Preserve customer information
-      if (invoice.customer) {
-        state.customer = invoice.customer
+      // Preserve customer and contact information
+      state.customer = {
+        id: invoice.customer?.id || invoice.user_id,
+        name: invoice.contact?.name || invoice.customer?.name || invoice.name,
+        email: invoice.contact?.email || invoice.customer?.email || invoice.email,
+        phone: invoice.contact?.phone || invoice.customer?.phone || invoice.phone
       }
+      
+      state.contact = invoice.contact || null
 
       // Log incoming invoice data
       logger.info('Loading invoice data:', {
         id: invoice.id,
         invoice_number: invoice.invoice_number,
-        customer: invoice.customer,
+        customer: state.customer,
+        contact: state.contact,
         items: invoice.items.map(item => ({
           id: item.item_id,
           price: item.price,
@@ -475,6 +481,10 @@ export const actions = {
       // Calculate final total
       const totalAmount = taxableAmount + totalTax
 
+      // Get customer and contact information from state
+      const customer = state.customer || {}
+      const contact = state.contact || {}
+
       // Prepare invoice data with all required fields
       const invoiceData = {
         // Basic invoice info
@@ -538,8 +548,14 @@ export const actions = {
         not_charge_automatically: false,
         is_edited: 1,
         
-        // Required IDs
-        user_id: companyStore.selectedCustomer?.id || 1,
+        // Required IDs and customer information
+        user_id: customer.id || companyStore.selectedCustomer?.id || 1,
+        customer_id: customer.id,
+        customer_name: customer.name,
+        customer_email: customer.email,
+        contact: contact, // Preserve the original contact information
+        
+        // Store and company information
         store_id: companyStore.selectedStore?.id || 1,
         cash_register_id: companyStore.selectedCashier?.id || 1,
         company_id: companyStore.company?.id || 1,

@@ -1,7 +1,7 @@
 const environment = import.meta.env.MODE
 
 const API_URLS = {
-  production: 'https://yukikaze/api',
+  production: 'https://qa.corebill.co/api',
   qa: 'https://qa.corebill.co/api',
   development: 'http://localhost/api'
 }
