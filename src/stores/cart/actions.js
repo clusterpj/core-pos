@@ -374,8 +374,8 @@ export const actions = {
 
       // Load items
       state.items = invoice.items.map(item => {
-        // Prices should already be normalized by the OrderInvoicesTable component
-        const itemPrice = item.price
+        // Normalize prices from backend (e.g., 14900 becomes 149)
+        const itemPrice = item.price > 1000 ? item.price / 100 : item.price
         const itemQuantity = parseInt(item.quantity)
         const itemTotal = itemPrice * itemQuantity
         

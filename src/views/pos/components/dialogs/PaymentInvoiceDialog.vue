@@ -435,8 +435,13 @@ const invoiceNumber = computed(() => {
 })
 
 const invoiceTotal = computed(() => {
-  // Invoice total is already in cents (431 for $4.31)
-  return props.invoice?.invoice?.total || 0
+  // Normalize the price from backend (e.g., 14900 becomes 149)
+  const rawTotal = props.invoice?.invoice?.total || 0
+  if (rawTotal > 1000) { // If price is in cents (e.g., 14900)
+    return rawTotal
+  }
+  // If price is already normalized (e.g., 149), convert to cents
+  return rawTotal * 100
 })
 
 const calculatedTip = computed(() => {
