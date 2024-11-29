@@ -355,8 +355,12 @@ import { ref, computed, watch } from 'vue'
 import { usePayment } from '../../composables/usePayment'
 import { useTableManagement } from '../../composables/useTableManagement'
 import { useCartStore } from '@/stores/cart-store'
+import { useCompanyStore } from '@/stores/company'
 import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
 import { posApi } from '@/services/api/pos-api'
+
+const cartStore = useCartStore()
+const companyStore = useCompanyStore()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -402,7 +406,6 @@ const error = computed(() => paymentError.value || tableError.value)
 
 const processing = ref(false)
 const payments = ref([])
-const cartStore = useCartStore()
 
 const canLoadToCart = computed(() => {
   return ['DRAFT', 'SENT'].includes(props.invoice?.invoice?.status)
