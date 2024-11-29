@@ -378,6 +378,8 @@ import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter
 import { posApi } from '@/services/api/pos-api'
 import { PriceUtils } from '@/utils/price'
 
+const emit = defineEmits(['update:modelValue'])
+
 const props = defineProps({
   modelValue: Boolean,
   invoice: {

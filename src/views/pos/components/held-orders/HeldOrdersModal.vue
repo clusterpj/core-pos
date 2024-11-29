@@ -420,8 +420,6 @@ const handleConvertOrder = async (invoice) => {
     id: invoice.id,
     description: invoice.description,
     rawTotal: invoice.total,
-    isDollarAmount: PriceUtils.isInDollars(invoice.total),
-    isCentsAmount: invoice.total > 100,
     items: invoice.hold_items?.length,
     holdItems: invoice.hold_items?.map(item => ({
       name: item.name,
@@ -430,35 +428,21 @@ const handleConvertOrder = async (invoice) => {
     }))
   })
   
-  // Check if the total is already in cents (larger number)
-  let finalTotal = invoice.total
-  if (invoice.total && invoice.total > 1000) {
-    console.log('HeldOrdersModal - Total is already in cents:', {
-      total: invoice.total,
-      asDollars: PriceUtils.toDollars(invoice.total)
-    })
-  } else if (invoice.total) {
-    finalTotal = PriceUtils.toCents(invoice.total)
-    console.log('HeldOrdersModal - Converting total to cents:', {
-      originalTotal: invoice.total,
-      convertedTotal: finalTotal,
-      asDollars: PriceUtils.toDollars(finalTotal)
-    })
-    invoice.total = finalTotal
-  }
+  // Ensure the total is in cents using PriceUtils
+  let finalTotal = PriceUtils.ensureCents(invoice.total)
+  console.log('HeldOrdersModal - Normalized total:', {
+    originalTotal: invoice.total,
+    finalTotal: finalTotal,
+    asDollars: PriceUtils.toDollars(finalTotal)
+  })
+  invoice.total = finalTotal
   
-  // Also log individual item prices
+  // Also normalize item prices
   if (invoice.hold_items) {
-    invoice.hold_items.forEach((item, index) => {
-      console.log(`HeldOrdersModal - Item ${index + 1} price:`, {
-        name: item.name,
-        rawPrice: item.price,
-        isDollarAmount: PriceUtils.isInDollars(item.price),
-        isCentsAmount: item.price > 100,
-        quantity: item.quantity,
-        totalForItem: item.price * item.quantity
-      })
-    })
+    invoice.hold_items = invoice.hold_items.map(item => ({
+      ...item,
+      price: PriceUtils.ensureCents(item.price)
+    }))
   }
   
   const result = await convertToInvoice(invoice)

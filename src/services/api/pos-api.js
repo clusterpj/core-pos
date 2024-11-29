@@ -165,6 +165,61 @@ const operations = {
     }
   },
 
+  async createItem(itemData) {
+    logger.startGroup('POS API: Create Item')
+    try {
+      const endpoint = getApiEndpoint('pos.items')
+      logger.info('Creating item at endpoint:', endpoint)
+      logger.debug('Item data:', itemData)
+
+      const response = await apiClient.post(endpoint, itemData)
+      logger.http('POST', endpoint, { data: itemData }, response)
+
+      if (!response.data) {
+        throw new Error('Invalid response format: missing data')
+      }
+
+      return response.data
+    } catch (error) {
+      logger.error('Failed to create item', {
+        error,
+        endpoint: getApiEndpoint('pos.items'),
+        itemData
+      })
+      throw error
+    } finally {
+      logger.endGroup()
+    }
+  },
+
+  async updateItem(itemId, itemData) {
+    logger.startGroup('POS API: Update Item')
+    try {
+      const endpoint = `${getApiEndpoint('pos.items')}/${itemId}`
+      logger.info('Updating item at endpoint:', endpoint)
+      logger.debug('Item data:', itemData)
+
+      const response = await apiClient.put(endpoint, itemData)
+      logger.http('PUT', endpoint, { data: itemData }, response)
+
+      if (!response.data) {
+        throw new Error('Invalid response format: missing data')
+      }
+
+      return response.data
+    } catch (error) {
+      logger.error('Failed to update item', {
+        error,
+        endpoint: getApiEndpoint('pos.items'),
+        itemId,
+        itemData
+      })
+      throw error
+    } finally {
+      logger.endGroup()
+    }
+  },
+
   async getItemCategories() {
     logger.startGroup('POS API: Get Item Categories')
     try {

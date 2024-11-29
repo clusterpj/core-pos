@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { parseOrderNotes } from '../../../../../stores/cart/helpers'
 
 const props = defineProps({
@@ -167,12 +167,25 @@ const props = defineProps({
 
 const emit = defineEmits(['load', 'convert', 'delete', 'update:page', 'refresh'])
 
+// Add logging utility
+const logOrderInfo = (action, invoice) => {
+  console.log(`[HeldOrdersTable] ${action}:`, {
+    id: invoice.id,
+    type: props.getOrderType(invoice),
+    description: invoice.description,
+    itemCount: invoice.hold_items?.length || 0,
+    total: invoice.total,
+    formattedTotal: props.formatCurrency(invoice.total / 100)
+  })
+}
+
 // Payment Dialog
 const showPaymentDialog = ref(false)
 const showConfirmDialog = ref(false)
 const selectedInvoice = ref(null)
 
 const handlePayClick = (invoice) => {
+  logOrderInfo('Payment initiated', invoice)
   selectedInvoice.value = invoice
   showConfirmDialog.value = true
 }
@@ -185,13 +198,19 @@ const confirmPayment = () => {
 const handlePaymentComplete = async (result) => {
   try {
     showPaymentDialog.value = false
+    if (selectedInvoice.value) {
+      console.log('[HeldOrdersTable] Payment completed:', {
+        success: result,
+        invoiceId: selectedInvoice.value.id
+      })
+    }
     selectedInvoice.value = null
     if (result) {
       window.toastr?.['success']('Payment processed successfully')
       emit('refresh')
     }
   } catch (error) {
-    console.error('Payment completion error:', error)
+    console.error('[HeldOrdersTable] Payment completion error:', error)
     window.toastr?.['error']('Failed to complete payment process')
   }
 }
@@ -240,6 +259,25 @@ const handleConvert = (invoice) => {
   })
   emit('convert', holdInvoice)
 }
+
+// Watch for prop changes to track loading states
+watch(() => props.loadingOrder, (newVal, oldVal) => {
+  if (newVal) {
+    const invoice = props.invoices.find(i => i.id === newVal)
+    if (invoice) {
+      logOrderInfo('Loading order', invoice)
+    }
+  }
+})
+
+watch(() => props.convertingOrder, (newVal, oldVal) => {
+  if (newVal) {
+    const invoice = props.invoices.find(i => i.id === newVal)
+    if (invoice) {
+      logOrderInfo('Converting order', invoice)
+    }
+  }
+})
 </script>
 
 <style scoped>

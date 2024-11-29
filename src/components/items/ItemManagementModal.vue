@@ -395,6 +395,7 @@ async function saveItem() {
       unit_id: itemForm.unit?.id,
       item_category_id: itemForm.category_id,
       unit: itemForm.unit,
+      sku: itemForm.sku,  // Adding SKU field
       allow_pos: true,
       avalara_bool: false,
       avalara_discount_type: {

@@ -199,12 +199,13 @@ const posStore = usePosStore()
 
 // Local state
 const selectedCategory = ref(posStore.selectedCategory)
+const error = ref(null)
 const selectedItems = ref([])
+const showDeleteDialog = ref(false)
+const deletingMultiple = ref(false)
 const showItemModal = ref(false)
 const editingItem = ref(null)
-const showDeleteDialog = ref(false)
 const itemToDelete = ref(null)
-const error = ref(null)
 
 // Table headers
 const headers = [
@@ -217,7 +218,7 @@ const headers = [
 ]
 
 // Computed
-const deletingMultiple = computed(() => selectedItems.value.length > 0 && !itemToDelete.value)
+const deletingMultipleComputed = computed(() => selectedItems.value.length > 0 && !editingItem.value)
 
 // Format price from cents to dollars
 const formatPrice = (price) => {
@@ -303,7 +304,7 @@ const confirmDeleteSelected = () => {
 
 const deleteConfirmed = async () => {
   try {
-    if (deletingMultiple.value) {
+    if (deletingMultipleComputed.value) {
       await posStore.deleteMultipleItems(selectedItems.value)
       selectedItems.value = []
     } else {

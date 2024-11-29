@@ -13,15 +13,19 @@ export const actions = {
           id: product.id,
           name: product.name,
           price: product.price,
+          fromHeldOrder: product.fromHeldOrder,
           formatted_price: PriceUtils.format(product.price)
         }, 
         quantity 
       })
       
-      const price = priceHelpers.normalizePrice(product.price)
-      logger.debug('Normalized price:', {
-        original: product.price,
-        normalized: price,
+      // Price from held order is already in cents, otherwise normalize it
+      const price = product.fromHeldOrder ? product.price : priceHelpers.normalizePrice(product.price)
+      logger.info('Price validation:', { 
+        originalPrice: product.price,
+        fromHeldOrder: product.fromHeldOrder,
+        isInDollars: PriceUtils.isInDollars(product.price),
+        normalizedPrice: price,
         formatted: PriceUtils.format(price)
       })
       
@@ -391,7 +395,8 @@ export const actions = {
           sub_total: itemTotal,
           discount_type: item.discount_type || 'fixed',
           discount: item.discount || 0,
-          discount_val: item.discount_val || 0
+          discount_val: item.discount_val || 0,
+          fromHeldOrder: true // Mark item as coming from held order
         }
       })
 

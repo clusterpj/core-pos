@@ -60,7 +60,8 @@ export const createProductsModule = (state, posApi, companyStore) => {
         is_pos: 1,
         id: companyStore.selectedStore,
         limit: state.itemsPerPage.value,
-        page: state.currentPage.value
+        page: state.currentPage.value,
+        sku: state.searchQuery.value
       }
 
       logger.debug('Fetch products params', params)
@@ -92,9 +93,51 @@ export const createProductsModule = (state, posApi, companyStore) => {
     await fetchProducts()
   }
 
+  const createItem = async (itemData) => {
+    logger.startGroup('POS Store: Create Item')
+    state.loading.value.itemOperation = true
+    state.error.value = null
+
+    try {
+      const response = await posApi.createItem(itemData)
+      logger.info('Item created successfully:', response)
+      await fetchProducts() // Refresh the list
+      return response
+    } catch (error) {
+      logger.error('Failed to create item:', error)
+      state.error.value = error.message
+      throw error
+    } finally {
+      state.loading.value.itemOperation = false
+      logger.endGroup()
+    }
+  }
+
+  const updateItem = async (itemId, itemData) => {
+    logger.startGroup('POS Store: Update Item')
+    state.loading.value.itemOperation = true
+    state.error.value = null
+
+    try {
+      const response = await posApi.updateItem(itemId, itemData)
+      logger.info('Item updated successfully:', response)
+      await fetchProducts() // Refresh the list
+      return response
+    } catch (error) {
+      logger.error('Failed to update item:', error)
+      state.error.value = error.message
+      throw error
+    } finally {
+      state.loading.value.itemOperation = false
+      logger.endGroup()
+    }
+  }
+
   return {
     fetchCategories,
     fetchProducts,
-    setCategory
+    setCategory,
+    createItem,
+    updateItem
   }
 }

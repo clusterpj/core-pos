@@ -13,6 +13,7 @@ import {
   getOrderTypeColor 
 } from '../utils/formatters'
 import { parseOrderNotes } from '../../../../../stores/cart/helpers'
+import { PriceUtils } from '../../../../../utils/price'
 
 const HISTORY_STORAGE_KEY = 'core_pos_order_history'
 
@@ -357,18 +358,34 @@ export function useHeldOrders() {
       for (const item of invoice.hold_items) {
         validateItemData(item)
 
+        // Ensure price is in cents without double conversion
+        const normalizedPrice = PriceUtils.isInDollars(item.price) ? 
+          PriceUtils.toCents(item.price) : 
+          item.price
+
+        logger.debug('Processing item price:', {
+          itemName: item.name,
+          originalPrice: item.price,
+          isInDollars: PriceUtils.isInDollars(item.price),
+          normalizedPrice,
+          formattedPrice: PriceUtils.format(normalizedPrice)
+        })
+
         const product = {
           id: item.item_id,
           name: item.name,
           description: item.description,
-          price: item.price,
-          unit_name: item.unit_name
+          price: normalizedPrice,
+          unit_name: item.unit_name,
+          fromHeldOrder: true  // Mark item as coming from held order
         }
 
         logger.debug('Adding item to cart:', {
           productId: product.id,
           name: product.name,
-          quantity: item.quantity
+          quantity: item.quantity,
+          price: product.price,
+          formattedPrice: PriceUtils.format(product.price)
         })
 
         try {
