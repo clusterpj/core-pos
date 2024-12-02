@@ -274,8 +274,8 @@ const createInvoice = async () => {
       contact: {
         name: companyStore.company?.name || "Walk-in Customer",
         company_name: companyStore.company?.name || "Walk-in Customer",
-        first_name: null,  // Explicitly set to null to prevent user name fallback
-        last_name: null,   // Explicitly set to null to prevent user name fallback
+        first_name: companyStore.company?.name || "Walk-in",
+        last_name: "Customer",  // Provide a default value to satisfy DB constraint
         email: companyStore.company?.email || "walk-in@example.com",
         phone: companyStore.company?.phone || "000-000-0000",
         second_phone: "N/A",
