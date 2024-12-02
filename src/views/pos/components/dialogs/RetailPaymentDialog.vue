@@ -261,7 +261,7 @@ const createInvoice = async () => {
     
     // Prepare invoice data
     const invoiceData = {
-      invoice_number: invoice_number || `INV-${String(nextNumber).padStart(6, '0')}`,
+      invoice_number: invoice_number || `${invoicePrefix}-${String(nextNumber).padStart(6, '0')}`,
       invoice_date: formattedDate,
       due_date: formatApiDate(new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000)),
       total: PriceUtils.toCents(cartStore.total),
