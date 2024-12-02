@@ -274,10 +274,13 @@ const createInvoice = async () => {
       contact: {
         name: companyStore.company?.name || "Walk-in Customer",
         company_name: companyStore.company?.name || "Walk-in Customer",
+        first_name: null,  // Explicitly set to null to prevent user name fallback
+        last_name: null,   // Explicitly set to null to prevent user name fallback
         email: companyStore.company?.email || "walk-in@example.com",
         phone: companyStore.company?.phone || "000-000-0000",
         second_phone: "N/A",
-        identification: companyStore.company?.tax_id || "N/A"
+        identification: companyStore.company?.tax_id || "N/A",
+        type: "company"    // Explicitly mark as company contact
       },
       status: "SENT",
       description: "Retail Point of Sale Transaction",
