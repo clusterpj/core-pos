@@ -152,7 +152,13 @@ import { posApi } from '@/services/api/pos-api'
 import { logger } from '@/utils/logger'
 import { PriceUtils } from '@/utils/price'
 import { OrderType, PaidStatus } from '@/types/order'
-import { formatApiDate } from '../held-orders/utils/formatters'
+const formatApiDate = (date) => {
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 const props = defineProps({
   modelValue: Boolean
