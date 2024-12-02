@@ -243,6 +243,10 @@ const createInvoice = async () => {
       throw new Error('Failed to get next invoice number')
     }
 
+    // Ensure all required date fields are set
+    const currentDate = new Date()
+    const dueDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+
     // Log detailed invoice data for comprehensive debugging
     logger.debug('Invoice Creation Details', {
       storeId: companyStore.currentStore?.id,
@@ -261,16 +265,16 @@ const createInvoice = async () => {
         total: PriceUtils.toCents(cartStore.total),
         subtotal: PriceUtils.toCents(cartStore.subtotal),
         tax: PriceUtils.toCents(cartStore.taxAmount),
-        store_id: companyStore.currentStore?.id,
-        cash_register_id: companyStore.currentRegister?.id,
-        user_id: getCurrentUserId.value,
+        store_id: companyStore.currentStore?.id || 1,
+        cash_register_id: companyStore.currentRegister?.id || 1,
+        user_id: getCurrentUserId.value || 1,
         type: OrderType.RETAIL,
         status: 'SENT',
         paid_status: PaidStatus.UNPAID,
         description: 'Retail Point of Sale Transaction',
-          
-        // Add missing required fields
-        banType: true,  // Boolean field with default true
+              
+        // Ensure all boolean fields are explicitly set
+        banType: true,
         avalara_bool: false,
         package_bool: false,
         print_pdf: false,
@@ -282,14 +286,14 @@ const createInvoice = async () => {
         is_prepared_data: true,
         invoice_template_id: 1,
         invoice_pbx_modify: 0,
-        
+            
         // Customer details for walk-in
         customer_id: null,
         customer_name: 'Walk-in Customer',
         customer_email: null,
         customer_phone: null,
         customer_address: null,
-        
+            
         // Payment and discount details
         payment_terms: '7',
         due_amount: PriceUtils.toCents(cartStore.total),
@@ -297,33 +301,47 @@ const createInvoice = async () => {
         discount_type: "fixed",
         discount_val: 0,
         discount_per_item: "NO",
-        
-        // Date fields
-        invoice_date: formatApiDate(new Date()),
-        due_date: formatApiDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)), // 7 days from now
+            
+        // Explicitly set date fields with fallback
+        invoice_date: formatApiDate(currentDate),
+        due_date: formatApiDate(dueDate),
         is_hold_invoice: false,
-        
-        // Additional arrays and optional fields
+            
+        // Ensure arrays are always present
         taxes: [],
         packages: [],
         tables_selected: [],
         notes: '',
         tip: "0",
         tip_type: "fixed",
-        tip_val: 0
+        tip_val: 0,
+
+        // Additional fields that might be required
+        currency: 'USD',
+        language: 'en',
+        company_id: companyStore.currentStore?.id || 1
       },
       invoicePrefix: nextNumberResponse.prefix,
       nextInvoiceNumber: nextNumberResponse.nextNumber,
       items: formatInvoiceItems(cartStore.items)
     }
 
-    // 3. Create invoice
-    const response = await posApi.invoice.create(invoiceData)
-    if (!response?.data?.id) {
-      throw new Error(response?.message || 'Failed to create invoice')
+    // 3. Create invoice with comprehensive error handling
+    try {
+      const response = await posApi.invoice.create(invoiceData)
+      if (!response?.data?.id) {
+        throw new Error(response?.message || 'Failed to create invoice')
+      }
+      return response.data
+    } catch (apiErr) {
+      // Log full error details for debugging
+      logger.error('Invoice Creation API Error:', {
+        message: apiErr.message,
+        response: apiErr.response?.data,
+        requestData: invoiceData
+      })
+      throw apiErr
     }
-
-    return response.data
 
   } catch (err) {
     logger.error('Error creating invoice:', err)
