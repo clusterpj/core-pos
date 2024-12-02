@@ -248,7 +248,45 @@ const createInvoice = async () => {
         type: OrderType.RETAIL,
         status: 'SENT',
         paid_status: PaidStatus.UNPAID,
-        description: 'Retail Point of Sale Transaction'
+        description: 'Retail Point of Sale Transaction',
+        
+        // Add missing required fields
+        banType: true,
+        avalara_bool: false,
+        package_bool: false,
+        print_pdf: false,
+        save_as_draft: false,
+        send_email: false,
+        not_charge_automatically: false,
+        is_invoice_pos: 1,
+        is_pdf_pos: companyStore.pdfFormatPos === '1',
+        is_prepared_data: true,
+        invoice_template_id: 1,
+        invoice_pbx_modify: 0,
+        
+        // Customer details for walk-in
+        customer_id: null,
+        customer_name: 'Walk-in Customer',
+        customer_email: null,
+        customer_phone: null,
+        customer_address: null,
+        
+        // Payment and discount details
+        payment_terms: companyStore.invoiceIssuancePeriod || '7',
+        due_amount: PriceUtils.toCents(cartStore.total),
+        discount: String(cartStore.discountAmount || 0),
+        discount_type: cartStore.discountType || "fixed",
+        discount_val: cartStore.discountValue || 0,
+        discount_per_item: companyStore.discountPerItem || "NO",
+        
+        // Additional arrays and optional fields
+        taxes: [],
+        packages: [],
+        tables_selected: [],
+        notes: '',
+        tip: "0",
+        tip_type: "fixed",
+        tip_val: 0
       },
       invoicePrefix: nextNumberResponse.prefix,
       nextInvoiceNumber: nextNumberResponse.nextNumber,
