@@ -272,14 +272,13 @@ const createInvoice = async () => {
       packages: [],
       tables_selected: [],
       contact: {
-        name: `${companyStore.company?.name || "Walk-in Customer"}`,
+        name: companyStore.company?.name || "Walk-in Customer",
+        first_name: companyStore.company?.name || "Walk-in",
+        last_name: "Customer",
         email: companyStore.company?.email || "walk-in@example.com",
         phone: companyStore.company?.phone || "000-000-0000",
         second_phone: "N/A",
-        identification: companyStore.company?.tax_id || "N/A",
-        // Ensure these fields are present for the table display
-        first_name: companyStore.company?.name || "Walk-in",
-        last_name: "Customer"
+        identification: companyStore.company?.tax_id || "N/A"
       },
       status: "SENT",
       description: "Retail Point of Sale Transaction",
