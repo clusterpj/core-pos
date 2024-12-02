@@ -190,16 +190,18 @@ const invoiceTotal = computed(() => currentInvoice.value?.total || 0)
 
 // Get current user ID
 const getCurrentUserId = computed(() => {
-  if (!user.value?.id) {
-    throw new Error('User ID is required but not available')
-  }
-  return user.value.id
+  // Fallback to a default user ID if not available
+  return user.value?.id || companyStore.currentStore?.default_user_id || 1
 })
 
-// Load user profile if not already loaded
-const loadUserProfile = async () => {
+// Ensure user profile is loaded before processing payment
+const ensureUserProfile = async () => {
   if (!user.value?.id) {
-    await authStore.loadUserProfile()
+    try {
+      await authStore.loadUserProfile()
+    } catch (error) {
+      logger.warn('Failed to load user profile, using fallback user ID')
+    }
   }
 }
 
@@ -316,6 +318,9 @@ const processPayment = async () => {
   try {
     processing.value = true
     error.value = null
+
+    // 0. Ensure user profile is loaded
+    await ensureUserProfile()
 
     // 1. Create invoice first
     const invoice = await createInvoice()
