@@ -191,7 +191,11 @@ const hasItems = computed(() => items.value.length > 0)
 const canPay = computed(() => hasItems.value && !processing.value)
 
 // Computed properties for invoice details
-const invoiceNumber = computed(() => currentInvoice.value?.invoice_number || '')
+const invoiceNumber = computed(() => {
+  return currentInvoice.value?.invoice_number || 
+         `${currentInvoice.value?.invoicePrefix}${currentInvoice.value?.nextInvoiceNumber}` || 
+         ''
+})
 const invoiceTotal = computed(() => currentInvoice.value?.total || 0)
 
 // Get current user ID
@@ -248,9 +252,16 @@ const createInvoice = async () => {
     // Format items for invoice
     const formattedItems = formatInvoiceItems(cartStore.items)
     
+    // Store invoice prefix and number for display
+    currentInvoice.value = {
+      ...currentInvoice.value,
+      invoicePrefix: invoicePrefix || 'INV',
+      nextInvoiceNumber: String(nextNumber).padStart(6, '0')
+    }
+    
     // Prepare invoice data
     const invoiceData = {
-      invoice_number: invoice_number || `INV${String(nextNumber).padStart(6, '0')}`,
+      invoice_number: invoice_number || `${invoicePrefix || 'INV'}${String(nextNumber).padStart(6, '0')}`,
       invoice_date: formattedDate,
       due_date: formatApiDate(new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000)), // Due date 7 days from now
       
