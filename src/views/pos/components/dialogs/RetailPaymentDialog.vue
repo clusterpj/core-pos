@@ -268,9 +268,9 @@ const createInvoice = async () => {
         status: 'SENT',
         paid_status: PaidStatus.UNPAID,
         description: 'Retail Point of Sale Transaction',
-        
+          
         // Add missing required fields
-        banType: true,  // Required boolean field for POS
+        ban_type: 1,  // Changed from banType to ban_type and set to 1
         avalara_bool: false,
         package_bool: false,
         print_pdf: false,
