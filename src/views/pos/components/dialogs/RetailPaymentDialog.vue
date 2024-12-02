@@ -319,7 +319,15 @@ const createInvoice = async () => {
         // Additional fields that might be required
         currency: 'USD',
         language: 'en',
-        company_id: companyStore.currentStore?.id || 1
+        company_id: companyStore.currentStore?.id || 1,
+
+        // Add additional fields that might be required by the backend
+        date: formatApiDate(currentDate),
+        created_at: currentDate.toISOString(),
+        updated_at: currentDate.toISOString(),
+        deleted_at: null,
+        is_active: true,
+        is_deleted: false
       },
       invoicePrefix: nextNumberResponse.prefix,
       nextInvoiceNumber: nextNumberResponse.nextNumber,
