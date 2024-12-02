@@ -250,7 +250,7 @@ const createInvoice = async () => {
     
     // Prepare invoice data
     const invoiceData = {
-      invoice_number: invoice_number || `${invoicePrefix}-${nextNumber}`,
+      invoice_number: invoice_number || `INV-${String(nextNumber).padStart(7, '0')}`,
       invoice_date: formattedDate,
       due_date: formatApiDate(new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000)), // Due date 7 days from now
       
