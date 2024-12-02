@@ -281,7 +281,7 @@ const createInvoice = async () => {
       },
       status: "SENT",
       description: "Retail Point of Sale Transaction",
-      user_id: companyStore.company?.id,
+      user_id: getCurrentUserId.value,
       company_id: companyStore.company?.id,
       invoice_template_id: 1,
       is_invoice_pos: 1,
