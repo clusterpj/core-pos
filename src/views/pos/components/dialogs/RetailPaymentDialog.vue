@@ -250,47 +250,66 @@ const createInvoice = async () => {
     
     // Prepare invoice data
     const invoiceData = {
-      invoice: {
-        invoice_number: invoice_number || `${invoicePrefix}-${nextNumber}`,
-        date: formattedDate,
-        invoice_date: formattedDate,
-        due_date: formattedDate,
-        
-        // Amounts
-        total: PriceUtils.toCents(cartStore.total),
-        subtotal: PriceUtils.toCents(cartStore.subtotal),
-        tax: PriceUtils.toCents(cartStore.taxAmount),
-        due_amount: PriceUtils.toCents(cartStore.total),
-        
-        // IDs
-        store_id: companyStore.currentStore?.id || 1,
-        cash_register_id: companyStore.currentRegister?.id || 1,
-        user_id: getCurrentUserId.value,
-        company_id: companyStore.currentStore?.id || 1,
-        
-        // Type and status
-        type: OrderType.RETAIL,
-        status: 'SENT',
-        paid_status: PaidStatus.UNPAID,
-        
-        // Customer info
-        customer_name: 'Walk-in Customer',
-        
-        // Required flags
-        is_invoice_pos: true,
-        is_pdf_pos: true,
-        is_prepared_data: true,
-        is_hold_invoice: false,
-        
-        // Empty arrays/defaults
-        taxes: [],
-        packages: [],
-        notes: '',
-        description: 'Retail Point of Sale Transaction'
-      },
+      invoice_number: invoice_number || `${invoicePrefix}-${nextNumber}`,
+      invoice_date: formattedDate,
+      due_date: formatApiDate(new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000)), // Due date 7 days from now
+      
+      // Amounts
+      total: PriceUtils.toCents(cartStore.total),
+      sub_total: PriceUtils.toCents(cartStore.subtotal),
+      tax: PriceUtils.toCents(cartStore.taxAmount),
+      
+      // Items and related arrays
       items: formattedItems,
-      invoicePrefix,
-      nextInvoiceNumber: nextNumber
+      taxes: [],
+      packages: [],
+      tables_selected: [],
+      
+      // Customer info
+      contact: {
+        name: 'Walk-in',
+        last_name: 'Customer',
+        email: '',
+        phone: '',
+        second_phone: 'N/A',
+        identification: 'N/A'
+      },
+      
+      // Type and status
+      type: OrderType.RETAIL,
+      status: 'SENT',
+      description: 'Retail Point of Sale Transaction',
+      
+      // IDs
+      user_id: getCurrentUserId.value,
+      invoice_template_id: 1,
+      
+      // Flags and settings
+      is_invoice_pos: 1,
+      is_pdf_pos: true,
+      is_hold_invoice: false,
+      avalara_bool: false,
+      banType: true,
+      package_bool: false,
+      print_pdf: false,
+      save_as_draft: false,
+      send_email: false,
+      not_charge_automatically: false,
+      invoice_pbx_modify: 0,
+      send_sms: 0,
+      
+      // Discounts and tips
+      discount: "0",
+      discount_type: "fixed",
+      discount_val: 0,
+      discount_per_item: "NO",
+      tip: "0",
+      tip_type: "fixed",
+      tip_val: 0,
+      
+      // Additional fields
+      notes: "",
+      hold_invoice_id: null
     }
 
     logger.debug('Invoice Data:', invoiceData)
