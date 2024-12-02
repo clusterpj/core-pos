@@ -237,11 +237,15 @@ const createInvoice = async () => {
       throw new Error('Failed to get next invoice number')
     }
 
-    // Log invoice data for debugging
-    logger.debug('Preparing invoice data', {
+    // Log detailed invoice data for comprehensive debugging
+    logger.debug('Invoice Creation Details', {
       storeId: companyStore.currentStore?.id,
       userId: getCurrentUserId.value,
-      total: PriceUtils.toCents(cartStore.total)
+      total: PriceUtils.toCents(cartStore.total),
+      subtotal: PriceUtils.toCents(cartStore.subtotal),
+      tax: PriceUtils.toCents(cartStore.taxAmount),
+      itemCount: cartStore.items.length,
+      invoiceNumber: `${nextNumberResponse.prefix}-${nextNumberResponse.nextNumber}`
     })
 
     // 2. Prepare invoice data
@@ -260,7 +264,7 @@ const createInvoice = async () => {
         description: 'Retail Point of Sale Transaction',
         
         // Add missing required fields
-        ban_type: true,  // Changed from banType to ban_type
+        banType: true,  // Revert back to camelCase to match backend expectation
         avalara_bool: false,
         package_bool: false,
         print_pdf: false,
