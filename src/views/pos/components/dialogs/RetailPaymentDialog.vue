@@ -270,7 +270,7 @@ const createInvoice = async () => {
         description: 'Retail Point of Sale Transaction',
         
         // Add missing required fields
-        banType: true,  // Revert back to camelCase to match backend expectation
+        banType: true,  // Required boolean field for POS
         avalara_bool: false,
         package_bool: false,
         print_pdf: false,
@@ -278,7 +278,7 @@ const createInvoice = async () => {
         send_email: false,
         not_charge_automatically: false,
         is_invoice_pos: 1,
-        is_pdf_pos: companyStore.pdfFormatPos === '1',
+        is_pdf_pos: true,
         is_prepared_data: true,
         invoice_template_id: 1,
         invoice_pbx_modify: 0,
@@ -291,12 +291,17 @@ const createInvoice = async () => {
         customer_address: null,
         
         // Payment and discount details
-        payment_terms: companyStore.invoiceIssuancePeriod || '7',
+        payment_terms: '7',
         due_amount: PriceUtils.toCents(cartStore.total),
-        discount: String(cartStore.discountAmount || 0),
-        discount_type: cartStore.discountType || "fixed",
-        discount_val: cartStore.discountValue || 0,
-        discount_per_item: companyStore.discountPerItem || "NO",
+        discount: "0",
+        discount_type: "fixed",
+        discount_val: 0,
+        discount_per_item: "NO",
+        
+        // Date fields
+        invoice_date: formatApiDate(new Date()),
+        due_date: formatApiDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)), // 7 days from now
+        is_hold_invoice: false,
         
         // Additional arrays and optional fields
         taxes: [],
