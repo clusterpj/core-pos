@@ -77,15 +77,15 @@
                     </div>
                     <div class="d-flex justify-space-between mb-2">
                       <span>Subtotal:</span>
-                      <strong>{{ formatCurrency(invoiceTotal / 100) }}</strong>
+                      <strong>{{ formatCurrency(invoiceTotal) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between mb-2" v-if="tipAmount > 0">
                       <span>Tip:</span>
-                      <strong>{{ formatCurrency(tipAmount / 100) }}</strong>
+                      <strong>{{ formatCurrency(tipAmount) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between">
                       <span>Total Amount:</span>
-                      <strong>{{ formatCurrency((invoiceTotal + tipAmount) / 100) }}</strong>
+                      <strong>{{ formatCurrency(invoiceTotal + tipAmount) }}</strong>
                     </div>
                   </v-card-text>
                 </v-card>
@@ -358,6 +358,7 @@ import { useCartStore } from '@/stores/cart-store'
 import { useCompanyStore } from '@/stores/company'
 import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
 import { posApi } from '@/services/api/pos-api'
+import { PriceUtils } from '@/utils/price'
 
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
@@ -491,10 +492,7 @@ const isValid = computed(() => {
 
 // Methods
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
+  return PriceUtils.format(amount)
 }
 
 const hasPaymentFees = (methodId) => {

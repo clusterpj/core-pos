@@ -40,15 +40,14 @@
           elevation="2"
           size="large"
         >
-          PAY {{ formatCurrency(cartStore.total) }}
+          PAY {{ PriceUtils.format(cartStore.total) }}
         </v-btn>
       </div>
     </div>
 
     <!-- Payment Dialog -->
-    <payment-dialog
+    <retail-payment-dialog
       v-model="showPaymentDialog"
-      :invoice="currentInvoice"
       @payment-complete="handlePaymentComplete"
     />
   </v-footer>
@@ -63,12 +62,14 @@ import ToGoModal from './order-types/ToGoModal.vue'
 import DeliveryModal from './order-types/DeliveryModal.vue'
 import PickupModal from './order-types/PickupModal.vue'
 import PaymentDialog from './dialogs/PaymentDialog.vue'
+import RetailPaymentDialog from './dialogs/RetailPaymentDialog.vue'
 import { useCartStore } from '@/stores/cart-store'
 import { useCompanyStore } from '@/stores/company'
 import { usePayment } from '../composables/usePayment'
 import { logger } from '@/utils/logger'
 import { convertHeldOrderToInvoice } from './held-orders/utils/invoiceConverter'
 import { usePosStore } from '@/stores/pos-store'
+import { PriceUtils } from '@/utils/price'
 
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
@@ -94,135 +95,32 @@ const isDisabled = computed(() => {
 
 // Compute if payment can be processed
 const canPay = computed(() => {
-  const canPayValue = !isEmpty.value && isConfigured.value && holdInvoiceId.value !== null
+  const canPayValue = !isEmpty.value && isConfigured.value
   logger.debug('Can pay computed:', {
     isEmpty: isEmpty.value,
     isConfigured: isConfigured.value,
-    holdInvoiceId: holdInvoiceId.value,
     canPay: canPayValue
   })
   return canPayValue
 })
 
-// Format currency helper
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
-}
-
 // Handle payment initiation
 const handlePayment = async () => {
   logger.debug('Handle payment called')
-  
-  if (!holdInvoiceId.value) {
-    logger.error('No held order loaded')
-    window.toastr?.['error']('No held order loaded')
-    return
-  }
-
-  try {
-    // Get the current hold invoice from the POS store
-    const holdInvoice = posStore.holdInvoices.find(inv => inv.id === holdInvoiceId.value)
-    
-    if (!holdInvoice) {
-      throw new Error('Hold invoice not found')
-    }
-
-    logger.debug('Found hold invoice:', holdInvoice)
-    
-    // Calculate subtotal from items
-    const subTotal = cartStore.items.reduce((total, item) => {
-      return total + (item.price * item.quantity)
-    }, 0)
-    
-    // Create new invoice data while preserving original fields
-    const invoiceData = {
-      ...holdInvoice, // Keep original data including user_id
-      description: cartStore.holdOrderDescription || holdInvoice.description,
-      store_id: holdInvoice.store_id,
-      cash_register_id: holdInvoice.cash_register_id,
-      sub_total: subTotal,
-      total: cartStore.total,
-      tax: cartStore.tax,
-      discount: cartStore.discount,
-      discount_type: cartStore.discountType,
-      discount_val: cartStore.discountValue,
-      tip: cartStore.tip,
-      tip_type: cartStore.tipType,
-      tip_val: cartStore.tipValue,
-      hold_items: cartStore.items.map(item => ({
-        item_id: item.id,
-        name: item.name,
-        description: item.description || '',
-        price: item.price,
-        quantity: item.quantity,
-        unit_name: item.unit_name || 'units',
-        tax: item.tax || 0
-      })),
-      notes: cartStore.notes || holdInvoice.notes
-    }
-
-    logger.debug('Prepared invoice data:', {
-      id: invoiceData.id,
-      user_id: invoiceData.user_id,
-      store_id: invoiceData.store_id,
-      total: invoiceData.total,
-      items: invoiceData.hold_items?.length
-    })
-
-    // Convert the order to invoice using the same converter as HeldOrdersModal
-    const result = await convertHeldOrderToInvoice(invoiceData)
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to create invoice')
-    }
-
-    // Store the created invoice
-    currentInvoice.value = result.invoice
-
-    // Show payment dialog
-    showPaymentDialog.value = true
-
-    logger.info('Invoice created successfully:', {
-      invoiceId: result.invoice?.id,
-      holdInvoiceId: holdInvoiceId.value
-    })
-  } catch (error) {
-    logger.error('Failed to create invoice:', error)
-    window.toastr?.['error'](error.message || 'Failed to create invoice')
-  }
+  showPaymentDialog.value = true
 }
 
 // Handle payment completion
 const handlePaymentComplete = async (result) => {
   logger.info('Payment completion handler called with result:', result)
-
-  try {
-    if (!holdInvoiceId.value) {
-      throw new Error('Missing hold invoice ID')
-    }
-
-    // Delete the held order
-    const deleteResponse = await posStore.deleteHoldInvoice(holdInvoiceId.value)
-    
-    if (!deleteResponse.success) {
-      throw new Error(deleteResponse.message || 'Failed to delete hold invoice')
-    }
-
-    // Show success message
+  
+  if (result) {
+    // Clear the cart after successful payment
+    await cartStore.$reset()
     window.toastr?.['success']('Payment processed successfully')
-
-    // Reset state
-    currentInvoice.value = null
-    showPaymentDialog.value = false
-    cartStore.clearCart()
-
-  } catch (error) {
-    logger.error('Failed to complete payment process:', error)
-    window.toastr?.['error']('Failed to complete payment process')
   }
+  
+  showPaymentDialog.value = false
 }
 
 // Debug mounted state

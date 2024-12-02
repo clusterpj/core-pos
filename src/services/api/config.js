@@ -1,13 +1,25 @@
 const environment = import.meta.env.MODE
 
+// Get the API URL from environment variables with fallback to environment-specific URLs
 const API_URLS = {
-  production: 'https://qa.corebill.co/api',
-  qa: 'https://qa.corebill.co/api',
-  development: 'http://localhost/api'
+  production: 'https://lajuanita.corebill.co/api',
+  qa: 'https://lajuanita.corebill.co/api',
+  development: 'https://lajuanita.corebill.co/api'
+}
+
+const getBaseUrl = () => {
+  // First try to use the environment variable
+  const envApiUrl = import.meta.env.VITE_API_URL
+  if (envApiUrl) {
+    // Remove trailing slash and version if present
+    return envApiUrl.replace(/\/v1\/*$/, '').replace(/\/+$/, '')
+  }
+  // Fallback to environment-specific URLs
+  return API_URLS[environment] || API_URLS.development
 }
 
 export const apiConfig = {
-  baseURL: API_URLS[environment] || API_URLS.development,
+  baseURL: getBaseUrl(),
   version: 'v1',
   timeout: 30000,
   endpoints: {
@@ -60,6 +72,10 @@ export const apiConfig = {
  * @returns {string} The formatted endpoint URL
  */
 export function getEndpointUrl(endpoint) {
+  // If baseURL already includes version, don't append it again
+  if (apiConfig.baseURL.includes('/v1')) {
+    return `/${endpoint.replace(/^\/+|\/+$/g, '')}`
+  }
   return `/${apiConfig.version}/${endpoint.replace(/^\/+|\/+$/g, '')}`
 }
 

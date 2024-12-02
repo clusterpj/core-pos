@@ -16,8 +16,13 @@ export class PriceUtils {
     // Handle null, undefined, or zero values
     if (!amount) return 0
 
-    // If already an integer, assume it's in cents
-    if (Number.isInteger(amount)) return Math.round(amount)
+    // If already an integer and less than a large threshold (e.g., $1M in cents), assume it's in cents
+    if (Number.isInteger(amount) && amount < 100000000) return Math.round(amount)
+
+    // If it's a large integer, it's likely already in dollars
+    if (Number.isInteger(amount) && amount >= 100000000) {
+      return Math.round(amount * 100)
+    }
 
     // Handle string inputs
     if (typeof amount === 'string') {
