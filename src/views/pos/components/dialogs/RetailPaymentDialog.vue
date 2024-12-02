@@ -272,16 +272,17 @@ const createInvoice = async () => {
       packages: [],
       tables_selected: [],
       contact: {
-        name: "Walk-in",
+        name: companyStore.company?.name || "Walk-in",
         last_name: "Customer",
-        email: "walk-in@example.com",
-        phone: "000-000-0000",
+        email: companyStore.company?.email || "walk-in@example.com",
+        phone: companyStore.company?.phone || "000-000-0000",
         second_phone: "N/A",
-        identification: "N/A"
+        identification: companyStore.company?.tax_id || "N/A"
       },
       status: "SENT",
       description: "Retail Point of Sale Transaction",
-      user_id: companyStore.company?.id || getCurrentUserId.value,
+      user_id: companyStore.company?.id,
+      company_id: companyStore.company?.id,
       invoice_template_id: 1,
       is_invoice_pos: 1,
       is_pdf_pos: true,
