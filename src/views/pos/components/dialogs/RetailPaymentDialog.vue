@@ -229,104 +229,33 @@ const formatInvoiceItems = (items) => {
 
 const createInvoice = async () => {
   try {
-    // 0. Ensure user profile is loaded
-    await loadUserProfile()
-
     // 1. Get next invoice number
     const nextNumberResponse = await posApi.invoice.getNextNumber()
     if (!nextNumberResponse?.nextNumber) {
       throw new Error('Failed to get next invoice number')
     }
 
-    // 2. Get today's date and due date
-    const today = new Date()
-    const dueDate = new Date()
-    dueDate.setDate(today.getDate() + 7)
-
-    const formatDate = (date) => {
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    }
-
-    const todayFormatted = formatDate(today)
-    const dueDateFormatted = formatDate(dueDate)
-
-    // 3. Format invoice items
-    const formattedItems = formatInvoiceItems(cartStore.items)
-
-    // 4. Calculate totals
-    const subTotal = cartStore.subtotal
-    const tax = cartStore.taxAmount
-    const total = cartStore.total
-
-    // 5. Prepare invoice data
+    // 2. Prepare invoice data
     const invoiceData = {
-      // Required fields first
-      invoice_date: todayFormatted,
-      due_date: dueDateFormatted,
-      invoice_number: `${nextNumberResponse.prefix}-${nextNumberResponse.nextNumber}`,
-      sub_total: subTotal,
-      total: total,
-      tax: tax,
-      items: formattedItems,
-
-      // Required boolean flags
-      avalara_bool: false,
-      banType: true,
-      package_bool: false,
-      print_pdf: false,
-      save_as_draft: false,
-      send_email: false,
-      not_charge_automatically: false,
-      is_invoice_pos: 1,
-      is_pdf_pos: companyStore.pdfFormatPos === '1',
-      is_prepared_data: true,
-
-      // IDs and references
-      invoice_template_id: 1,
-      invoice_pbx_modify: 0,
-      store_id: companyStore.currentStore?.id,
-      cash_register_id: companyStore.currentRegister?.id,
-      user_id: getCurrentUserId.value,
-
-      // Order type and status
-      type: OrderType.RETAIL,
-      status: "SENT",
-      paid_status: PaidStatus.UNPAID,
-      description: `Retail sale - ${formatDate(today)}`,
-
-      // Customer info
-      customer_id: null,
-      customer_name: 'Walk-in Customer',
-      customer_email: null,
-      customer_phone: null,
-      customer_address: null,
-
-      // Payment terms
-      payment_terms: companyStore.invoiceIssuancePeriod || '7',
-      due_amount: total,
-
-      // Discount
-      discount: String(cartStore.discountAmount || 0),
-      discount_type: cartStore.discountType || "fixed",
-      discount_val: cartStore.discountValue || 0,
-      discount_per_item: companyStore.discountPerItem || "NO",
-
-      // Arrays
-      taxes: [],
-      packages: [],
-      tables_selected: [],
-
-      // Optional fields
-      notes: '',
-      tip: "0",
-      tip_type: "fixed",
-      tip_val: 0
+      invoice: {
+        invoice_number: `${nextNumberResponse.prefix}-${nextNumberResponse.nextNumber}`,
+        total: PriceUtils.toCents(cartStore.total),
+        subtotal: PriceUtils.toCents(cartStore.subtotal),
+        tax: PriceUtils.toCents(cartStore.taxAmount),
+        store_id: companyStore.currentStore?.id,
+        cash_register_id: companyStore.currentRegister?.id,
+        user_id: getCurrentUserId.value,
+        type: OrderType.RETAIL,
+        status: 'SENT',
+        paid_status: PaidStatus.UNPAID,
+        description: 'Retail Point of Sale Transaction'
+      },
+      invoicePrefix: nextNumberResponse.prefix,
+      nextInvoiceNumber: nextNumberResponse.nextNumber,
+      items: formatInvoiceItems(cartStore.items)
     }
 
-    // 5. Create invoice
+    // 3. Create invoice
     const response = await posApi.invoice.create(invoiceData)
     if (!response?.data?.id) {
       throw new Error(response?.message || 'Failed to create invoice')
