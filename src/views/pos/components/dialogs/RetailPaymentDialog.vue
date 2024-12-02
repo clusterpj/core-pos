@@ -269,8 +269,8 @@ const createInvoice = async () => {
       contact: {
         name: 'Walk-in',
         last_name: 'Customer',
-        email: '',
-        phone: '',
+        email: 'walk-in@example.com',
+        phone: '000-000-0000',
         second_phone: 'N/A',
         identification: 'N/A'
       },
