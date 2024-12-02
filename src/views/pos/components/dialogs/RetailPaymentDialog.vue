@@ -236,124 +236,78 @@ const formatInvoiceItems = (items) => {
 }
 
 const createInvoice = async () => {
+  logger.startGroup('Creating Retail Invoice')
   try {
-    // 1. Get next invoice number
-    const nextNumberResponse = await posApi.invoice.getNextNumber()
-    if (!nextNumberResponse?.nextNumber) {
-      throw new Error('Failed to get next invoice number')
-    }
-
-    // Ensure all required date fields are set
+    // Get next invoice number
+    const { invoice_number, prefix: invoicePrefix, nextNumber } = await posApi.invoice.getNextNumber()
+    
+    // Get current date
     const currentDate = new Date()
-    const dueDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000)
-
-    // Log detailed invoice data for comprehensive debugging
-    logger.debug('Invoice Creation Details', {
-      storeId: companyStore.currentStore?.id,
-      userId: getCurrentUserId.value,
-      total: PriceUtils.toCents(cartStore.total),
-      subtotal: PriceUtils.toCents(cartStore.subtotal),
-      tax: PriceUtils.toCents(cartStore.taxAmount),
-      itemCount: cartStore.items.length,
-      invoiceNumber: `${nextNumberResponse.prefix}-${nextNumberResponse.nextNumber}`
-    })
-
-    // 2. Prepare invoice data
+    const formattedDate = formatApiDate(currentDate)
+    
+    // Format items for invoice
+    const formattedItems = formatInvoiceItems(cartStore.items)
+    
+    // Prepare invoice data
     const invoiceData = {
       invoice: {
-        invoice_number: `${nextNumberResponse.prefix}-${nextNumberResponse.nextNumber}`,
+        invoice_number: invoice_number || `${invoicePrefix}-${nextNumber}`,
+        date: formattedDate,
+        invoice_date: formattedDate,
+        due_date: formattedDate,
+        
+        // Amounts
         total: PriceUtils.toCents(cartStore.total),
         subtotal: PriceUtils.toCents(cartStore.subtotal),
         tax: PriceUtils.toCents(cartStore.taxAmount),
+        due_amount: PriceUtils.toCents(cartStore.total),
+        
+        // IDs
         store_id: companyStore.currentStore?.id || 1,
         cash_register_id: companyStore.currentRegister?.id || 1,
-        user_id: getCurrentUserId.value || 1,
+        user_id: getCurrentUserId.value,
+        company_id: companyStore.currentStore?.id || 1,
+        
+        // Type and status
         type: OrderType.RETAIL,
         status: 'SENT',
         paid_status: PaidStatus.UNPAID,
-        description: 'Retail Point of Sale Transaction',
-              
-        // Ensure all boolean fields are explicitly set
-        banType: true,
-        avalara_bool: false,
-        package_bool: false,
-        print_pdf: false,
-        save_as_draft: false,
-        send_email: false,
-        not_charge_automatically: false,
-        is_invoice_pos: 1,
+        
+        // Customer info
+        customer_name: 'Walk-in Customer',
+        
+        // Required flags
+        is_invoice_pos: true,
         is_pdf_pos: true,
         is_prepared_data: true,
-        invoice_template_id: 1,
-        invoice_pbx_modify: 0,
-            
-        // Customer details for walk-in
-        customer_id: null,
-        customer_name: 'Walk-in Customer',
-        customer_email: null,
-        customer_phone: null,
-        customer_address: null,
-            
-        // Payment and discount details
-        payment_terms: '7',
-        due_amount: PriceUtils.toCents(cartStore.total),
-        discount: "0",
-        discount_type: "fixed",
-        discount_val: 0,
-        discount_per_item: "NO",
-            
-        // Explicitly set date fields with fallback
-        invoice_date: formatApiDate(currentDate),
-        due_date: formatApiDate(dueDate),
         is_hold_invoice: false,
-            
-        // Ensure arrays are always present
+        
+        // Empty arrays/defaults
         taxes: [],
         packages: [],
-        tables_selected: [],
         notes: '',
-        tip: "0",
-        tip_type: "fixed",
-        tip_val: 0,
-
-        // Additional fields that might be required
-        currency: 'USD',
-        language: 'en',
-        company_id: companyStore.currentStore?.id || 1,
-
-        // Add additional fields that might be required by the backend
-        date: formatApiDate(currentDate),
-        created_at: currentDate.toISOString(),
-        updated_at: currentDate.toISOString(),
-        deleted_at: null,
-        is_active: true,
-        is_deleted: false
+        description: 'Retail Point of Sale Transaction'
       },
-      invoicePrefix: nextNumberResponse.prefix,
-      nextInvoiceNumber: nextNumberResponse.nextNumber,
-      items: formatInvoiceItems(cartStore.items)
+      items: formattedItems,
+      invoicePrefix,
+      nextInvoiceNumber: nextNumber
     }
 
-    // 3. Create invoice with comprehensive error handling
-    try {
-      const response = await posApi.invoice.create(invoiceData)
-      if (!response?.data?.id) {
-        throw new Error(response?.message || 'Failed to create invoice')
-      }
-      return response.data
-    } catch (apiErr) {
-      // Log full error details for debugging
-      logger.error('Invoice Creation API Error:', {
-        message: apiErr.message,
-        response: apiErr.response?.data,
-        requestData: invoiceData
-      })
-      throw apiErr
+    logger.debug('Invoice Data:', invoiceData)
+    const response = await posApi.invoice.create(invoiceData)
+    logger.debug('Invoice Creation Response:', response)
+    
+    if (!response?.data) {
+      throw new Error('Failed to create invoice: No response data')
     }
+    
+    logger.endGroup()
+    return response.data
 
-  } catch (err) {
-    logger.error('Error creating invoice:', err)
-    throw new Error(`Failed to create invoice: ${err.message || 'Unknown error occurred'}`)
+  } catch (error) {
+    logger.error('Invoice Creation Failed:', error)
+    logger.endGroup()
+    throw new Error(`Failed to create invoice: ${error.message}`)
   }
 }
 
