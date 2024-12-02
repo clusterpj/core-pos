@@ -273,8 +273,7 @@ const createInvoice = async () => {
       tables_selected: [],
       contact: {
         name: companyStore.company?.name || "Walk-in Customer",
-        first_name: companyStore.company?.name || "Walk-in",
-        last_name: "Customer",
+        company_name: companyStore.company?.name || "Walk-in Customer",
         email: companyStore.company?.email || "walk-in@example.com",
         phone: companyStore.company?.phone || "000-000-0000",
         second_phone: "N/A",
