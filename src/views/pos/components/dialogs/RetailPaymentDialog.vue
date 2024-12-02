@@ -270,7 +270,7 @@ const createInvoice = async () => {
         description: 'Retail Point of Sale Transaction',
           
         // Add missing required fields
-        ban_type: true,  // Boolean field with default true
+        banType: true,  // Boolean field with default true
         avalara_bool: false,
         package_bool: false,
         print_pdf: false,
