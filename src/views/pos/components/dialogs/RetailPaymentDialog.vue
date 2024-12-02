@@ -192,8 +192,8 @@ const canPay = computed(() => hasItems.value && !processing.value)
 
 // Computed properties for invoice details
 const invoiceNumber = computed(() => {
-  return currentInvoice.value?.invoice_number || 
-         `${currentInvoice.value?.invoicePrefix}${currentInvoice.value?.nextInvoiceNumber}` || 
+  return currentInvoice.value?.invoice?.invoice_number || 
+         `${currentInvoice.value?.invoicePrefix}-${currentInvoice.value?.nextInvoiceNumber}` || 
          ''
 })
 const invoiceTotal = computed(() => currentInvoice.value?.total || 0)
@@ -243,7 +243,8 @@ const createInvoice = async () => {
   logger.startGroup('Creating Retail Invoice')
   try {
     // Get next invoice number
-    const { invoice_number, prefix: invoicePrefix, nextNumber } = await posApi.invoice.getNextNumber()
+    const nextInvoiceResponse = await posApi.invoice.getNextNumber()
+    logger.debug('Next invoice number response:', nextInvoiceResponse)
     
     // Get current date
     const currentDate = new Date()
@@ -254,14 +255,13 @@ const createInvoice = async () => {
     
     // Store invoice prefix and number for display
     currentInvoice.value = {
-      ...currentInvoice.value,
-      invoicePrefix: invoicePrefix || 'INV',
-      nextInvoiceNumber: String(nextNumber).padStart(6, '0')
+      invoicePrefix: nextInvoiceResponse.prefix,
+      nextInvoiceNumber: nextInvoiceResponse.nextNumber
     }
     
     // Prepare invoice data
     const invoiceData = {
-      invoice_number: invoice_number || `${prefix}-${nextNumber}`,
+      invoice_number: `${nextInvoiceResponse.prefix}${nextInvoiceResponse.nextNumber}`,
       invoice_date: formattedDate,
       due_date: formatApiDate(new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000)),
       total: PriceUtils.toCents(cartStore.total),
