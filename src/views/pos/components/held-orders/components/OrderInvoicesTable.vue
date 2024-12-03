@@ -5,6 +5,7 @@
       <v-table
         fixed-header
         class="invoices-table"
+        v-slot="{ props }"
       >
         <thead>
           <tr>
