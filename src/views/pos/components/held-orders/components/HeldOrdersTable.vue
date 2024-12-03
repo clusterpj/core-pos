@@ -1,113 +1,166 @@
 <!-- src/views/pos/components/held-orders/components/HeldOrdersTable.vue -->
 <template>
-  <v-container class="px-2">
-    <v-table fixed-header height="600px" class="elevation-1 w-100">
-    <thead>
-      <tr>
-        <th class="text-left" style="min-width: 120px">Order Type</th>
-        <th class="text-left" style="min-width: 200px">Description</th>
-        <th class="text-left" style="min-width: 150px">Created</th>
-        <th class="text-left" style="min-width: 100px">Items</th>
-        <th class="text-right" style="min-width: 120px">Total</th>
-        <th class="text-left" style="min-width: 120px">Status</th>
-        <th v-if="!hideActions" class="text-center" style="min-width: 300px">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="invoice in invoices" :key="invoice.id">
-        <td>
-          <v-chip
-            :color="getOrderTypeColor(getOrderType(invoice))"
-            size="small"
-            class="text-uppercase"
-          >
-            {{ getOrderType(invoice) }}
-          </v-chip>
-        </td>
-        <td class="text-truncate" style="max-width: 200px">
-          <v-tooltip
-            :text="getTooltipText(invoice)"
-            location="top"
-            open-delay="300"
-          >
-            <template v-slot:activator="{ props }">
-              <span v-bind="props" class="cursor-help">
-                {{ invoice.description }}
-                <v-icon
-                  v-if="hasNotes(invoice)"
-                  size="x-small"
-                  color="grey-darken-1"
-                  class="ml-1"
+  <div class="table-wrapper">
+    <div class="filters-row">
+      <div class="search-field">
+        <v-text-field
+          v-model="searchQuery"
+          prepend-inner-icon="mdi-magnify"
+          label="Search orders"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="search-input"
+        ></v-text-field>
+      </div>
+
+      <div class="filter-controls">
+        <v-select
+          v-model="selectedFilter"
+          :items="filterItems"
+          label="Type"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="filter-select"
+          prepend-inner-icon="mdi-filter"
+        ></v-select>
+
+        <v-select
+          v-model="selectedStatus"
+          :items="statusItems"
+          label="Status"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="filter-select"
+          prepend-inner-icon="mdi-check-circle-outline"
+        ></v-select>
+
+        <v-select
+          v-model="selectedPaymentStatus"
+          :items="paymentStatusItems"
+          label="Payment"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="filter-select"
+          prepend-inner-icon="mdi-cash"
+        ></v-select>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <v-table class="orders-table" fixed-header :height="$vuetify.display.mobile ? 'calc(100vh - 250px)' : '600px'">
+        <thead>
+          <tr>
+            <th class="text-left order-type-col">Order Type</th>
+            <th class="text-left description-col">Description</th>
+            <th class="text-left created-col">Created</th>
+            <th class="text-center items-col">Items</th>
+            <th class="text-right total-col">Total</th>
+            <th class="text-left status-col">Status</th>
+            <th v-if="!hideActions" class="text-center actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="invoice in invoices" :key="invoice.id">
+            <td>
+              <v-chip
+                :color="getOrderTypeColor(getOrderType(invoice))"
+                size="small"
+                class="order-type-chip"
+                variant="flat"
+              >
+                {{ getOrderType(invoice) }}
+              </v-chip>
+            </td>
+            <td class="text-truncate" :style="{ maxWidth: $vuetify.display.mobile ? '150px' : '200px' }">
+              <v-tooltip
+                :text="getTooltipText(invoice)"
+                location="top"
+                open-delay="300"
+              >
+                <template v-slot:activator="{ props }">
+                  <span v-bind="props" class="cursor-help">
+                    {{ invoice.description }}
+                    <v-icon
+                      v-if="hasNotes(invoice)"
+                      size="x-small"
+                      color="grey-darken-1"
+                      class="ml-1"
+                    >
+                      mdi-note-text-outline
+                    </v-icon>
+                  </span>
+                </template>
+              </v-tooltip>
+            </td>
+            <td>{{ formatDate(invoice.created_at) }}</td>
+            <td class="text-center">{{ invoice.hold_items?.length || 0 }}</td>
+            <td class="text-right">{{ formatCurrency(invoice.total / 100) }}</td>
+            <td>
+              <v-chip
+                :color="getStatusColor(invoice.paid_status)"
+                size="small"
+                variant="flat"
+                class="status-chip"
+              >
+                {{ invoice.paid_status || 'UNPAID' }}
+              </v-chip>
+            </td>
+            <td v-if="!hideActions" class="text-center">
+              <div class="actions-wrapper">
+                <v-btn
+                  size="small"
+                  color="info"
+                  variant="flat"
+                  @click.prevent="$emit('load', invoice)"
+                  :loading="loadingOrder === invoice.id"
+                  :disabled="convertingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
                 >
-                  mdi-note-text-outline
-                </v-icon>
-              </span>
-            </template>
-          </v-tooltip>
-        </td>
-        <td>{{ formatDate(invoice.created_at) }}</td>
-        <td class="text-center">{{ invoice.hold_items?.length || 0 }}</td>
-        <td class="text-right">{{ formatCurrency(invoice.total / 100) }}</td>
-        <td>
-          <v-chip
-            :color="getStatusColor(invoice.paid_status)"
-            size="small"
-            class="text-uppercase"
-          >
-            {{ invoice.paid_status || 'UNPAID' }}
-          </v-chip>
-        </td>
-        <td v-if="!hideActions" class="text-center">
-          <div class="d-flex gap-2">
-            <v-btn
-              size="small"
-              color="info"
-              variant="elevated"
-              @click.prevent="$emit('load', invoice)"
-              :loading="loadingOrder === invoice.id"
-              :disabled="convertingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
-            >
-              <v-icon size="small" class="mr-1">mdi-cart-arrow-down</v-icon>
-              {{ loadingOrder === invoice.id ? 'Loading...' : 'Load' }}
-            </v-btn>
-            <v-btn
-              size="small"
-              color="success"
-              variant="elevated"
-              @click.prevent="$emit('convert', invoice)"
-              :loading="convertingOrder === invoice.id"
-              :disabled="loadingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
-            >
-              <v-icon size="small" class="mr-1">mdi-cash-register</v-icon>
-              Pay
-            </v-btn>
-            <v-btn
-              size="small"
-              color="error"
-              variant="elevated"
-              @click="$emit('delete', invoice)"
-              :loading="deletingOrder === invoice.id"
-              :disabled="loadingOrder === invoice.id || convertingOrder === invoice.id || invoice.paid_status === 'PAID'"
-            >
-              <v-icon size="small" class="mr-1">mdi-delete</v-icon>
-              Delete
-            </v-btn>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </v-table>
-  
-  <div v-if="showPagination" class="d-flex justify-center align-center mt-4">
-    <v-pagination
-      :model-value="page"
-      @update:model-value="$emit('update:page', $event)"
-      :length="totalPages"
-      :total-visible="7"
-      rounded="circle"
-    ></v-pagination>
+                  <v-icon size="small" class="mr-1">mdi-cart-arrow-down</v-icon>
+                  LOAD
+                </v-btn>
+                <v-btn
+                  size="small"
+                  color="success"
+                  variant="flat"
+                  @click.prevent="$emit('convert', invoice)"
+                  :loading="convertingOrder === invoice.id"
+                  :disabled="loadingOrder === invoice.id || deletingOrder === invoice.id || invoice.paid_status === 'PAID'"
+                >
+                  <v-icon size="small" class="mr-1">mdi-cash-register</v-icon>
+                  PAY
+                </v-btn>
+                <v-btn
+                  size="small"
+                  color="error"
+                  variant="flat"
+                  @click="$emit('delete', invoice)"
+                  :loading="deletingOrder === invoice.id"
+                  :disabled="loadingOrder === invoice.id || convertingOrder === invoice.id || invoice.paid_status === 'PAID'"
+                >
+                  <v-icon size="small" class="mr-1">mdi-delete</v-icon>
+                  DELETE
+                </v-btn>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </v-table>
+    </div>
+
+    <div v-if="showPagination" class="pagination-wrapper">
+      <v-pagination
+        :model-value="page"
+        @update:model-value="$emit('update:page', $event)"
+        :length="totalPages"
+        :total-visible="7"
+        rounded="circle"
+      ></v-pagination>
+    </div>
   </div>
-  </v-container>
 </template>
 
 <script setup>
@@ -281,21 +334,115 @@ watch(() => props.convertingOrder, (newVal, oldVal) => {
 </script>
 
 <style scoped>
-.v-table {
-  width: 100%;
-}
-
-.gap-2 {
-  gap: 8px;
-}
-
-.text-truncate {
-  white-space: nowrap;
+.table-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 16px;
+  gap: 16px;
 }
 
-.cursor-help {
-  cursor: help;
+.filters-row {
+  display: flex;
+  gap: 16px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.search-field {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  width: 160px;
+}
+
+.table-container {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 4px;
+}
+
+.orders-table {
+  width: 100%;
+  background: white;
+}
+
+.order-type-col { width: 120px; }
+.description-col { width: 200px; }
+.created-col { width: 120px; }
+.items-col { width: 80px; }
+.total-col { width: 100px; }
+.status-col { width: 100px; }
+.actions-col { width: 280px; }
+
+.order-type-chip,
+.status-chip {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.actions-wrapper {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.pagination-wrapper {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+@media (max-width: 768px) {
+  .table-wrapper {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .filters-row {
+    gap: 8px;
+  }
+
+  .search-field {
+    width: 100%;
+    flex: none;
+  }
+
+  .filter-controls {
+    width: 100%;
+  }
+
+  .filter-select {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .orders-table {
+    font-size: 0.875rem;
+  }
+
+  .order-type-col { width: 100px; }
+  .description-col { width: 150px; }
+  .created-col { width: 100px; }
+  .items-col { width: 60px; }
+  .total-col { width: 80px; }
+  .status-col { width: 90px; }
+  .actions-col { width: 240px; }
+
+  .actions-wrapper {
+    gap: 4px;
+  }
 }
 </style>

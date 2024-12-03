@@ -188,18 +188,40 @@ const quickAdd = (product) => {
   cartStore.addItem(product, 1)
 }
 
-const handleQuickAdd = (searchTerm) => {
+const handleQuickAdd = async (searchTerm) => {
   logger.startGroup('POS Products: Quick Add by Search')
   try {
-    // Find the first product that matches the search term
-    const product = posStore.products.find(p => 
+    // First try to find by SKU
+    const productBySku = posStore.products.find(p => 
+      p.sku?.toLowerCase() === searchTerm.toLowerCase()
+    )
+    
+    if (productBySku) {
+      quickAdd(productBySku)
+      return
+    }
+    
+    // If no SKU match, try name match
+    const productByName = posStore.products.find(p => 
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     
-    if (product) {
-      quickAdd(product)
+    if (productByName) {
+      quickAdd(productByName)
     } else {
-      logger.warn('No matching product found for quick add', { searchTerm })
+      // If product not in current list, try to fetch it directly by SKU
+      const response = await posApi.getItems({
+        sku: searchTerm,
+        is_pos: 1,
+        id: companyStore.selectedStore,
+        limit: 1
+      })
+      
+      if (response.items?.data?.[0]) {
+        quickAdd(response.items.data[0])
+      } else {
+        logger.warn('No matching product found for quick add', { searchTerm })
+      }
     }
   } catch (err) {
     logger.error('Quick add failed', err)

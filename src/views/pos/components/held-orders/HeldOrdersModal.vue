@@ -18,201 +18,262 @@
     <v-dialog
       :model-value="modelValue"
       @update:model-value="updateModelValue"
-      :fullscreen="$vuetify.display.mobile"
-      :max-width="$vuetify.display.mobile ? undefined : '1400'"
+      fullscreen
       transition="dialog-bottom-transition"
-      class="orders-dialog"
+      :scrim="false"
     >
-      <v-card class="h-100">
+      <v-card class="modal-card">
         <v-toolbar
           color="primary"
-          :elevation="1"
-          prominent
+          density="comfortable"
         >
           <v-toolbar-title class="text-h6 font-weight-medium">
             Orders Management
           </v-toolbar-title>
           <v-spacer></v-spacer>
           <v-btn
-            icon="mdi-close"
-            variant="text"
+            icon
             @click="updateModelValue(false)"
-            class="ml-2"
-          ></v-btn>
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-toolbar>
 
-        <v-card-text class="pa-0">
-          <v-container fluid class="pa-0">
-            <v-tabs
-              v-model="activeTab"
-              color="primary"
-              grow
-              show-arrows
-              class="v-tabs-sticky"
-              :height="$vuetify.display.mobile ? 48 : 64"
-            >
-              <v-tab
-                value="active"
-                class="text-subtitle-1"
-                :class="{ 'px-6': !$vuetify.display.mobile }"
-              >
-                <v-icon
-                  start
-                  :icon="activeTab === 'active' ? 'mdi-clipboard-list' : 'mdi-clipboard-list-outline'"
-                  class="mr-2"
-                ></v-icon>
-                DINE IN | TOGO
-              </v-tab>
-              <v-tab
-                value="delivery"
-                class="text-subtitle-1"
-                :class="{ 'px-6': !$vuetify.display.mobile }"
-              >
-                <v-icon
-                  start
-                  :icon="activeTab === 'delivery' ? 'mdi-bike-fast' : 'mdi-bike'"
-                  class="mr-2"
-                ></v-icon>
-                DELIVERY | PICKUP
-              </v-tab>
-              <v-tab
-                value="invoices"
-                class="text-subtitle-1"
-                :class="{ 'px-6': !$vuetify.display.mobile }"
-              >
-                <v-icon
-                  start
-                  :icon="activeTab === 'invoices' ? 'mdi-file-document' : 'mdi-file-document-outline'"
-                  class="mr-2"
-                ></v-icon>
-                ORDER HISTORY
-              </v-tab>
-            </v-tabs>
+        <v-tabs
+          v-model="activeTab"
+          bg-color="transparent"
+          class="orders-tabs px-2"
+          show-arrows="false"
+        >
+          <v-tab 
+            value="active" 
+            class="tab-item flex-1 dine-in-tab"
+            :class="{ 'tab-active': activeTab === 'active' }"
+          >
+            <v-icon start>mdi-silverware</v-icon>
+            DINE IN | TOGO
+          </v-tab>
+          <v-tab 
+            value="delivery" 
+            class="tab-item flex-1 delivery-tab"
+            :class="{ 'tab-active': activeTab === 'delivery' }"
+          >
+            <v-icon start>mdi-bike-fast</v-icon>
+            DELIVERY | PICKUP
+          </v-tab>
+          <v-tab 
+            value="invoices" 
+            class="tab-item flex-1 history-tab"
+            :class="{ 'tab-active': activeTab === 'invoices' }"
+          >
+            <v-icon start>mdi-history</v-icon>
+            ORDER HISTORY
+          </v-tab>
+        </v-tabs>
 
-            <v-window v-model="activeTab" class="mt-6">
-              <!-- Active Orders Tab -->
-              <v-window-item value="active">
-                <v-row v-if="!activeOrders.length">
-                  <v-col cols="12" class="text-center">
-                    <p>No active orders found</p>
-                  </v-col>
-                </v-row>
+        <v-window v-model="activeTab" class="window-content">
+          <v-window-item value="active" class="window-item">
+            <held-orders-table
+              :invoices="filteredActiveOrders"
+              :loading-order="loadingOrder"
+              :converting-order="convertingOrder"
+              :deleting-order="deletingOrder"
+              :get-order-type="getOrderType"
+              :get-order-type-color="getOrderTypeColor"
+              :format-date="formatDate"
+              :format-currency="formatCurrency"
+              @load="handleLoadOrder"
+              @convert="handleConvertOrder"
+              @delete="handleDeleteOrder"
+              class="table-component"
+            />
+          </v-window-item>
 
-                <template v-else>
-                  <v-container class="px-2 pb-2">
-                    <HeldOrdersFilters
-                      :search="search"
-                      :selectedType="selectedType"
-                      :selectedStatus="selectedStatus"
-                      :orderTypes="orderTypes"
-                      mode="active"
-                      @update:search="search = $event"
-                      @update:selectedType="selectedType = $event"
-                      @update:selectedStatus="selectedStatus = $event"
-                    />
-                  </v-container>
+          <v-window-item value="delivery" class="window-item">
+            <order-invoices-table
+              :loading="deliveryLoading"
+              :invoices="filteredDeliveryOrders"
+              :get-order-type="getOrderType"
+              :get-order-type-color="getOrderTypeColor"
+              :format-date="formatDate"
+              :show-pagination="true"
+              :page="deliveryPage"
+              :total-pages="totalDeliveryPages"
+              @update:page="(page) => deliveryPage = page"
+              @refresh="fetchInvoices"
+              class="table-component"
+            />
+          </v-window-item>
 
-                  <v-row>
-                    <v-col cols="12">
-                      <HeldOrdersTable
-                        :invoices="filteredActiveOrders"
-                        :loadingOrder="loadingOrder"
-                        :convertingOrder="convertingOrder"
-                        :deletingOrder="deletingOrder"
-                        :getOrderType="getOrderType"
-                        :getOrderTypeColor="getOrderTypeColor"
-                        :formatDate="formatDate"
-                        :formatCurrency="formatCurrency"
-                        @load="handleLoadOrder"
-                        @convert="handleConvertOrder"
-                        @delete="handleDeleteOrder"
-                      />
-                    </v-col>
-                  </v-row>
-                </template>
-              </v-window-item>
-
-              <!-- Delivery & Pickup Tab -->
-              <v-window-item value="delivery">
-                <v-container class="px-2 pb-2">
-                  <HeldOrdersFilters
-                    :search="deliverySearch"
-                    :selectedType="deliverySelectedType"
-                    :selectedStatus="deliverySelectedStatus"
-                    :selectedPaymentStatus="deliverySelectedPaymentStatus"
-                    :orderTypes="orderTypes"
-                    mode="delivery"
-                    @update:search="deliverySearch = $event"
-                    @update:selectedType="deliverySelectedType = $event"
-                    @update:selectedStatus="deliverySelectedStatus = $event"
-                    @update:selectedPaymentStatus="deliverySelectedPaymentStatus = $event"
-                  />
-                </v-container>
-
-                <OrderInvoicesTable
-                  :loading="deliveryLoading"
-                  :invoices="filteredDeliveryOrders"
-                  :getOrderType="getOrderType"
-                  :getOrderTypeColor="getOrderTypeColor"
-                  :formatDate="formatDate"
-                  :showPagination="true"
-                  :page="deliveryPage"
-                  :totalPages="totalDeliveryPages"
-                  @update:page="deliveryPage = $event"
-                  @refresh="fetchInvoices()"
-                />
-              </v-window-item>
-
-              <!-- Order Invoices Tab -->
-              <v-window-item value="invoices">
-                <v-container class="px-2 pb-2">
-                  <HeldOrdersFilters
-                    :search="invoiceSearch"
-                    :selectedType="invoiceSelectedType"
-                    :selectedStatus="invoiceSelectedStatus"
-                    :selectedPaymentStatus="invoiceSelectedPaymentStatus"
-                    :orderTypes="orderTypes"
-                    mode="history"
-                    @update:search="invoiceSearch = $event"
-                    @update:selectedType="invoiceSelectedType = $event"
-                    @update:selectedStatus="invoiceSelectedStatus = $event"
-                    @update:selectedPaymentStatus="invoiceSelectedPaymentStatus = $event"
-                  />
-                </v-container>
-
-                <OrderInvoicesTable
-                  :loading="invoicesLoading"
-                  :invoices="filteredInvoiceOrders"
-                  :getOrderType="getOrderType"
-                  :getOrderTypeColor="getOrderTypeColor"
-                  :formatDate="formatDate"
-                  :showPagination="true"
-                  :page="invoicePage"
-                  :totalPages="totalInvoicePages"
-                  @update:page="invoicePage = $event"
-                  @refresh="fetchInvoices()"
-                />
-              </v-window-item>
-            </v-window>
-          </v-container>
-        </v-card-text>
+          <v-window-item value="invoices" class="window-item">
+            <order-invoices-table
+              :loading="invoicesLoading"
+              :invoices="filteredInvoiceOrders"
+              :get-order-type="getOrderType"
+              :get-order-type-color="getOrderTypeColor"
+              :format-date="formatDate"
+              :show-pagination="true"
+              :page="invoicePage"
+              :total-pages="totalInvoicePages"
+              @update:page="(page) => invoicePage = page"
+              @refresh="fetchInvoices"
+              class="table-component"
+            />
+          </v-window-item>
+        </v-window>
       </v-card>
-
-      <DeleteConfirmationDialog
-        v-model="deleteDialog"
-        :loading="isDeleting"
-        :order-description="selectedInvoice?.description"
-        @confirm="confirmDelete"
-      />
-
-      <PaymentDialog
-        v-model="showPaymentDialog"
-        :invoice="currentInvoice || {}"
-        @payment-complete="handlePaymentComplete"
-      />
     </v-dialog>
+
+    <DeleteConfirmationDialog
+      v-model="deleteDialog"
+      :loading="isDeleting"
+      :order-description="selectedInvoice?.description"
+      @confirm="confirmDelete"
+    />
+
+    <PaymentDialog
+      v-model="showPaymentDialog"
+      :invoice="currentInvoice || {}"
+      @payment-complete="handlePaymentComplete"
+    />
   </div>
 </template>
+
+<style scoped>
+.modal-card {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: rgb(var(--v-theme-background));
+}
+
+.orders-tabs {
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  background-color: rgb(var(--v-theme-primary));
+}
+
+.orders-tabs :deep(.v-tabs-bar) {
+  width: 100%;
+}
+
+.orders-tabs :deep(.v-slide-group__wrapper) {
+  width: 100%;
+}
+
+.orders-tabs :deep(.v-slide-group__content) {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+}
+
+.tab-item {
+  flex: 1;
+  width: 100%;
+  justify-content: center;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.0892857143em;
+  border-radius: 12px 12px 0 0 !important;
+  min-height: 56px;
+  transition: all 0.2s ease-in-out;
+  opacity: 0.85;
+  border: 2px solid transparent;
+  border-bottom: none;
+  font-size: 1rem;
+  padding-bottom: 8px;
+}
+
+.tab-item :deep(.v-tab__content) {
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.tab-item :deep(.v-icon) {
+  font-size: 1.4rem;
+  margin-right: 8px;
+}
+
+.tab-item:hover {
+  opacity: 0.95;
+}
+
+.tab-active {
+  opacity: 1;
+  transform: translateY(4px);
+  padding-bottom: 12px;
+}
+
+.dine-in-tab {
+  background-color: #2196F3 !important;
+  color: white !important;
+}
+
+.dine-in-tab.tab-active {
+  background-color: #1976D2 !important;
+  border-color: #1565C0;
+}
+
+.delivery-tab {
+  background-color: #4CAF50 !important;
+  color: white !important;
+}
+
+.delivery-tab.tab-active {
+  background-color: #388E3C !important;
+  border-color: #2E7D32;
+}
+
+.history-tab {
+  background-color: #FF9800 !important;
+  color: white !important;
+}
+
+.history-tab.tab-active {
+  background-color: #F57C00 !important;
+  border-color: #EF6C00;
+}
+
+.window-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+}
+
+.window-item {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.table-component {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 600px) {
+  .tab-item {
+    font-size: 0.95rem;
+    min-height: 48px;
+    padding-bottom: 6px;
+  }
+  
+  .tab-active {
+    padding-bottom: 10px;
+  }
+
+  .tab-item :deep(.v-icon) {
+    font-size: 1.2rem;
+  }
+  
+  .orders-tabs {
+    padding: 8px 8px 0 8px !important;
+  }
+}
+</style>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
@@ -249,7 +310,6 @@ const activeTab = ref('active')
 const search = ref('')
 const selectedType = ref('ALL')
 const selectedStatus = ref('ALL')
-
 
 // Invoice filters
 const invoiceSearch = ref('')
@@ -348,7 +408,6 @@ const filteredDeliveryOrders = computed(() => {
 const totalDeliveryPages = computed(() => {
   return invoicesPagination.value.lastPage || 1
 })
-
 
 // Computed property for filtered invoices
 const filteredInvoiceOrders = computed(() => {

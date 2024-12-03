@@ -34,6 +34,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useDisplay } from 'vuetify'
+import { logger } from '@/utils/logger'
 
 const searchQuery = ref('')
 const isLoading = ref(false)
@@ -49,20 +50,32 @@ const handleSearch = (value) => {
   isLoading.value = true
   clearTimeout(searchTimeout)
   
-  searchTimeout = setTimeout(() => {
-    emit('search', value)
-    isLoading.value = false
-  }, 300)
+  // Check if the value looks like a SKU (you might want to adjust this logic)
+  const isSKU = /^[A-Za-z0-9-]+$/.test(value) && value.length >= 4
+  
+  if (isSKU) {
+    // If it looks like a SKU, emit quickAdd immediately
+    emit('quickAdd', value)
+    clearSearch()
+  } else {
+    // Otherwise, use debounced search
+    searchTimeout = setTimeout(() => {
+      emit('search', value)
+      isLoading.value = false
+    }, 300)
+  }
 }
 
 const clearSearch = () => {
   searchQuery.value = ''
   emit('search', '')
+  isLoading.value = false
 }
 
 const handleEnter = () => {
   if (searchQuery.value.trim()) {
     emit('quickAdd', searchQuery.value.trim())
+    clearSearch() // Clear the search after adding
   }
 }
 </script>

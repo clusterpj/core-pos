@@ -1,149 +1,158 @@
 <template>
-  <v-dialog
-    v-model="dialog"
-    :fullscreen="$vuetify.display.mobile"
-    :max-width="$vuetify.display.mobile ? '100%' : '800px'"
-    persistent
-    scrollable
-    transition="dialog-bottom-transition"
-    class="payment-dialog"
-  >
-    <v-card class="payment-dialog-card">
-      <v-toolbar color="primary" class="payment-dialog-toolbar" :elevation="2">
-        <v-toolbar-title class="text-h6 font-weight-medium">
-          <v-icon icon="mdi-cash-register" size="large" class="mr-2"></v-icon>
-          Process Payment
-        </v-toolbar-title>
-        <v-spacer></v-spacer>
-        <v-btn
-          icon="mdi-close"
-          variant="text"
-          @click="closeDialog"
-          class="ml-2"
-          size="large"
-        ></v-btn>
-      </v-toolbar>
+  <div>
+    <v-dialog
+      v-model="dialog"
+      :fullscreen="$vuetify.display.mobile"
+      :max-width="$vuetify.display.mobile ? '100%' : '800px'"
+      persistent
+      scrollable
+      transition="dialog-bottom-transition"
+      class="payment-dialog"
+    >
+      <v-card class="payment-dialog-card">
+        <v-toolbar color="primary" class="payment-dialog-toolbar" :elevation="2">
+          <v-toolbar-title class="text-h6 font-weight-medium">
+            <v-icon icon="mdi-cash-register" size="large" class="mr-2"></v-icon>
+            Process Payment
+          </v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            @click="closeDialog"
+            class="ml-2"
+            size="large"
+          ></v-btn>
+        </v-toolbar>
 
-      <v-card-text>
-        <v-container>
-          <!-- Error Alert -->
-          <v-alert
-            v-if="error"
-            type="error"
-            variant="tonal"
-            closable
-            class="mb-4"
-            @click:close="error = null"
-          >
-            {{ error }}
-          </v-alert>
+        <v-card-text>
+          <v-container>
+            <!-- Error Alert -->
+            <v-alert
+              v-if="error"
+              type="error"
+              variant="tonal"
+              closable
+              class="mb-4"
+              @click:close="error = null"
+            >
+              {{ error }}
+            </v-alert>
 
-          <!-- Loading State -->
-          <div v-if="processing" class="text-center py-8">
-            <v-progress-circular
-              indeterminate
-              color="primary"
-              size="64"
-            ></v-progress-circular>
-            <div class="text-h6 mt-4">Processing Payment...</div>
-          </div>
+            <!-- Loading State -->
+            <div v-if="processing" class="text-center py-8">
+              <v-progress-circular
+                indeterminate
+                color="primary"
+                size="64"
+              ></v-progress-circular>
+              <div class="text-h6 mt-4">Processing Payment...</div>
+            </div>
 
-          <!-- Cart Empty Warning -->
-          <v-alert
-            v-else-if="!hasItems"
-            type="warning"
-            variant="tonal"
-            class="mb-4"
-          >
-            Please add items to cart before proceeding with payment.
-          </v-alert>
+            <!-- Cart Empty Warning -->
+            <v-alert
+              v-else-if="!hasItems"
+              type="warning"
+              variant="tonal"
+              class="mb-4"
+            >
+              Please add items to cart before proceeding with payment.
+            </v-alert>
 
-          <!-- Payment Summary -->
-          <v-row v-else>
-            <v-col cols="12" class="text-center">
-              <v-card variant="outlined" class="invoice-summary-card mb-4">
-                <v-card-text class="py-4">
-                  <div class="d-flex justify-space-between mb-2">
-                    <span>Subtotal:</span>
-                    <strong>{{ formatCurrency(cartStore.subtotal) }}</strong>
-                  </div>
-                  <div class="d-flex justify-space-between mb-2">
-                    <span>Tax:</span>
-                    <strong>{{ formatCurrency(cartStore.taxAmount) }}</strong>
-                  </div>
-                  <div v-if="cartStore.discountAmount > 0" class="d-flex justify-space-between mb-2">
-                    <span>Discount:</span>
-                    <strong>-{{ formatCurrency(cartStore.discountAmount) }}</strong>
-                  </div>
-                  <v-divider class="my-2"></v-divider>
-                  <div class="d-flex justify-space-between mb-2">
-                    <span class="text-h6">Total:</span>
-                    <strong class="text-h6">{{ formatCurrency(cartStore.total) }}</strong>
-                  </div>
-                </v-card-text>
-              </v-card>
-
-              <!-- Success State -->
-              <template v-if="currentInvoice">
-                <v-icon icon="mdi-check-circle" color="success" size="64" class="mb-4"></v-icon>
-                <h2 class="text-h5 mb-4">Payment Processed Successfully</h2>
+            <!-- Payment Summary -->
+            <v-row v-else>
+              <v-col cols="12" class="text-center">
                 <v-card variant="outlined" class="invoice-summary-card mb-4">
                   <v-card-text class="py-4">
                     <div class="d-flex justify-space-between mb-2">
-                      <span>Invoice Number:</span>
-                      <strong>{{ invoiceNumber }}</strong>
+                      <span>Subtotal:</span>
+                      <strong>{{ formatCurrency(cartStore.subtotal) }}</strong>
                     </div>
                     <div class="d-flex justify-space-between mb-2">
-                      <span>Total Amount:</span>
-                      <strong>{{ formatCurrency(invoiceTotal) }}</strong>
+                      <span>Tax:</span>
+                      <strong>{{ formatCurrency(cartStore.taxAmount) }}</strong>
+                    </div>
+                    <div v-if="cartStore.discountAmount > 0" class="d-flex justify-space-between mb-2">
+                      <span>Discount:</span>
+                      <strong>-{{ formatCurrency(cartStore.discountAmount) }}</strong>
+                    </div>
+                    <v-divider class="my-2"></v-divider>
+                    <div class="d-flex justify-space-between mb-2">
+                      <span class="text-h6">Total:</span>
+                      <strong class="text-h6">{{ formatCurrency(cartStore.total) }}</strong>
                     </div>
                   </v-card-text>
                 </v-card>
-              </template>
-            </v-col>
-          </v-row>
-        </v-container>
-      </v-card-text>
 
-      <v-card-actions class="pa-4">
-        <v-spacer></v-spacer>
-        <v-btn
-          v-if="!currentInvoice"
-          color="primary"
-          size="large"
-          min-width="120"
-          height="48"
-          @click="processPayment"
-          :loading="processing"
-          :disabled="!canPay"
-          class="text-none px-6"
-          rounded="pill"
-          elevation="2"
-        >
-          <v-icon start icon="mdi-cash-register" class="mr-1"></v-icon>
-          Pay Now
-        </v-btn>
-        <v-btn
-          v-else
-          color="primary"
-          size="large"
-          min-width="120"
-          height="48"
-          @click="closeDialog"
-          class="text-none px-6"
-          rounded="pill"
-          elevation="2"
-        >
-          <v-icon start icon="mdi-check" class="mr-1"></v-icon>
-          Done
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+                <!-- Success State -->
+                <template v-if="currentInvoice">
+                  <v-icon icon="mdi-check-circle" color="success" size="64" class="mb-4"></v-icon>
+                  <h2 class="text-h5 mb-4">Payment Processed Successfully</h2>
+                  <v-card variant="outlined" class="invoice-summary-card mb-4">
+                    <v-card-text class="py-4">
+                      <div class="d-flex justify-space-between mb-2">
+                        <span>Invoice Number:</span>
+                        <strong>{{ invoiceNumber }}</strong>
+                      </div>
+                      <div class="d-flex justify-space-between mb-2">
+                        <span>Total Amount:</span>
+                        <strong>{{ formatCurrency(invoiceTotal) }}</strong>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </template>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card-text>
+
+        <v-card-actions class="pa-4">
+          <v-spacer></v-spacer>
+          <v-btn
+            v-if="!currentInvoice"
+            color="primary"
+            size="large"
+            min-width="120"
+            height="48"
+            @click="processPayment"
+            :loading="processing"
+            :disabled="!canPay"
+            class="text-none px-6"
+            rounded="pill"
+            elevation="2"
+          >
+            <v-icon start icon="mdi-cash-register" class="mr-1"></v-icon>
+            Pay Now
+          </v-btn>
+          <v-btn
+            v-else
+            color="primary"
+            size="large"
+            min-width="120"
+            height="48"
+            @click="closeDialog"
+            class="text-none px-6"
+            rounded="pill"
+            elevation="2"
+          >
+            <v-icon start icon="mdi-check" class="mr-1"></v-icon>
+            Done
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Add Payment Dialog -->
+    <PaymentDialog
+      v-model="showPaymentDialog"
+      :invoice="currentInvoice"
+      @payment-complete="handlePaymentComplete"
+    />
+  </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCartStore } from '@/stores/cart-store'
 import { useCompanyStore } from '@/stores/company'
@@ -152,6 +161,8 @@ import { posApi } from '@/services/api/pos-api'
 import { logger } from '@/utils/logger'
 import { PriceUtils } from '@/utils/price'
 import { OrderType, PaidStatus } from '@/types/order'
+import PaymentDialog from './PaymentDialog.vue'
+
 const formatApiDate = (date) => {
   const d = new Date(date)
   const year = d.getFullYear()
@@ -170,15 +181,33 @@ const emit = defineEmits(['update:modelValue', 'payment-complete'])
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const authStore = useAuthStore()
+
+// Ensure company data is loaded
+onMounted(async () => {
+  console.log('Component mounted, initializing company store...')
+  try {
+    await companyStore.initializeStore()
+    console.log('Company data after initialization:', {
+      selectedCustomer: companyStore.selectedCustomer,
+      currentStore: companyStore.currentStore,
+      isConfigured: companyStore.isConfigured
+    })
+  } catch (error) {
+    console.error('Failed to initialize company store:', error)
+  }
+})
+
 const { items } = storeToRefs(cartStore)
 
 // Get user from auth store
 const { user } = storeToRefs(authStore)
+console.log('Auth Store User:', user.value)
 
 // State
 const processing = ref(false)
 const error = ref(null)
 const currentInvoice = ref(null)
+const showPaymentDialog = ref(false)
 
 // Dialog computed property
 const dialog = computed({
@@ -242,6 +271,11 @@ const formatInvoiceItems = (items) => {
 const createInvoice = async () => {
   logger.startGroup('Creating Retail Invoice')
   try {
+    // Ensure company store is initialized
+    if (!companyStore.isConfigured) {
+      await companyStore.initializeStore()
+    }
+
     // Get next invoice number
     const nextInvoiceResponse = await posApi.invoice.getNextNumber()
     logger.debug('Next invoice number response:', nextInvoiceResponse)
@@ -253,10 +287,10 @@ const createInvoice = async () => {
     // Format items for invoice
     const formattedItems = formatInvoiceItems(cartStore.items)
     
-    // Store invoice prefix and number for display
-    currentInvoice.value = {
-      invoicePrefix: nextInvoiceResponse.prefix,
-      nextInvoiceNumber: nextInvoiceResponse.nextNumber
+    // Get the current store details
+    const currentStore = companyStore.currentStore
+    if (!currentStore) {
+      throw new Error('No store selected')
     }
     
     // Prepare invoice data
@@ -268,21 +302,24 @@ const createInvoice = async () => {
       sub_total: PriceUtils.toCents(cartStore.subtotal),
       tax: PriceUtils.toCents(cartStore.taxAmount),
       items: formattedItems,
+      hold_items: formattedItems, // Add hold_items for payment dialog
       taxes: [],
       packages: [],
       tables_selected: [],
       contact: {
-        name: companyStore.company?.name || "Walk-in Customer",
-        company_name: companyStore.company?.name || "Walk-in Customer",
-        first_name: companyStore.company?.name || "Walk-in",
-        last_name: "Customer",  // Provide a default value to satisfy DB constraint
-        email: companyStore.company?.email || "walk-in@example.com",
-        phone: companyStore.company?.phone || "000-000-0000",
+        name: currentStore.company_name || "Walk-in Customer",
+        company_name: currentStore.company_name || "Walk-in Customer",
+        first_name: currentStore.company_name || "Walk-in",
+        last_name: "Customer",
+        email: currentStore.email || "walk-in@example.com",
+        phone: currentStore.phone || "000-000-0000",
         second_phone: "N/A",
-        identification: companyStore.company?.tax_id || "N/A",
-        type: "company"    // Explicitly mark as company contact
+        identification: currentStore.tax_id || "N/A",
+        type: "company"
       },
+      type: OrderType.RETAIL,
       status: "SENT",
+      paid_status: PaidStatus.UNPAID,
       description: "Retail Point of Sale Transaction",
       user_id: getCurrentUserId.value,
       company_id: companyStore.company?.id,
@@ -307,75 +344,70 @@ const createInvoice = async () => {
       tip_type: "fixed",
       tip_val: 0,
       notes: "",
-      hold_invoice_id: null
+      hold_invoice_id: null,
+      store_id: currentStore.id || 0,
+      cash_register_id: companyStore.selectedCashier?.id || 0
     }
 
-    logger.debug('Invoice Data:', invoiceData)
+    // Create the invoice
     const response = await posApi.invoice.create(invoiceData)
-    logger.debug('Invoice Creation Response:', response)
     
-    if (!response?.data) {
-      throw new Error('Failed to create invoice: No response data')
+    // Set up the current invoice for payment dialog
+    currentInvoice.value = {
+      invoice: {
+        ...invoiceData,
+        id: response?.data?.id || `${nextInvoiceResponse.prefix}-${nextInvoiceResponse.nextNumber}`,
+        type: OrderType.RETAIL,
+        hold_items: formattedItems,
+        total: cartStore.total,
+        sub_total: cartStore.subtotal,
+        tax: cartStore.taxAmount,
+        is_prepared_data: true
+      }
     }
-    
+
+    // Show payment dialog
+    showPaymentDialog.value = true
+    dialog.value = false
+
     logger.endGroup()
-    return response.data
+    return currentInvoice.value.invoice
 
   } catch (error) {
     logger.error('Invoice Creation Failed:', error)
     logger.endGroup()
-    throw new Error(`Failed to create invoice: ${error.message}`)
+    throw error
   }
 }
 
 const processPayment = async () => {
-  if (!hasItems.value) {
-    error.value = 'Cannot process payment: Cart is empty'
-    return
-  }
-
+  if (!canPay.value) return
+  
+  processing.value = true
+  error.value = null
+  
   try {
-    processing.value = true
-    error.value = null
-
-    // 0. Ensure user profile is loaded
-    await ensureUserProfile()
-
-    // 1. Create invoice first
     const invoice = await createInvoice()
-    
-    // 2. Process payment
-    const paymentData = {
-      invoice_id: invoice.id,
-      amount: cartStore.total,
-      payment_method: 'cash', // TODO: Make this dynamic based on selected payment method
-      payment_date: formatDate(new Date()),
-      notes: '',
-      store_id: companyStore.currentStore?.id
+    if (!invoice) {
+      throw new Error('Failed to create invoice')
     }
-
-    const paymentResponse = await posApi.payment.createPayment(paymentData)
-    if (!paymentResponse?.data?.id) {
-      throw new Error(paymentResponse?.message || 'Payment processing failed')
-    }
-
-    // 3. Update invoice status
-    await posApi.invoice.updateInvoice(invoice.id, {
-      paid_status: PaidStatus.PAID
-    })
-
-    // 4. Store current invoice and clear cart
-    currentInvoice.value = invoice
-    await cartStore.clearCart()
-    
-    // 5. Emit success
-    emit('payment-complete', { invoice, payment: paymentResponse.data })
-
   } catch (err) {
+    error.value = err.message || 'Failed to process payment'
     logger.error('Payment processing error:', err)
-    error.value = `Payment failed: ${err.message || 'Unknown error occurred'}`
   } finally {
     processing.value = false
+  }
+}
+
+const handlePaymentComplete = async (result) => {
+  if (result?.success) {
+    // Clear the cart and reset state
+    cartStore.clearCart()
+    currentInvoice.value = null
+    showPaymentDialog.value = false
+    window.toastr?.['success']('Retail payment processed successfully')
+  } else {
+    window.toastr?.['error']('Failed to process payment')
   }
 }
 
@@ -383,6 +415,7 @@ const closeDialog = () => {
   if (!processing.value) {
     error.value = null
     currentInvoice.value = null
+    showPaymentDialog.value = false
     emit('update:modelValue', false)
   }
 }

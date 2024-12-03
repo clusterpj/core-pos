@@ -1,9 +1,9 @@
 <!-- src/views/pos/components/held-orders/components/HeldOrdersFilters.vue -->
 <template>
-  <v-row>
+  <v-row dense>
     <template v-if="mode === 'active'">
       <!-- Only Type Filter for DINE IN/TOGO -->
-      <v-col cols="12" sm="4">
+      <v-col :cols="$vuetify.display.mobile ? 12 : 4">
         <v-select
           :model-value="selectedType"
           @update:model-value="$emit('update:selectedType', $event)"
@@ -18,7 +18,7 @@
 
     <template v-else-if="mode === 'delivery'">
       <!-- Search Field -->
-      <v-col cols="12" sm="3">
+      <v-col :cols="$vuetify.display.mobile ? 12 : 3">
         <v-text-field
           :model-value="search"
           @update:model-value="$emit('update:search', $event)"
@@ -30,7 +30,7 @@
       </v-col>
       
       <!-- Type Filter -->
-      <v-col cols="12" sm="3">
+      <v-col :cols="$vuetify.display.mobile ? 12 : 3">
         <v-select
           :model-value="selectedType"
           @update:model-value="$emit('update:selectedType', $event)"
@@ -43,7 +43,7 @@
       </v-col>
 
       <!-- Status Filter -->
-      <v-col cols="12" sm="3">
+      <v-col :cols="$vuetify.display.mobile ? 12 : 3">
         <v-select
           :model-value="selectedStatus"
           @update:model-value="$emit('update:selectedStatus', $event)"
@@ -56,7 +56,7 @@
       </v-col>
 
       <!-- Payment Status Filter -->
-      <v-col cols="12" sm="3">
+      <v-col :cols="$vuetify.display.mobile ? 12 : 3">
         <v-select
           :model-value="selectedPaymentStatus"
           @update:model-value="$emit('update:selectedPaymentStatus', $event)"
@@ -71,7 +71,7 @@
 
     <template v-else>
       <!-- Search Field -->
-      <v-col cols="12" sm="4">
+      <v-col :cols="$vuetify.display.mobile ? 12 : 4">
         <v-text-field
           :model-value="search"
           @update:model-value="$emit('update:search', $event)"
@@ -83,7 +83,7 @@
       </v-col>
       
       <!-- Type Filter -->
-      <v-col cols="12" sm="4">
+      <v-col :cols="$vuetify.display.mobile ? 12 : 4">
         <v-select
           :model-value="selectedType"
           @update:model-value="$emit('update:selectedType', $event)"
@@ -96,7 +96,7 @@
       </v-col>
 
       <!-- Status Filter -->
-      <v-col cols="12" sm="4">
+      <v-col :cols="$vuetify.display.mobile ? 12 : 4">
         <v-select
           :model-value="selectedStatus"
           @update:model-value="$emit('update:selectedStatus', $event)"
@@ -109,7 +109,7 @@
       </v-col>
 
       <!-- Payment Status Filter -->
-      <v-col cols="12" sm="4">
+      <v-col :cols="$vuetify.display.mobile ? 12 : 4">
         <v-select
           :model-value="selectedPaymentStatus"
           @update:model-value="$emit('update:selectedPaymentStatus', $event)"
