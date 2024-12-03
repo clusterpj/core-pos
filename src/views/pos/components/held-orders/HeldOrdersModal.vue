@@ -90,35 +90,121 @@
           </v-window-item>
 
           <v-window-item value="delivery" class="window-item">
-            <order-invoices-table
-              :loading="deliveryLoading"
-              :invoices="filteredDeliveryOrders"
-              :get-order-type="getOrderType"
-              :get-order-type-color="getOrderTypeColor"
-              :format-date="formatDate"
-              :show-pagination="true"
-              :page="deliveryPage"
-              :total-pages="totalDeliveryPages"
-              @update:page="(page) => deliveryPage = page"
-              @refresh="fetchInvoices"
-              class="table-component"
-            />
+            <v-row no-gutters>
+              <v-col cols="12">
+                <div class="filters-container">
+                  <v-row>
+                    <v-col cols="12" sm="4">
+                      <v-text-field
+                        v-model="deliverySearch"
+                        label="Search"
+                        density="comfortable"
+                        hide-details
+                        prepend-inner-icon="mdi-magnify"
+                        variant="outlined"
+                        class="mb-2"
+                      />
+                    </v-col>
+                    <v-col cols="12" sm="4">
+                      <v-select
+                        v-model="deliverySelectedStatus"
+                        :items="['ALL', 'DRAFT', 'SENT', 'COMPLETED']"
+                        label="Status"
+                        density="comfortable"
+                        hide-details
+                        variant="outlined"
+                        class="mb-2"
+                      />
+                    </v-col>
+                    <v-col cols="12" sm="4">
+                      <v-select
+                        v-model="deliverySelectedPaymentStatus"
+                        :items="['ALL', 'PAID', 'UNPAID']"
+                        label="Payment Status"
+                        density="comfortable"
+                        hide-details
+                        variant="outlined"
+                        class="mb-2"
+                      />
+                    </v-col>
+                  </v-row>
+                </div>
+              </v-col>
+              <v-col cols="12">
+                <order-invoices-table
+                  :loading="deliveryLoading"
+                  :invoices="filteredDeliveryOrders"
+                  :get-order-type="getOrderType"
+                  :get-order-type-color="getOrderTypeColor"
+                  :format-date="formatDate"
+                  :show-pagination="true"
+                  :page="deliveryPage"
+                  :total-pages="totalDeliveryPages"
+                  @update:page="(page) => deliveryPage = page"
+                  @refresh="fetchInvoices"
+                  class="table-component"
+                />
+              </v-col>
+            </v-row>
           </v-window-item>
 
           <v-window-item value="invoices" class="window-item">
-            <order-invoices-table
-              :loading="invoicesLoading"
-              :invoices="filteredInvoiceOrders"
-              :get-order-type="getOrderType"
-              :get-order-type-color="getOrderTypeColor"
-              :format-date="formatDate"
-              :show-pagination="true"
-              :page="invoicePage"
-              :total-pages="totalInvoicePages"
-              @update:page="(page) => invoicePage = page"
-              @refresh="fetchInvoices"
-              class="table-component"
-            />
+            <v-row no-gutters>
+              <v-col cols="12">
+                <div class="filters-container">
+                  <v-row>
+                    <v-col cols="12" sm="4">
+                      <v-text-field
+                        v-model="invoiceSearch"
+                        label="Search"
+                        density="comfortable"
+                        hide-details
+                        prepend-inner-icon="mdi-magnify"
+                        variant="outlined"
+                        class="mb-2"
+                      />
+                    </v-col>
+                    <v-col cols="12" sm="4">
+                      <v-select
+                        v-model="invoiceSelectedStatus"
+                        :items="['ALL', 'DRAFT', 'SENT', 'COMPLETED']"
+                        label="Status"
+                        density="comfortable"
+                        hide-details
+                        variant="outlined"
+                        class="mb-2"
+                      />
+                    </v-col>
+                    <v-col cols="12" sm="4">
+                      <v-select
+                        v-model="invoiceSelectedPaymentStatus"
+                        :items="['ALL', 'PAID', 'UNPAID']"
+                        label="Payment Status"
+                        density="comfortable"
+                        hide-details
+                        variant="outlined"
+                        class="mb-2"
+                      />
+                    </v-col>
+                  </v-row>
+                </div>
+              </v-col>
+              <v-col cols="12">
+                <order-invoices-table
+                  :loading="invoicesLoading"
+                  :invoices="filteredInvoiceOrders"
+                  :get-order-type="getOrderType"
+                  :get-order-type-color="getOrderTypeColor"
+                  :format-date="formatDate"
+                  :show-pagination="true"
+                  :page="invoicePage"
+                  :total-pages="totalInvoicePages"
+                  @update:page="(page) => invoicePage = page"
+                  @refresh="fetchInvoices"
+                  class="table-component"
+                />
+              </v-col>
+            </v-row>
           </v-window-item>
         </v-window>
       </v-card>
@@ -145,6 +231,43 @@
   flex-direction: column;
   height: 100vh;
   background-color: rgb(var(--v-theme-background));
+}
+
+.window-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.window-item {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.filters-container {
+  padding: 8px 16px;
+  background-color: rgb(var(--v-theme-background));
+  border-bottom: 1px solid rgb(var(--v-theme-divider));
+  margin: 0;
+}
+
+.filters-container :deep(.v-text-field),
+.filters-container :deep(.v-select) {
+  margin-bottom: 0 !important;
+}
+
+.filters-container :deep(.v-col) {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.table-component {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .orders-tabs {
@@ -235,25 +358,6 @@
   border-color: #EF6C00;
 }
 
-.window-content {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-}
-
-.window-item {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-}
-
-.table-component {
-  flex: 1;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-}
-
 @media (max-width: 600px) {
   .tab-item {
     font-size: 0.95rem;
@@ -271,6 +375,14 @@
   
   .orders-tabs {
     padding: 8px 8px 0 8px !important;
+  }
+  
+  .filters-container {
+    padding: 8px;
+  }
+  
+  .filters-container :deep(.v-col) {
+    padding: 4px;
   }
 }
 </style>
@@ -308,12 +420,10 @@ const activeTab = ref('active')
 
 // Active orders filters
 const search = ref('')
-const selectedType = ref('ALL')
 const selectedStatus = ref('ALL')
 
 // Invoice filters
 const invoiceSearch = ref('')
-const invoiceSelectedType = ref('ALL')
 const invoiceSelectedStatus = ref('ALL')
 const invoiceSelectedPaymentStatus = ref('ALL')
 const invoicePage = ref(1)
@@ -321,7 +431,6 @@ const invoiceItemsPerPage = ref(10)
 
 // Delivery & Pickup filters
 const deliverySearch = ref('')
-const deliverySelectedType = ref('ALL')
 const deliverySelectedStatus = ref('ALL')
 const deliverySelectedPaymentStatus = ref('ALL')
 const deliveryPage = ref(1)
@@ -336,7 +445,6 @@ const {
   loadingOrder,
   deletingOrder,
   convertingOrder,
-  orderTypes,
   holdInvoices,
   getOrderType,
   getOrderTypeColor,
@@ -370,10 +478,6 @@ const activeOrders = computed(() =>
 const filteredActiveOrders = computed(() => {
   let filtered = activeOrders.value
 
-  if (selectedType.value !== 'ALL') {
-    filtered = filtered.filter(invoice => invoice.type === selectedType.value)
-  }
-
   if (selectedStatus.value !== 'ALL') {
     filtered = filtered.filter(invoice => invoice.paid_status === selectedStatus.value)
   }
@@ -402,7 +506,41 @@ const filteredDeliveryOrders = computed(() => {
     logger.warn('Invoices is not an array:', invoices.value)
     return []
   }
-  return invoices.value
+
+  let filtered = invoices.value
+
+  if (deliverySelectedStatus.value !== 'ALL') {
+    filtered = filtered.filter(invoice => 
+      invoice?.status === deliverySelectedStatus.value
+    )
+  }
+
+  if (deliverySelectedPaymentStatus.value !== 'ALL') {
+    filtered = filtered.filter(invoice =>
+      invoice?.paid_status === deliverySelectedPaymentStatus.value
+    )
+  }
+
+  if (deliverySearch.value) {
+    const searchTerm = deliverySearch.value.toLowerCase()
+    filtered = filtered.filter(invoice => 
+      invoice?.invoice_number?.toLowerCase().includes(searchTerm) ||
+      invoice?.customer?.name?.toLowerCase().includes(searchTerm) ||
+      invoice?.id?.toString().includes(searchTerm)
+    )
+  }
+
+  logger.debug('Filtered delivery orders:', {
+    total: invoices.value.length,
+    filtered: filtered.length,
+    filters: {
+      status: deliverySelectedStatus.value,
+      paymentStatus: deliverySelectedPaymentStatus.value,
+      search: deliverySearch.value
+    }
+  })
+
+  return filtered
 })
 
 const totalDeliveryPages = computed(() => {
@@ -417,12 +555,6 @@ const filteredInvoiceOrders = computed(() => {
   }
 
   let filtered = invoices.value
-
-  if (invoiceSelectedType.value !== 'ALL') {
-    filtered = filtered.filter(invoice => 
-      invoice?.type === invoiceSelectedType.value
-    )
-  }
 
   if (invoiceSelectedStatus.value !== 'ALL') {
     filtered = filtered.filter(invoice => 
@@ -449,7 +581,6 @@ const filteredInvoiceOrders = computed(() => {
     total: invoices.value.length,
     filtered: filtered.length,
     filters: {
-      type: invoiceSelectedType.value,
       status: invoiceSelectedStatus.value,
       search: invoiceSearch.value
     }
@@ -585,16 +716,12 @@ watch(activeTab, async (newValue) => {
 })
 
 // Watch for delivery filters changes
-watch([deliverySearch, deliverySelectedType, deliverySelectedStatus, deliverySelectedPaymentStatus, deliveryPage], async () => {
+watch([deliverySearch, deliverySelectedStatus, deliverySelectedPaymentStatus, deliveryPage], async () => {
   if (activeTab.value === 'delivery') {
     deliveryLoading.value = true
     try {
-      const type = deliverySelectedType.value === 'ALL' 
-        ? ['DELIVERY', 'PICKUP']
-        : [deliverySelectedType.value]
-        
       const params = {
-        type,
+        type: ['DELIVERY', 'PICKUP'],
         invoiceNumber: deliverySearch.value,
         page: deliveryPage.value,
         orderByField: 'invoice_number',
@@ -619,7 +746,7 @@ watch([deliverySearch, deliverySelectedType, deliverySelectedStatus, deliverySel
 })
 
 // Watch for invoice filters changes
-watch([invoiceSearch, invoiceSelectedType, invoiceSelectedStatus, invoicePage], async () => {
+watch([invoiceSearch, invoiceSelectedStatus, invoicePage], async () => {
   if (activeTab.value === 'invoices') {
     await fetchInvoices({
       status: invoiceSelectedStatus.value !== 'ALL' ? invoiceSelectedStatus.value : '',
