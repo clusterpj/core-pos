@@ -1,6 +1,6 @@
 <!-- src/views/pos/components/held-orders/components/OrderInvoicesTable.vue -->
 <template>
-  <div class="order-invoices-table">
+  <div class="order-invoices-table" :class="$attrs.class">
     <div class="table-container">
       <v-table
         fixed-header
