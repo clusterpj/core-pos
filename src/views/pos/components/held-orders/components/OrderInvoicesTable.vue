@@ -207,8 +207,8 @@
                   <tr v-for="item in selectedInvoiceDetails.items" :key="item.id">
                     <td>{{ item.name }}</td>
                     <td class="text-right">{{ item.quantity }}</td>
-                    <td class="text-right">{{ PriceUtils.format(item.price) }}</td>
-                    <td class="text-right">{{ PriceUtils.format(item.total) }}</td>
+                    <td class="text-right">{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(item.price)) }}</td>
+                    <td class="text-right">{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(item.total)) }}</td>
                   </tr>
                 </tbody>
               </v-table>
@@ -220,16 +220,16 @@
             <v-col cols="12" sm="6" offset-sm="6">
               <div class="d-flex justify-space-between mb-2">
                 <strong>Subtotal:</strong>
-                <span>{{ PriceUtils.format(selectedInvoiceDetails.sub_total) }}</span>
+                <span>{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(selectedInvoiceDetails.sub_total)) }}</span>
               </div>
               <div class="d-flex justify-space-between mb-2">
                 <strong>Tax:</strong>
-                <span>{{ PriceUtils.format(selectedInvoiceDetails.tax) }}</span>
+                <span>{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(selectedInvoiceDetails.tax)) }}</span>
               </div>
               <v-divider class="my-2"></v-divider>
               <div class="d-flex justify-space-between">
                 <strong>Total:</strong>
-                <span class="text-h6">{{ PriceUtils.format(selectedInvoiceDetails.total) }}</span>
+                <span class="text-h6">{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(selectedInvoiceDetails.total)) }}</span>
               </div>
             </v-col>
           </v-row>
@@ -344,18 +344,8 @@ const formatDate = (date) => {
 
 // Helper function to detect and normalize price
 const normalizePriceFromBackend = (price) => {
-  // If price is a string, convert to number
-  const numPrice = Number(price);
-  
-  // If price is greater than 1000, assume it needs to be normalized down
-  // This handles cases where 149 cents comes as 14900
-  if (numPrice > 1000) {
-    return Math.round(numPrice / 100);
-  }
-  
-  // Otherwise, return the price as is, assuming it's already in cents
-  // This handles cases where 149 cents comes as 149
-  return numPrice;
+  if (!price) return 0;
+  return PriceUtils.normalizePrice(price);
 }
 
 const loadInvoiceToCart = async (invoice) => {

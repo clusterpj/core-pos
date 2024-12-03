@@ -439,13 +439,7 @@ const invoiceNumber = computed(() => {
 })
 
 const invoiceTotal = computed(() => {
-  // Normalize the price from backend (e.g., 14900 becomes 149)
-  const rawTotal = props.invoice?.invoice?.total || 0
-  if (rawTotal > 1000) { // If price is in cents (e.g., 14900)
-    return rawTotal
-  }
-  // If price is already normalized (e.g., 149), convert to cents
-  return rawTotal * 100
+  return PriceUtils.normalizePrice(props.invoice?.invoice?.total || 0)
 })
 
 const calculatedTip = computed(() => {
@@ -461,9 +455,9 @@ const dialog = computed({
 
 const remainingAmount = computed(() => {
   const totalPaid = payments.value.reduce((sum, payment) => {
-    return sum + payment.amount
+    return sum + PriceUtils.normalizePrice(payment.amount)
   }, 0)
-  return (invoiceTotal.value + tipAmount.value) - totalPaid
+  return PriceUtils.normalizePrice(invoiceTotal.value + tipAmount.value - totalPaid)
 })
 
 const totalPayments = computed(() => {
@@ -492,7 +486,7 @@ const isValid = computed(() => {
 
 // Methods
 const formatCurrency = (amount) => {
-  return PriceUtils.format(amount)
+  return PriceUtils.formatInvoiceAmount(amount)
 }
 
 const hasPaymentFees = (methodId) => {
