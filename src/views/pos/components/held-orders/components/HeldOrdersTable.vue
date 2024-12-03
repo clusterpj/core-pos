@@ -1,57 +1,62 @@
 <!-- src/views/pos/components/held-orders/components/HeldOrdersTable.vue -->
 <template>
-  <div class="table-wrapper">
-    <div class="filters-row">
-      <div class="search-field">
-        <v-text-field
-          v-model="searchQuery"
-          prepend-inner-icon="mdi-magnify"
-          label="Search orders"
-          variant="outlined"
-          density="compact"
-          hide-details
-          class="search-input"
-        ></v-text-field>
-      </div>
+  <div class="held-orders-table">
+    <div class="filters-container">
+      <div class="filters-row">
+        <div class="search-field">
+          <v-text-field
+            v-model="searchQuery"
+            prepend-inner-icon="mdi-magnify"
+            label="Search orders"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="search-input"
+          ></v-text-field>
+        </div>
 
-      <div class="filter-controls">
-        <v-select
-          v-model="selectedFilter"
-          :items="filterItems"
-          label="Type"
-          variant="outlined"
-          density="compact"
-          hide-details
-          class="filter-select"
-          prepend-inner-icon="mdi-filter"
-        ></v-select>
+        <div class="filter-controls">
+          <v-select
+            v-model="selectedFilter"
+            :items="filterItems"
+            label="Type"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="filter-select"
+            prepend-inner-icon="mdi-filter"
+          ></v-select>
 
-        <v-select
-          v-model="selectedStatus"
-          :items="statusItems"
-          label="Status"
-          variant="outlined"
-          density="compact"
-          hide-details
-          class="filter-select"
-          prepend-inner-icon="mdi-check-circle-outline"
-        ></v-select>
+          <v-select
+            v-model="selectedStatus"
+            :items="statusItems"
+            label="Status"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="filter-select"
+            prepend-inner-icon="mdi-check-circle-outline"
+          ></v-select>
 
-        <v-select
-          v-model="selectedPaymentStatus"
-          :items="paymentStatusItems"
-          label="Payment"
-          variant="outlined"
-          density="compact"
-          hide-details
-          class="filter-select"
-          prepend-inner-icon="mdi-cash"
-        ></v-select>
+          <v-select
+            v-model="selectedPaymentStatus"
+            :items="paymentStatusItems"
+            label="Payment"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="filter-select"
+            prepend-inner-icon="mdi-cash"
+          ></v-select>
+        </div>
       </div>
     </div>
 
     <div class="table-container">
-      <v-table class="orders-table" fixed-header :height="$vuetify.display.mobile ? 'calc(100vh - 250px)' : '600px'">
+      <v-table
+        fixed-header
+        class="orders-table"
+      >
         <thead>
           <tr>
             <th class="text-left order-type-col">Order Type</th>
@@ -334,31 +339,36 @@ watch(() => props.convertingOrder, (newVal, oldVal) => {
 </script>
 
 <style scoped>
-.table-wrapper {
+.held-orders-table {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
+  width: 100%;
+  background-color: rgb(var(--v-theme-background));
+}
+
+.filters-container {
+  flex: 0 0 auto;
   padding: 16px;
-  gap: 16px;
+  background-color: rgb(var(--v-theme-surface));
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .filters-row {
   display: flex;
   gap: 16px;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
+  align-items: center;
 }
 
 .search-field {
   flex: 1;
-  min-width: 200px;
+  max-width: 300px;
 }
 
 .filter-controls {
+  flex: 1;
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .filter-select {
@@ -368,22 +378,73 @@ watch(() => props.convertingOrder, (newVal, oldVal) => {
 .table-container {
   flex: 1;
   overflow: auto;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 4px;
+  min-height: 0;
+  position: relative;
 }
 
 .orders-table {
+  height: 100%;
   width: 100%;
-  background: white;
 }
 
-.order-type-col { width: 120px; }
-.description-col { width: 200px; }
-.created-col { width: 120px; }
-.items-col { width: 80px; }
-.total-col { width: 100px; }
-.status-col { width: 100px; }
-.actions-col { width: 280px; }
+:deep(.v-table) {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(var(--v-theme-surface));
+}
+
+:deep(.v-table__wrapper) {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+:deep(.v-table__wrapper > table) {
+  width: 100%;
+  table-layout: fixed;
+  border-spacing: 0;
+}
+
+:deep(.v-table__wrapper > table > thead) {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: rgb(var(--v-theme-surface));
+}
+
+:deep(.v-table__wrapper > table > thead > tr > th) {
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  padding: 0 16px;
+  height: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.v-table__wrapper > table > tbody > tr > td) {
+  padding: 0 16px;
+  height: 48px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.v-table__wrapper > table > tbody > tr:not(:last-child) > td) {
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* Column widths */
+.order-type-col { width: 12%; }
+.description-col { width: 25%; }
+.created-col { width: 12%; }
+.items-col { width: 8%; }
+.total-col { width: 10%; }
+.status-col { width: 10%; }
+.actions-col { width: 23%; }
 
 .order-type-chip,
 .status-chip {
@@ -395,54 +456,71 @@ watch(() => props.convertingOrder, (newVal, oldVal) => {
 .actions-wrapper {
   display: flex;
   gap: 8px;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .pagination-wrapper {
   flex: 0 0 auto;
   display: flex;
   justify-content: center;
-  padding: 8px 0;
+  padding: 16px;
+  background-color: rgb(var(--v-theme-surface));
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
-@media (max-width: 768px) {
-  .table-wrapper {
-    padding: 8px;
-    gap: 8px;
+.cursor-help {
+  cursor: help;
+}
+
+@media (max-width: 600px) {
+  .filters-container {
+    padding: 12px;
   }
 
   .filters-row {
-    gap: 8px;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .search-field {
     width: 100%;
-    flex: none;
+    max-width: none;
   }
 
   .filter-controls {
     width: 100%;
+    gap: 8px;
   }
 
   .filter-select {
+    width: auto;
     flex: 1;
-    min-width: 120px;
   }
 
-  .orders-table {
+  :deep(.v-table__wrapper > table > thead > tr > th),
+  :deep(.v-table__wrapper > table > tbody > tr > td) {
+    padding: 0 12px;
+    height: 40px;
     font-size: 0.875rem;
   }
 
-  .order-type-col { width: 100px; }
-  .description-col { width: 150px; }
-  .created-col { width: 100px; }
-  .items-col { width: 60px; }
-  .total-col { width: 80px; }
-  .status-col { width: 90px; }
-  .actions-col { width: 240px; }
+  /* Adjust column widths for mobile */
+  .order-type-col { width: 15%; }
+  .description-col { width: 20%; }
+  .created-col { width: 12%; }
+  .items-col { width: 8%; }
+  .total-col { width: 12%; }
+  .status-col { width: 12%; }
+  .actions-col { width: 21%; }
 
   .actions-wrapper {
     gap: 4px;
+  }
+
+  .pagination-wrapper {
+    padding: 12px;
   }
 }
 </style>

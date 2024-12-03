@@ -1,110 +1,95 @@
 <!-- src/views/pos/components/held-orders/components/OrderInvoicesTable.vue -->
 <template>
-  <div class="invoices-container">
-    <v-container class="px-2" v-if="loading">
-      <v-skeleton-loader
-        type="table-heading, table-row-divider, table-row@6"
-        class="mx-auto"
-      ></v-skeleton-loader>
-    </v-container>
-    
-    <v-container class="px-2" v-else-if="!invoices.length">
-      <v-row>
-        <v-col cols="12" class="text-center">
-          <p>No invoices found</p>
-        </v-col>
-      </v-row>
-    </v-container>
-
-    <div v-else class="invoices-content">
-      <div class="table-wrapper">
-        <v-table class="invoices-table">
-          <thead>
-            <tr>
-              <th class="text-left date-col">Date</th>
-              <th class="text-left invoice-col">Invoice #</th>
-              <th class="text-left customer-col">Customer</th>
-              <th class="text-left status-col">Status</th>
-              <th class="text-left payment-col">Payment</th>
-              <th class="text-right total-col">Total</th>
-              <th class="text-center actions-col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="invoice in invoices" :key="invoice.id">
-              <td>{{ invoice?.created_at ? formatDate(invoice.created_at) : 'N/A' }}</td>
-              <td>{{ invoice?.invoice_number || 'N/A' }}</td>
-              <td class="text-truncate">
-                {{ invoice?.contact?.name || invoice?.first_name || invoice?.name || 'Walk-in Customer' }}
-              </td>
-              <td>
-                <v-chip
-                  :color="getStatusColor(invoice.status)"
+  <div class="order-invoices-table">
+    <div class="table-container">
+      <v-table
+        fixed-header
+        class="invoices-table"
+      >
+        <thead>
+          <tr>
+            <th class="text-left date-col">Date</th>
+            <th class="text-left invoice-col">Invoice #</th>
+            <th class="text-left customer-col">Customer</th>
+            <th class="text-left status-col">Status</th>
+            <th class="text-left payment-col">Payment</th>
+            <th class="text-right total-col">Total</th>
+            <th class="text-center actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="invoice in invoices" :key="invoice.id">
+            <td>{{ invoice?.created_at ? formatDate(invoice.created_at) : 'N/A' }}</td>
+            <td>{{ invoice?.invoice_number || 'N/A' }}</td>
+            <td class="text-truncate">
+              {{ invoice?.contact?.name || invoice?.first_name || invoice?.name || 'Walk-in Customer' }}
+            </td>
+            <td>
+              <v-chip
+                :color="getStatusColor(invoice.status)"
+                size="small"
+                variant="flat"
+                class="status-chip"
+              >
+                {{ invoice.status }}
+              </v-chip>
+            </td>
+            <td>
+              <v-chip
+                :color="getPaidStatusColor(invoice.paid_status)"
+                size="small"
+                variant="flat"
+                class="status-chip"
+              >
+                {{ invoice.paid_status || 'UNPAID' }}
+              </v-chip>
+            </td>
+            <td class="text-right">{{ PriceUtils.format(invoice.total) }}</td>
+            <td>
+              <div class="actions-wrapper">
+                <v-btn
+                  v-if="invoice.paid_status === 'UNPAID'"
+                  color="success"
                   size="small"
                   variant="flat"
-                  class="status-chip"
+                  @click="handlePayClick(invoice)"
                 >
-                  {{ invoice.status }}
-                </v-chip>
-              </td>
-              <td>
-                <v-chip
-                  :color="getPaidStatusColor(invoice.paid_status)"
+                  <v-icon size="small" class="mr-1">mdi-cash-register</v-icon>
+                  PAY
+                </v-btn>
+                <v-btn
+                  color="info"
                   size="small"
                   variant="flat"
-                  class="status-chip"
+                  @click="showInvoiceDetails(invoice)"
                 >
-                  {{ invoice.paid_status || 'UNPAID' }}
-                </v-chip>
-              </td>
-              <td class="text-right">{{ PriceUtils.format(invoice.total) }}</td>
-              <td>
-                <div class="actions-wrapper">
-                  <v-btn
-                    v-if="invoice.paid_status === 'UNPAID'"
-                    color="success"
-                    size="small"
-                    variant="flat"
-                    @click="handlePayClick(invoice)"
-                  >
-                    <v-icon size="small" class="mr-1">mdi-cash-register</v-icon>
-                    PAY
-                  </v-btn>
-                  <v-btn
-                    color="info"
-                    size="small"
-                    variant="flat"
-                    @click="showInvoiceDetails(invoice)"
-                  >
-                    <v-icon size="small" class="mr-1">mdi-information</v-icon>
-                    DETAILS
-                  </v-btn>
-                  <v-btn
-                    v-if="['DRAFT', 'SENT'].includes(invoice.status)"
-                    color="primary"
-                    size="small"
-                    variant="flat"
-                    @click="loadInvoiceToCart(invoice)"
-                  >
-                    <v-icon size="small" class="mr-1">mdi-cart-arrow-down</v-icon>
-                    LOAD TO CART
-                  </v-btn>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
-      </div>
+                  <v-icon size="small" class="mr-1">mdi-information</v-icon>
+                  DETAILS
+                </v-btn>
+                <v-btn
+                  v-if="['DRAFT', 'SENT'].includes(invoice.status)"
+                  color="primary"
+                  size="small"
+                  variant="flat"
+                  @click="loadInvoiceToCart(invoice)"
+                >
+                  <v-icon size="small" class="mr-1">mdi-cart-arrow-down</v-icon>
+                  LOAD TO CART
+                </v-btn>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </v-table>
+    </div>
 
-      <div v-if="showPagination" class="pagination-wrapper">
-        <v-pagination
-          :model-value="page"
-          @update:model-value="$emit('update:page', $event)"
-          :length="totalPages"
-          :total-visible="7"
-          rounded="circle"
-        ></v-pagination>
-      </div>
+    <div v-if="showPagination" class="pagination-container">
+      <v-pagination
+        :model-value="page"
+        @update:model-value="$emit('update:page', $event)"
+        :length="totalPages"
+        :total-visible="5"
+      ></v-pagination>
     </div>
   </div>
 
@@ -492,39 +477,101 @@ const handlePaymentComplete = (result) => {
 </script>
 
 <style scoped>
-.invoices-container {
+.order-invoices-table {
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  background-color: rgb(var(--v-theme-background));
 }
 
-.invoices-content {
+.table-container {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.table-wrapper {
-  flex: 1;
-  overflow-x: auto;
-  overflow-y: auto;
+  overflow: auto;
+  min-height: 0;
+  position: relative;
 }
 
 .invoices-table {
+  height: 100%;
   width: 100%;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 4px;
 }
 
-.date-col { width: 120px; }
-.invoice-col { width: 120px; }
-.customer-col { width: 180px; }
-.status-col { width: 100px; }
-.payment-col { width: 100px; }
-.total-col { width: 100px; }
-.actions-col { width: 280px; }
+:deep(.v-table) {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(var(--v-theme-surface));
+}
+
+:deep(.v-table__wrapper) {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+:deep(.v-table__wrapper > table) {
+  width: 100%;
+  table-layout: fixed;
+  border-spacing: 0;
+}
+
+:deep(.v-table__wrapper > table > thead) {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: rgb(var(--v-theme-surface));
+}
+
+:deep(.v-table__wrapper > table > thead > tr > th) {
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  padding: 0 16px;
+  height: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.v-table__wrapper > table > tbody > tr > td) {
+  padding: 0 16px;
+  height: 48px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.v-table__wrapper > table > tbody > tr:not(:last-child) > td) {
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.actions-wrapper {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.pagination-container {
+  flex: 0 0 auto;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  background-color: rgb(var(--v-theme-surface));
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* Column widths */
+:deep(.date-col) { width: 10%; }
+:deep(.invoice-col) { width: 12%; }
+:deep(.customer-col) { width: 20%; }
+:deep(.status-col) { width: 10%; }
+:deep(.payment-col) { width: 10%; }
+:deep(.total-col) { width: 10%; }
+:deep(.actions-col) { width: 28%; }
 
 .status-chip {
   font-size: 0.75rem;
@@ -532,31 +579,26 @@ const handlePaymentComplete = (result) => {
   text-transform: uppercase;
 }
 
-.actions-wrapper {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
-  padding: 8px;
-}
-
 @media (max-width: 600px) {
-  .invoices-table {
+  :deep(.v-table__wrapper > table > thead > tr > th),
+  :deep(.v-table__wrapper > table > tbody > tr > td) {
+    padding: 0 12px;
+    height: 40px;
     font-size: 0.875rem;
   }
 
-  .date-col { width: 100px; }
-  .invoice-col { width: 100px; }
-  .customer-col { width: 150px; }
-  .status-col { width: 90px; }
-  .payment-col { width: 90px; }
-  .total-col { width: 80px; }
-  .actions-col { width: 240px; }
+  .pagination-container {
+    padding: 12px;
+  }
+
+  /* Adjust column widths for mobile */
+  :deep(.date-col) { width: 12%; }
+  :deep(.invoice-col) { width: 15%; }
+  :deep(.customer-col) { width: 15%; }
+  :deep(.status-col) { width: 12%; }
+  :deep(.payment-col) { width: 12%; }
+  :deep(.total-col) { width: 12%; }
+  :deep(.actions-col) { width: 22%; }
 
   .actions-wrapper {
     gap: 4px;
