@@ -288,6 +288,10 @@ const props = defineProps({
   showPagination: {
     type: Boolean,
     default: false
+  },
+  selectedFilter: {
+    type: String,
+    default: 'all'
   }
 })
 
