@@ -424,15 +424,15 @@ const selectedStatus = ref('ALL')
 
 // Invoice filters
 const invoiceSearch = ref('')
-const invoiceSelectedStatus = ref('ALL')
-const invoiceSelectedPaymentStatus = ref('ALL')
+const invoiceSelectedStatus = ref('COMPLETED')
+const invoiceSelectedPaymentStatus = ref('PAID')
 const invoicePage = ref(1)
 const invoiceItemsPerPage = ref(10)
 
 // Delivery & Pickup filters
 const deliverySearch = ref('')
-const deliverySelectedStatus = ref('ALL')
-const deliverySelectedPaymentStatus = ref('ALL')
+const deliverySelectedStatus = ref('SENT')
+const deliverySelectedPaymentStatus = ref('UNPAID')
 const deliveryPage = ref(1)
 const deliveryLoading = ref(false)
 
