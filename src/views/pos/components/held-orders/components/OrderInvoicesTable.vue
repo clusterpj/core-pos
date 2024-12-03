@@ -487,33 +487,32 @@ const handlePaymentComplete = (result) => {
 
 .table-container {
   flex: 1;
-  overflow: auto;
   min-height: 0;
+  overflow: auto;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .invoices-table {
-  height: 100%;
-  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 :deep(.v-table) {
   height: 100%;
-  width: 100%;
   display: flex;
   flex-direction: column;
-  background-color: rgb(var(--v-theme-surface));
 }
 
 :deep(.v-table__wrapper) {
   flex: 1;
   overflow: auto;
-  min-height: 0;
 }
 
 :deep(.v-table__wrapper > table) {
   width: 100%;
-  table-layout: fixed;
   border-spacing: 0;
 }
 
@@ -547,61 +546,50 @@ const handlePaymentComplete = (result) => {
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
-.actions-wrapper {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-start;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
 .pagination-container {
-  flex: 0 0 auto;
-  padding: 16px;
+  padding: 8px 0;
   display: flex;
   justify-content: center;
   background-color: rgb(var(--v-theme-surface));
   border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
-/* Column widths */
-:deep(.date-col) { width: 10%; }
-:deep(.invoice-col) { width: 12%; }
-:deep(.customer-col) { width: 20%; }
-:deep(.status-col) { width: 10%; }
-:deep(.payment-col) { width: 10%; }
-:deep(.total-col) { width: 10%; }
-:deep(.actions-col) { width: 28%; }
-
-.status-chip {
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
+.actions-wrapper {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
-@media (max-width: 600px) {
-  :deep(.v-table__wrapper > table > thead > tr > th),
-  :deep(.v-table__wrapper > table > tbody > tr > td) {
-    padding: 0 12px;
-    height: 40px;
-    font-size: 0.875rem;
-  }
+.status-chip {
+  min-width: 80px;
+  justify-content: center;
+}
 
-  .pagination-container {
-    padding: 12px;
-  }
+.date-col {
+  width: 120px;
+}
 
-  /* Adjust column widths for mobile */
-  :deep(.date-col) { width: 12%; }
-  :deep(.invoice-col) { width: 15%; }
-  :deep(.customer-col) { width: 15%; }
-  :deep(.status-col) { width: 12%; }
-  :deep(.payment-col) { width: 12%; }
-  :deep(.total-col) { width: 12%; }
-  :deep(.actions-col) { width: 22%; }
+.invoice-col {
+  width: 120px;
+}
 
-  .actions-wrapper {
-    gap: 4px;
-  }
+.customer-col {
+  width: 200px;
+}
+
+.status-col {
+  width: 120px;
+}
+
+.payment-col {
+  width: 120px;
+}
+
+.total-col {
+  width: 100px;
+}
+
+.actions-col {
+  width: 280px;
 }
 </style>
