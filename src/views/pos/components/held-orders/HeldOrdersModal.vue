@@ -43,7 +43,7 @@
           v-model="activeTab"
           bg-color="transparent"
           class="orders-tabs px-2"
-          show-arrows="false"
+          :show-arrows="false"
         >
           <v-tab 
             value="active" 

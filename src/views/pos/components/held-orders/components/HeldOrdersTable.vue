@@ -172,6 +172,34 @@
 import { ref, watch } from 'vue'
 import { parseOrderNotes } from '../../../../../stores/cart/helpers'
 
+const searchQuery = ref('')
+
+const selectedFilter = ref('all')
+const filterItems = [
+  { title: 'All', value: 'all' },
+  { title: 'Dine In', value: 'dine_in' },
+  { title: 'To Go', value: 'to_go' },
+  { title: 'Delivery', value: 'delivery' },
+  { title: 'Pickup', value: 'pickup' }
+]
+
+const selectedStatus = ref('all')
+const statusItems = [
+  { title: 'All', value: 'all' },
+  { title: 'Draft', value: 'DRAFT' },
+  { title: 'Sent', value: 'SENT' },
+  { title: 'Completed', value: 'COMPLETED' },
+  { title: 'Cancelled', value: 'CANCELLED' }
+]
+
+const selectedPaymentStatus = ref('all')
+const paymentStatusItems = [
+  { title: 'All', value: 'all' },
+  { title: 'Paid', value: 'PAID' },
+  { title: 'Unpaid', value: 'UNPAID' },
+  { title: 'Partially Paid', value: 'PARTIALLY_PAID' }
+]
+
 const props = defineProps({
   invoices: {
     type: Array,
