@@ -1,5 +1,10 @@
 <template>
-  <v-dialog v-model="dialog" max-width="1200" scrollable>
+  <v-dialog 
+    v-model="dialog" 
+    fullscreen
+    transition="dialog-bottom-transition"
+    :scrim="false"
+  >
     <template v-slot:activator="{ props: dialogProps }">
       <v-btn
         color="primary"
@@ -9,58 +14,65 @@
         :disabled="disabled || cartStore.isEmpty"
         class="text-none px-6"
         rounded="pill"
-        elevation="2"
+        :elevation="$vuetify.display.mobile ? 1 : 2"
         size="large"
+        :block="$vuetify.display.mobile"
       >
-        DINE IN
+        <span class="text-subtitle-1 font-weight-medium">DINE IN</span>
       </v-btn>
     </template>
 
-    <v-card class="rounded-lg">
-      <v-toolbar color="primary" class="text-white rounded-t-lg">
+    <v-card class="modal-card">
+      <v-toolbar
+        color="primary"
+        density="comfortable"
+      >
         <v-toolbar-title class="text-h6 font-weight-medium">
           Table Selection
         </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn icon variant="text" @click="closeModal">
+        <v-btn
+          icon
+          @click="closeModal"
+        >
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-toolbar>
 
-      <v-card-text>
-        <v-container>
+      <v-card-text class="pa-0 fill-height d-flex flex-column">
+        <v-container fluid class="flex-grow-1 pa-4">
           <!-- Loading State -->
-          <v-row v-if="loading">
-            <v-col cols="12" class="text-center">
-              <v-progress-circular indeterminate></v-progress-circular>
+          <v-row v-if="loading" class="fill-height">
+            <v-col cols="12" class="d-flex align-center justify-center">
+              <v-progress-circular indeterminate size="64"></v-progress-circular>
             </v-col>
           </v-row>
 
           <!-- Error State -->
-          <v-row v-else-if="error">
-            <v-col cols="12">
-              <v-alert type="error" variant="tonal">
+          <v-row v-else-if="error" class="fill-height">
+            <v-col cols="12" class="d-flex align-center justify-center">
+              <v-alert type="error" variant="tonal" width="100%" max-width="500">
                 {{ error }}
+                <template v-slot:append>
+                  <v-btn color="error" variant="text" @click="retryLoadTables">
+                    Retry
+                  </v-btn>
+                </template>
               </v-alert>
-              <div class="text-center mt-4">
-                <v-btn color="primary" @click="retryLoadTables">
-                  Retry
-                </v-btn>
-              </div>
             </v-col>
           </v-row>
 
           <!-- No Tables State -->
-          <v-row v-else-if="!tables.length">
-            <v-col cols="12" class="text-center">
-              <v-alert type="info" variant="tonal">
+          <v-row v-else-if="!tables.length" class="fill-height">
+            <v-col cols="12" class="d-flex align-center justify-center">
+              <v-alert type="info" variant="tonal" width="100%" max-width="500">
                 No tables available for this cash register
               </v-alert>
             </v-col>
           </v-row>
 
           <!-- Table Grid -->
-          <v-row v-else>
+          <v-row v-else class="table-grid">
             <v-col
               v-for="table in tables"
               :key="table.id"
@@ -68,92 +80,100 @@
               sm="6"
               md="4"
               lg="3"
+              class="table-col pa-2"
             >
-              <v-card
-                :class="[
-                  'table-card',
-                  isTableSelected(table.id) ? 'selected' : '',
-                  isTableAvailable(table) ? 'available' : 'occupied'
-                ]"
-                variant="outlined"
-                @click="handleTableClick(table)"
-                elevation="2"
-                class="rounded-lg transition-swing"
-              >
-                <v-card-item>
-                  <div class="d-flex justify-space-between align-center mb-2">
-                    <v-card-title class="text-h6 font-weight-bold pa-0">
-                      {{ table.name }}
-                    </v-card-title>
-                    <v-chip
-                      :color="isTableAvailable(table) ? 'success' : 'error'"
-                      size="small"
-                      class="font-weight-medium"
-                      variant="elevated"
-                    >
-                      {{ isTableAvailable(table) ? 'Available' : 'In Use' }}
-                    </v-chip>
-                  </div>
-                </v-card-item>
+              <v-hover v-slot="{ isHovering, props: hoverProps }">
+                <v-card
+                  v-bind="hoverProps"
+                  :elevation="isHovering ? 4 : 1"
+                  :class="[
+                    'table-card',
+                    'transition-swing',
+                    isTableSelected(table.id) ? 'selected' : '',
+                    isTableAvailable(table) ? 'available' : 'occupied'
+                  ]"
+                  @click="handleTableClick(table)"
+                >
+                  <v-card-item class="pa-2">
+                    <div class="d-flex justify-space-between align-center">
+                      <v-card-title class="text-h6 font-weight-bold pa-0">
+                        {{ table.name }}
+                      </v-card-title>
+                      <v-chip
+                        :color="isTableAvailable(table) ? 'success' : 'error'"
+                        size="small"
+                        class="font-weight-medium text-caption"
+                        variant="elevated"
+                      >
+                        {{ isTableAvailable(table) ? 'Available' : 'In Use' }}
+                      </v-chip>
+                    </div>
+                  </v-card-item>
 
-                <v-card-text>
-                  <!-- Selected Table View -->
-                  <template v-if="isTableSelected(table.id)">
-                    <div class="d-flex flex-column align-center py-2">
-                      <div class="text-subtitle-1 mb-2">Number of People</div>
-                      <div class="d-flex align-center">
-                        <v-btn
-                          icon
-                          variant="outlined"
-                          @click.stop="decrementQuantity(table.id)"
-                          :disabled="getTableQuantity(table.id) <= 1"
-                        >
-                          <v-icon>mdi-minus</v-icon>
-                        </v-btn>
-                        <span class="mx-4 text-h5">{{ getTableQuantity(table.id) }}</span>
-                        <v-btn
-                          icon
-                          variant="outlined"
-                          @click.stop="incrementQuantity(table.id)"
-                        >
-                          <v-icon>mdi-plus</v-icon>
-                        </v-btn>
+                  <v-card-text class="text-center pa-2">
+                    <!-- Selected Table View -->
+                    <template v-if="isTableSelected(table.id)">
+                      <div class="d-flex flex-column align-center">
+                        <div class="text-subtitle-2 mb-1">Number of People</div>
+                        <div class="d-flex align-center justify-center">
+                          <v-btn
+                            icon="mdi-minus"
+                            size="small"
+                            variant="text"
+                            density="compact"
+                            @click.stop="decrementQuantity(table.id)"
+                            :disabled="getTableQuantity(table.id) <= 1"
+                          >
+                          </v-btn>
+                          <span class="mx-2 text-h6">{{ getTableQuantity(table.id) }}</span>
+                          <v-btn
+                            icon="mdi-plus"
+                            size="small"
+                            variant="text"
+                            density="compact"
+                            @click.stop="incrementQuantity(table.id)"
+                          >
+                          </v-btn>
+                        </div>
                       </div>
-                    </div>
-                  </template>
+                    </template>
 
-                  <!-- Occupied Table View -->
-                  <template v-else-if="!isTableAvailable(table)">
-                    <div class="d-flex align-center justify-center py-4">
-                      <v-icon color="error" class="mr-2">mdi-account-group</v-icon>
-                      <span class="text-h6">{{ table.quantity }} People</span>
-                    </div>
-                  </template>
+                    <!-- Occupied Table View -->
+                    <template v-else-if="!isTableAvailable(table)">
+                      <div class="d-flex align-center justify-center">
+                        <v-icon color="error" size="small" class="mr-1">mdi-account-group</v-icon>
+                        <span class="text-body-1">{{ table.quantity }} People</span>
+                      </div>
+                    </template>
 
-                  <!-- Available Table View -->
-                  <template v-else>
-                    <div class="d-flex align-center justify-center py-4">
-                      <v-icon size="large" color="success" class="mr-2">mdi-cursor-pointer</v-icon>
-                      <span class="text-subtitle-1">Click to Select</span>
-                    </div>
-                  </template>
-                </v-card-text>
-              </v-card>
+                    <!-- Available Table View -->
+                    <template v-else>
+                      <div class="d-flex align-center justify-center">
+                        <v-icon size="small" color="success" class="mr-1">mdi-cursor-pointer</v-icon>
+                        <span class="text-body-2">Click to Select</span>
+                      </div>
+                    </template>
+                  </v-card-text>
+                </v-card>
+              </v-hover>
             </v-col>
           </v-row>
+        </v-container>
 
-          <!-- Confirm Button -->
-          <v-row v-if="selectedTables.length > 0">
-            <v-col cols="12" class="text-center mt-4">
+        <!-- Footer with Button -->
+        <v-container fluid class="pa-4 pt-0">
+          <v-row>
+            <v-col cols="12">
               <v-btn
+                block
                 color="primary"
                 size="large"
-                block
-                @click="processOrder"
                 :loading="processing"
-                :disabled="!selectedTables.length || processing || cartStore.isEmpty"
+                :disabled="!selectedTables.length || processing"
+                @click="processOrder"
+                class="text-none"
               >
-                Confirm and Hold Order
+                CONFIRM AND HOLD ORDER
               </v-btn>
             </v-col>
           </v-row>
@@ -485,49 +505,82 @@ defineExpose({
 </script>
 
 <style scoped>
+.table-grid {
+  margin: 0;
+}
+
 .table-card {
+  width: 100%;
+  border-radius: 8px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-  min-height: 180px;
-  border-width: 2px !important;
+  position: relative;
+  overflow: hidden;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
-.table-card:hover:not(.occupied) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+.table-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  transition: background-color 0.3s ease;
 }
 
-.table-card.available {
-  border-color: rgb(var(--v-theme-success)) !important;
+.table-card.available::before {
+  background-color: rgb(var(--v-theme-success));
 }
 
-.table-card.occupied {
-  border-color: rgb(var(--v-theme-error)) !important;
-  cursor: not-allowed;
-  opacity: 0.8;
+.table-card.occupied::before {
+  background-color: rgb(var(--v-theme-error));
 }
 
 .table-card.selected {
-  border-color: rgb(var(--v-theme-primary)) !important;
-  background-color: rgb(var(--v-theme-primary), 0.05);
+  border: 2px solid rgb(var(--v-theme-primary));
+  background-color: rgb(var(--v-theme-primary-lighten-1));
 }
 
-.table-card.selected:hover {
-  background-color: rgb(var(--v-theme-primary), 0.08);
+.table-card.selected::before {
+  background-color: rgb(var(--v-theme-primary));
 }
 
-.v-card-text {
-  padding-top: 16px;
+.modal-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: rgb(var(--v-theme-background));
 }
 
-.transition-swing {
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+.table-col {
+  display: flex;
+  justify-content: center;
 }
 
-/* Responsive adjustments */
+.dialog-bottom-transition-enter-active,
+.dialog-bottom-transition-leave-active {
+  transition: transform 0.3s ease-in-out;
+}
+
+.dialog-bottom-transition-enter-from,
+.dialog-bottom-transition-leave-to {
+  transform: translateY(100%);
+}
+
 @media (max-width: 600px) {
   .table-card {
-    min-height: 160px;
+    height: 180px;
+  }
+  
+  .table-grid {
+    margin: -4px;
+  }
+  
+  .table-col {
+    padding: 4px !important;
   }
 }
 </style>
