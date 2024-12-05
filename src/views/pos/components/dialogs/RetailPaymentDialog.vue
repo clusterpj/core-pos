@@ -60,48 +60,82 @@
 
           <!-- Payment Content -->
           <v-container v-else class="payment-container pa-4">
-            <v-row>
-              <v-col cols="12" class="text-center">
-                <v-card variant="outlined" class="invoice-summary-card mb-4">
-                  <v-card-text class="py-4">
-                    <div class="d-flex justify-space-between mb-2">
-                      <span>Subtotal:</span>
-                      <strong>{{ formatCurrency(cartStore.subtotal) }}</strong>
+            <v-row class="fill-height">
+              <v-col cols="12" lg="8" offset-lg="2" md="10" offset-md="1" class="d-flex align-center">
+                <v-card variant="outlined" class="invoice-summary-card mb-4 flex-grow-1">
+                  <v-card-title class="text-center py-6 bg-primary text-white text-h5">
+                    <v-icon icon="mdi-receipt" size="x-large" class="mr-3"></v-icon>
+                    Order Preview
+                  </v-card-title>
+
+                  <v-card-text class="pa-6">
+                    <!-- Store Info -->
+                    <div class="text-center mb-6">
+                      <div class="text-h5 mb-2">{{ companyStore.currentStore?.name }}</div>
+                      <div class="text-subtitle-1">{{ companyStore.currentStore?.address }}</div>
                     </div>
-                    <div class="d-flex justify-space-between mb-2">
-                      <span>Tax:</span>
-                      <strong>{{ formatCurrency(cartStore.taxAmount) }}</strong>
+
+                    <v-divider class="mb-6"></v-divider>
+
+                    <!-- Items List -->
+                    <div class="items-list mb-6">
+                      <div v-for="(item, index) in items" :key="index" class="item-row mb-3">
+                        <div class="d-flex justify-space-between align-center">
+                          <div class="item-details">
+                            <div class="text-h6">{{ item.name }}</div>
+                            <div class="text-subtitle-2">
+                              {{ item.quantity }} x {{ formatCurrency(item.price) }}
+                            </div>
+                          </div>
+                          <div class="text-h6">
+                            {{ formatCurrency(item.quantity * item.price) }}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div v-if="cartStore.discountAmount > 0" class="d-flex justify-space-between mb-2">
-                      <span>Discount:</span>
-                      <strong>-{{ formatCurrency(cartStore.discountAmount) }}</strong>
-                    </div>
-                    <v-divider class="my-2"></v-divider>
-                    <div class="d-flex justify-space-between mb-2">
-                      <span class="text-h6">Total:</span>
-                      <strong class="text-h6">{{ formatCurrency(cartStore.total) }}</strong>
+
+                    <v-divider class="mb-6"></v-divider>
+
+                    <!-- Totals -->
+                    <div class="totals-section">
+                      <div class="d-flex justify-space-between mb-3">
+                        <span class="text-h6">Subtotal:</span>
+                        <strong class="text-h6">{{ formatCurrency(cartStore.subtotal) }}</strong>
+                      </div>
+                      <div class="d-flex justify-space-between mb-3">
+                        <span class="text-h6">Tax:</span>
+                        <strong class="text-h6">{{ formatCurrency(cartStore.taxAmount) }}</strong>
+                      </div>
+                      <div v-if="cartStore.discountAmount > 0" class="d-flex justify-space-between mb-3">
+                        <span class="text-h6">Discount:</span>
+                        <strong class="text-h6 text-error">-{{ formatCurrency(cartStore.discountAmount) }}</strong>
+                      </div>
+                      <v-divider class="my-4"></v-divider>
+                      <div class="d-flex justify-space-between">
+                        <span class="text-h4">Total:</span>
+                        <strong class="text-h4">{{ formatCurrency(cartStore.total) }}</strong>
+                      </div>
                     </div>
                   </v-card-text>
+
+                  <v-card-actions class="pa-6">
+                    <v-btn
+                      block
+                      color="primary"
+                      size="x-large"
+                      height="64"
+                      @click="processPayment"
+                      :loading="processing"
+                      :disabled="!canPay"
+                      class="text-h6"
+                      rounded="pill"
+                      elevation="3"
+                    >
+                      <v-icon start icon="mdi-cash-register" size="large" class="mr-3"></v-icon>
+                      Pay Now {{ formatCurrency(cartStore.total) }}
+                    </v-btn>
+                  </v-card-actions>
                 </v-card>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="12" class="d-flex justify-center">
-                <v-btn
-                  color="primary"
-                  size="large"
-                  min-width="120"
-                  height="48"
-                  @click="processPayment"
-                  :loading="processing"
-                  :disabled="!canPay"
-                  class="text-none px-6"
-                  rounded="pill"
-                  elevation="2"
-                >
-                  <v-icon start icon="mdi-cash-register" class="mr-1"></v-icon>
-                  Pay Now
-                </v-btn>
               </v-col>
             </v-row>
           </v-container>
@@ -390,91 +424,117 @@ const closeDialog = () => {
 .modal-card {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background-color: rgb(var(--v-theme-surface));
-}
-
-.v-toolbar {
-  position: relative;
-  z-index: 1;
+  height: 100%;
 }
 
 .payment-content {
   flex: 1;
   overflow-y: auto;
+  background-color: #f5f5f5;
   display: flex;
-  flex-direction: column;
-  background-color: rgb(var(--v-theme-background));
-}
-
-.error-alert {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  margin: 16px;
-}
-
-.processing-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 300px;
 }
 
 .payment-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
 }
 
-/* Ensure buttons and interactive elements are large enough for touch */
-:deep(.v-btn) {
-  min-height: 48px;
+.invoice-summary-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  margin: 24px 0;
 }
 
-:deep(.v-text-field .v-field__input),
-:deep(.v-select .v-field__input) {
-  min-height: 44px;
-  padding-top: 8px;
+.items-list {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
-/* Improve spacing and readability */
-:deep(.v-card-title) {
-  font-size: 1.2rem;
-  padding: 16px 20px;
+.items-list::-webkit-scrollbar {
+  width: 8px;
 }
 
-:deep(.v-card-text) {
-  font-size: 1rem;
-  line-height: 1.6;
+.items-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
 }
 
-/* Ensure proper spacing in container */
-:deep(.v-container) {
-  padding: 16px;
+.items-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
 }
 
-:deep(.v-row) {
-  margin-bottom: 16px;
+.items-list::-webkit-scrollbar-thumb:hover {
+  background: #666;
 }
 
-:deep(.v-col) {
-  padding: 8px;
+.item-row {
+  padding: 12px 0;
 }
 
-/* Dialog transition */
-.dialog-bottom-transition-enter-active,
-.dialog-bottom-transition-leave-active {
-  transition: transform 0.3s ease-in-out;
+.item-row:not(:last-child) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.dialog-bottom-transition-enter-from,
-.dialog-bottom-transition-leave-to {
-  transform: translateY(100%);
+.item-details {
+  flex: 1;
+  min-width: 0;
+  padding-right: 16px;
+}
+
+.item-details .text-h6 {
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.totals-section {
+  background-color: #f8f9fa;
+  padding: 24px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.error-alert {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  min-width: 400px;
+}
+
+.processing-state {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 1000;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 600px) {
+  .invoice-summary-card {
+    margin: 12px 0;
+  }
+
+  .payment-container {
+    padding: 8px !important;
+  }
+
+  .totals-section {
+    padding: 16px;
+  }
 }
 </style>
