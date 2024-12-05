@@ -258,32 +258,45 @@ const {
   clearError
 } = useErrorHandling()
 
+// Initialize the POS view
+const initializePos = async () => {
+  try {
+    logger.startGroup('POS View: Initializing')
+    logger.info('Starting POS initialization')
+    
+    // Initialize cashier selection which will handle stored selections
+    await initializeSelection()
+    
+    logger.info('POS initialization complete:', {
+      isConfigured: companyStore.isConfigured,
+      selectedCustomer: companyStore.selectedCustomer,
+      selectedStore: companyStore.selectedStore,
+      selectedCashier: companyStore.selectedCashier
+    })
+  } catch (err) {
+    logger.error('Failed to initialize POS view:', err)
+    error.value = 'Failed to initialize POS. Please try refreshing the page.'
+  } finally {
+    logger.endGroup()
+  }
+}
+
+// Initialize on mount
+onMounted(async () => {
+  await initializePos()
+})
+
 // Watch for configuration changes
 watch(
   () => companyStore.isConfigured,
   (isConfigured) => {
-    // Only show dialog if store is not configured AND we don't have a stored cashier
-    if (!isConfigured && !localStorage.getItem('selectedCashier') && !showSelectionDialog.value) {
+    logger.info('Company store configuration changed:', { isConfigured })
+    if (!isConfigured && !showSelectionDialog.value) {
+      // If configuration becomes invalid and dialog isn't shown, show it
       showSelectionDialog.value = true
     }
   }
 )
-
-// Initialize store data
-onMounted(async () => {
-  logger.startGroup('POS View: Mount')
-  loading.value = true
-  
-  try {
-    await initializeSelection()
-  } catch (err) {
-    error.value = err.message || 'Failed to initialize POS view'
-    logger.error('Failed to initialize POS view:', err)
-  } finally {
-    loading.value = false
-    logger.endGroup()
-  }
-})
 </script>
 
 <style scoped>

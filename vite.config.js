@@ -5,6 +5,7 @@ import vuetify from 'vite-plugin-vuetify'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  base: '/',
   plugins: [
     vue({
       template: {
@@ -34,12 +35,14 @@ export default defineConfig({
       output: {
         manualChunks: {
           'vuetify': ['vuetify']
-        }
+        },
+        // Remove the assets/ prefix since the base output already includes it
+        assetFileNames: '[name].[hash][extname]'
       }
     }
   },
   optimizeDeps: {
-    include: ['vuetify'],
+    include: ['vuetify', 'vue'],
     exclude: [],
     esbuildOptions: {
       target: 'esnext'
@@ -66,10 +69,6 @@ export default defineConfig({
       usePolling: true,
       interval: 100
     }
-  },
-  optimizeDeps: {
-    // Add Vue to the include list to ensure proper debugging
-    include: ['vuetify', 'vue']
   },
   define: {
     __API_URL__: JSON.stringify(process.env.VITE_API_URL || 'http://localhost/api'),
