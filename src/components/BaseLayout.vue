@@ -3,18 +3,18 @@
   <v-app>
     <v-fade-transition>
       <v-btn
-        v-show="!drawer"
+        v-show="!drawerBehavior.permanent"
         size="large"
         variant="elevated"
         color="primary"
-        @click="drawer = true"
+        @click="toggleDrawer"
         class="menu-toggle"
       >
         <v-icon
           size="24"
           color="white"
         >
-          mdi-menu
+          {{ drawer ? 'mdi-close' : 'mdi-menu' }}
         </v-icon>
         
         <v-tooltip
@@ -22,7 +22,7 @@
           location="right"
           open-delay="500"
         >
-          Open Menu
+          {{ drawer ? 'Close Menu' : 'Open Menu' }}
         </v-tooltip>
       </v-btn>
     </v-fade-transition>
@@ -31,53 +31,66 @@
       v-model="drawer"
       :temporary="drawerBehavior.temporary"
       :permanent="drawerBehavior.permanent"
+      class="sidebar-drawer"
+      width="300"
     >
-      <!-- Top Actions -->
-      <div class="d-flex flex-column pa-2 gap-2">
+      <!-- Header Section -->
+      <v-card flat class="header-section">
+        <v-toolbar 
+          color="primary"
+          density="comfortable"
+        >
+          <v-toolbar-title class="text-white font-weight-medium">
+            Core POS
+          </v-toolbar-title>
+          <template v-slot:append>
+            <v-btn
+              variant="text"
+              icon="mdi-close"
+              color="white"
+              @click.stop="drawer = false"
+            />
+          </template>
+        </v-toolbar>
+      </v-card>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons pa-4">
+        <v-btn
+          block
+          color="info"
+          variant="tonal"
+          prepend-icon="mdi-arrow-left-circle"
+          class="action-btn mb-6"
+          @click="confirmGoToCorebill"
+        >
+          Back to Corebill
+        </v-btn>
+
         <v-btn
           block
           color="error"
           variant="tonal"
           prepend-icon="mdi-logout"
-          @click="handleLogout"
+          class="action-btn"
+          @click="confirmLogout"
         >
           Logout
-        </v-btn>
-        <v-btn
-          block
-          color="primary"
-          variant="tonal"
-          prepend-icon="mdi-arrow-left-circle"
-          @click="goToCorebill"
-        >
-          Back to Corebill
         </v-btn>
       </div>
 
       <v-divider class="my-2"></v-divider>
 
-      <v-list-item>
-        <template v-slot:prepend>
-          <v-btn
-            variant="text"
-            icon="mdi-close"
-            @click.stop="drawer = false"
-          />
-        </template>
-        <v-list-item-title>
-          Menu
-        </v-list-item-title>
-      </v-list-item>
-
-      <v-divider></v-divider>
       <!-- Navigation Items -->
-      <v-list density="compact" nav>
+      <v-list class="px-2">
         <div v-for="item in navItems" :key="item.title" class="nav-item-container">
           <v-list-item
             :to="item.to"
             :prepend-icon="item.icon"
             :title="item.title"
             :value="item.title"
+            rounded="lg"
+            class="mb-1 nav-item"
           />
         </div>
       </v-list>
@@ -85,8 +98,8 @@
       <v-divider class="my-4"></v-divider>
 
       <!-- Selection Controls Section -->
-      <div class="px-3">
-        <div class="text-subtitle-2 mb-2">Selections</div>
+      <div class="px-4 pb-4 selections-section">
+        <div class="text-h6 mb-4 font-weight-medium">Selections</div>
         <v-select
           :model-value="companyStore.selectedCustomerDisplay"
           label="Customer"
@@ -94,12 +107,13 @@
           :loading="companyStore.loading"
           item-title="title"
           item-value="value"
-          density="compact"
+          density="comfortable"
           hide-details
-          class="mb-2"
+          class="mb-4 selection-field"
           @update:model-value="handleCustomerChange"
           :return-object="false"
           variant="outlined"
+          bg-color="surface"
         />
 
         <v-select
@@ -109,13 +123,14 @@
           :loading="companyStore.loadingStores"
           item-title="title"
           item-value="value"
-          density="compact"
+          density="comfortable"
           hide-details
-          class="mb-2"
+          class="mb-4 selection-field"
           :disabled="!companyStore.selectedCustomer"
           @update:model-value="handleStoreChange"
           :return-object="false"
           variant="outlined"
+          bg-color="surface"
         />
 
         <v-select
@@ -125,17 +140,80 @@
           :loading="companyStore.loadingCashRegisters"
           item-title="title"
           item-value="value"
-          density="compact"
+          density="comfortable"
           hide-details
+          class="selection-field"
           :disabled="!companyStore.selectedStore"
           @update:model-value="handleCashierChange"
           :return-object="false"
           variant="outlined"
+          bg-color="surface"
         />
       </div>
 
     </v-navigation-drawer>
 
+    <!-- Logout Confirmation Dialog -->
+    <v-dialog v-model="showLogoutDialog" max-width="400">
+      <v-card>
+        <v-card-title class="text-h5 pa-4">
+          Confirm Logout
+        </v-card-title>
+        
+        <v-card-text class="pa-4">
+          Are you sure you want to log out? Any unsaved changes will be lost.
+        </v-card-text>
+        
+        <v-card-actions class="pa-4">
+          <v-spacer></v-spacer>
+          <v-btn
+            color="grey-darken-1"
+            variant="text"
+            @click="showLogoutDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="error"
+            variant="tonal"
+            @click="handleLogout"
+          >
+            Logout
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Back to Corebill Confirmation Dialog -->
+    <v-dialog v-model="showCorebillDialog" max-width="400">
+      <v-card>
+        <v-card-title class="text-h5 pa-4">
+          Leave POS System
+        </v-card-title>
+        
+        <v-card-text class="pa-4">
+          Are you sure you want to return to Corebill? Any unsaved changes will be lost.
+        </v-card-text>
+        
+        <v-card-actions class="pa-4">
+          <v-spacer></v-spacer>
+          <v-btn
+            color="grey-darken-1"
+            variant="text"
+            @click="showCorebillDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="info"
+            variant="tonal"
+            @click="goToCorebill"
+          >
+            Continue
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-main class="main-content pa-0" style="max-width: none; width: 100vw;">
       <router-view v-slot="{ Component }">
@@ -160,6 +238,10 @@ const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const drawer = ref(false)
 const { mobile, mdAndUp } = useDisplay()
+
+// Dialog controls
+const showLogoutDialog = ref(false)
+const showCorebillDialog = ref(false)
 
 // Computed property for drawer behavior
 const drawerBehavior = computed(() => ({
@@ -233,7 +315,18 @@ const handleCashierChange = async (value) => {
   }
 }
 
+// Confirmation handlers
+const confirmLogout = () => {
+  showLogoutDialog.value = true
+}
+
+const confirmGoToCorebill = () => {
+  showCorebillDialog.value = true
+}
+
+// Handle logout
 const handleLogout = async () => {
+  showLogoutDialog.value = false
   try {
     await authStore.logout()
   } catch (error) {
@@ -241,9 +334,16 @@ const handleLogout = async () => {
   }
 }
 
+// Navigate to Corebill
 const goToCorebill = () => {
+  showCorebillDialog.value = false
   // This is a placeholder function - replace URL with actual Corebill URL
   window.location.href = '/corebill'
+}
+
+// Toggle drawer function
+const toggleDrawer = () => {
+  drawer.value = !drawer.value
 }
 
 // Initialize
@@ -335,39 +435,95 @@ onMounted(async () => {
   opacity: 0;
 }
 
-/* Selection controls styles */
-:deep(.v-select .v-field) {
-  --v-field-padding-top: 8px !important;
-  --v-field-padding-bottom: 8px !important;
+/* Sidebar styles */
+.sidebar-drawer {
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
 }
 
-:deep(.v-select) {
+.header-section {
+  border-radius: 0;
+}
+
+/* Action buttons */
+.action-buttons {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.12);
+}
+
+.action-btn {
+  transition: all 0.2s ease;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+  height: 44px;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation styles */
+.nav-item-container {
+  position: relative;
+}
+
+.nav-item {
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background-color: rgba(var(--v-theme-primary), 0.05);
+}
+
+.nav-item.v-list-item--active {
+  background-color: rgba(var(--v-theme-primary), 0.1);
+  color: rgb(var(--v-theme-primary));
+  font-weight: 500;
+}
+
+/* Selection fields */
+.selections-section {
+  background-color: rgb(var(--v-theme-background));
+}
+
+.selection-field {
   transition: all 0.3s ease;
 }
 
+.selection-field:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
 
+:deep(.v-field) {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+:deep(.v-field:not(.v-field--disabled):hover) {
+  border-color: rgba(var(--v-theme-primary), 0.5);
+}
+
+:deep(.v-field--disabled) {
+  opacity: 0.7;
+}
+
+/* Menu toggle button */
 .menu-toggle {
   position: fixed;
-  bottom: 10px;
+  bottom: 16px;
   left: 16px;
   z-index: 1001;
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  width: 44px; /* Smaller, more compact size */
-  height: 44px; /* Maintain perfect circle */
-  min-width: 44px !important; /* Ensure button doesn't expand */
-  min-height: 44px !important; /* Ensure button doesn't expand */
+  width: 48px;
+  height: 48px;
+  min-width: 48px !important;
+  min-height: 48px !important;
   transition: all 0.2s ease;
-  padding: 0 !important; /* Force remove padding */
-  display: flex !important; /* Ensure proper centering */
+  padding: 0 !important;
+  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-}
-
-.menu-toggle :deep(.v-icon) {
-  margin: 0 !important;
-  padding: 0 !important;
-  font-size: 20px !important; /* Slightly smaller icon */
 }
 
 .menu-toggle:hover {
@@ -383,31 +539,11 @@ onMounted(async () => {
   .menu-toggle {
     bottom: 88px;
     left: 12px;
-    width: 40px; /* Even smaller on mobile */
-    height: 40px;
-    min-width: 40px !important;
-    min-height: 40px !important;
+    width: 44px;
+    height: 44px;
+    min-width: 44px !important;
+    min-height: 44px !important;
   }
-  
-  .menu-toggle :deep(.v-icon) {
-    font-size: 18px !important; /* Smaller icon for mobile */
-  }
-}
-
-.v-fade-transition-enter-active,
-.v-fade-transition-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.v-fade-transition-enter-from,
-.v-fade-transition-leave-to {
-  opacity: 0;
-}
-
-/* Navigation styles */
-.nav-item-container {
-  position: relative;
-  margin-bottom: 8px;
 }
 
 .main-content {
