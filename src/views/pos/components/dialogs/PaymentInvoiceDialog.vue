@@ -2,18 +2,15 @@
 <template>
   <v-dialog 
     v-model="dialog" 
-    :fullscreen="$vuetify.display.mobile"
-    :max-width="$vuetify.display.mobile ? '100%' : '500px'"
-    persistent
-    scrollable
+    fullscreen
     transition="dialog-bottom-transition"
+    :scrim="false"
     class="payment-dialog"
   >
-    <v-card class="payment-dialog-card">
+    <v-card class="modal-card">
       <v-toolbar 
-        color="primary" 
-        class="payment-dialog-toolbar"
-        :elevation="2"
+        color="primary"
+        :elevation="1"
       >
         <v-toolbar-title class="text-h6 font-weight-medium">
           <v-icon icon="mdi-cash-register" size="large" class="mr-2"></v-icon>
@@ -39,8 +36,9 @@
         ></v-btn>
       </v-toolbar>
 
-      <v-card-text>
-        <v-container>
+      <div class="payment-content">
+        <template>
+          <v-container class="payment-container">
           <!-- Loading State -->
           <v-row v-if="loading">
             <v-col cols="12">
@@ -56,7 +54,7 @@
           <template v-else>
             <!-- Invoice Summary -->
             <v-row>
-              <v-col cols="12">
+              <v-col cols="12" md="4">
                 <v-card
                   variant="elevated"
                   class="invoice-summary-card mb-2"
@@ -111,10 +109,10 @@
             <v-row>
               <v-col cols="12">
                 <div class="text-subtitle-1 mb-3">Select Payment Method</div>
-                <v-row>
+                <v-row class="payment-methods-grid">
                   <v-col v-for="method in paymentMethods" 
                          :key="method.id" 
-                         cols="4" 
+                         cols="6" 
                          sm="4">
                     <v-btn
                       block
@@ -888,27 +886,33 @@ watch(() => dialog.value, async (newValue) => {
 </script>
 
 <style scoped>
-.payment-dialog {
-  .v-dialog {
-    border-radius: 16px;
-    overflow: hidden;
-  }
-}
-
-.payment-dialog-card {
+.modal-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  border-radius: 16px;
+  height: 100vh;
   background-color: rgb(var(--v-theme-surface));
 }
 
-.payment-dialog-toolbar {
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
-  backdrop-filter: blur(10px);
-  height: 48px !important;
+.v-toolbar {
+  position: relative;
+  z-index: 1;
+}
+
+.payment-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(var(--v-theme-background));
+}
+
+.payment-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px;
 }
 
 .invoice-summary-card {
@@ -1064,16 +1068,32 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 600px) {
-  .v-dialog {
-    margin: 0;
-    position: fixed;
+@media (max-width: 960px) {
+  .payment-container {
+    padding: 12px;
+  }
+  
+  .process-payment-footer {
+    margin: 0 -12px -12px;
+  }
+  
+  .invoice-summary-card {
+    position: relative;
     top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    max-width: 100% !important;
-    border-radius: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .payment-method-btn {
+    height: 56px !important;
+  }
+  
+  :deep(.v-card-title) {
+    font-size: 1.1rem;
+  }
+  
+  :deep(.v-card-text) {
+    font-size: 0.95rem;
   }
   
   .v-card {
