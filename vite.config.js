@@ -39,7 +39,8 @@ export default defineConfig({
         // Remove the assets/ prefix since the base output already includes it
         assetFileNames: '[name].[hash][extname]'
       }
-    }
+    },
+    copyPublicDir: true
   },
   optimizeDeps: {
     include: ['vuetify', 'vue'],
