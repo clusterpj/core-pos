@@ -1,10 +1,9 @@
 <template>
   <v-dialog
     v-model="dialog"
-    max-width="600"
-    :scrim="true"
+    fullscreen
     transition="dialog-bottom-transition"
-    class="rounded-lg"
+    :scrim="false"
   >
     <template v-slot:activator="{ props: dialogProps }">
       <v-btn
@@ -15,35 +14,38 @@
         :disabled="disabled || cartStore.isEmpty"
         class="text-none px-6"
         rounded="pill"
-        elevation="2"
+        :elevation="$vuetify.display.mobile ? 1 : 2"
         size="large"
+        :block="$vuetify.display.mobile"
       >
-        TO GO
+        <span class="text-subtitle-1 font-weight-medium">TO GO</span>
       </v-btn>
     </template>
 
-    <v-card class="rounded-lg">
+    <v-card class="modal-card">
       <v-toolbar
         color="primary"
         density="comfortable"
       >
         <v-toolbar-title class="text-h6 font-weight-medium">
+          <v-icon icon="mdi-shopping" size="large" class="mr-2"></v-icon>
           To Go Order
         </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn
-          icon="mdi-close"
-          variant="text"
+          icon
           @click="closeModal"
-        />
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-toolbar>
 
-      <v-card-text class="pa-4">
-        <v-container class="px-0">
+      <v-card-text class="pa-0 fill-height d-flex flex-column">
+        <v-container fluid class="flex-grow-1 pa-4">
           <v-fade-transition>
             <!-- Loading State -->
             <v-row v-if="loading">
-              <v-col cols="12" class="d-flex justify-center align-center pa-8">
+              <v-col cols="12" class="text-center">
                 <v-progress-circular
                   indeterminate
                   color="primary"
@@ -58,9 +60,9 @@
                 <v-alert
                   type="error"
                   variant="tonal"
-                  border="start"
-                  elevation="2"
                   closable
+                  class="mb-4"
+                  @click:close="error = null"
                 >
                   {{ error }}
                 </v-alert>
@@ -71,10 +73,10 @@
             <v-form
               v-else
               @submit.prevent="processOrder"
-              class="px-2"
             >
               <v-row>
-                <v-col cols="12">
+                <v-col cols="12" md="6">
+                  <div class="text-subtitle-1 mb-2">Customer Information</div>
                   <v-text-field
                     v-model="customerInfo.name"
                     label="Customer Name"
@@ -85,8 +87,8 @@
                     required
                     prepend-inner-icon="mdi-account"
                     placeholder="Enter customer name"
-                    hide-details="auto"
                     class="mb-4"
+                    bg-color="surface"
                   ></v-text-field>
 
                   <v-text-field
@@ -99,54 +101,71 @@
                     required
                     prepend-inner-icon="mdi-phone"
                     placeholder="Enter phone number"
-                    hide-details="auto"
                     class="mb-4"
+                    bg-color="surface"
                   ></v-text-field>
 
+                  <v-text-field
+                    v-model="customerInfo.email"
+                    label="Email"
+                    variant="outlined"
+                    density="comfortable"
+                    :error-messages="validationErrors.email"
+                    @input="clearError('email')"
+                    prepend-inner-icon="mdi-email"
+                    placeholder="Enter email address"
+                    class="mb-4"
+                    bg-color="surface"
+                  ></v-text-field>
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <div class="text-subtitle-1 mb-2">Order Notes</div>
                   <v-textarea
-                    v-model="customerInfo.instructions"
+                    v-model="customerInfo.notes"
                     label="Special Instructions"
                     variant="outlined"
                     density="comfortable"
-                    rows="3"
+                    :error-messages="validationErrors.notes"
+                    @input="clearError('notes')"
                     prepend-inner-icon="mdi-note-text"
-                    placeholder="Add any special instructions here"
-                    hide-details="auto"
-                    class="mb-6"
+                    placeholder="Enter any special instructions"
+                    rows="4"
+                    auto-grow
+                    bg-color="surface"
                   ></v-textarea>
-                </v-col>
-              </v-row>
-
-              <v-row>
-                <v-col cols="12">
-                  <v-btn
-                    color="primary"
-                    size="large"
-                    block
-                    height="56"
-                    @click="processOrder"
-                    :loading="processing"
-                    :disabled="!canProcessOrder || processing"
-                    elevation="2"
-                  >
-                    <v-icon start>mdi-check-circle</v-icon>
-                    Process Order
-                  </v-btn>
                 </v-col>
               </v-row>
             </v-form>
           </v-fade-transition>
         </v-container>
+
+        <!-- Action Buttons -->
+        <v-divider></v-divider>
+        <v-card-actions class="pa-4">
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            size="large"
+            :loading="loading"
+            :disabled="loading"
+            @click="processOrder"
+            class="px-6"
+          >
+            <v-icon start>mdi-cash-register</v-icon>
+            Process Order
+          </v-btn>
+        </v-card-actions>
       </v-card-text>
     </v-card>
-  </v-dialog>
 
-  <!-- Payment Dialog -->
-  <PaymentDialog
-    v-model="showPaymentDialog"
-    :invoice="currentInvoice"
-    @payment-complete="handlePaymentComplete"
-  />
+    <!-- Payment Dialog -->
+    <PaymentDialog
+      v-model="showPaymentDialog"
+      :invoice="currentInvoice"
+      @payment-complete="handlePaymentComplete"
+    />
+  </v-dialog>
 </template>
 
 <script setup>
@@ -183,12 +202,16 @@ const showPaymentDialog = ref(false)
 const customerInfo = reactive({
   name: '',
   phone: '',
-  instructions: ''
+  instructions: '',
+  email: '',
+  notes: ''
 })
 
 const validationErrors = reactive({
   name: '',
-  phone: ''
+  phone: '',
+  email: '',
+  notes: ''
 })
 
 // Computed properties
@@ -286,7 +309,9 @@ const processOrder = async () => {
         customer: {
           name: customerInfo.name.trim(),
           phone: formattedPhone,
-          instructions: customerInfo.instructions.trim()
+          instructions: customerInfo.instructions.trim(),
+          email: customerInfo.email.trim(),
+          notes: customerInfo.notes.trim()
         }
       }
     })
@@ -394,6 +419,8 @@ const closeModal = () => {
     customerInfo.name = ''
     customerInfo.phone = ''
     customerInfo.instructions = ''
+    customerInfo.email = ''
+    customerInfo.notes = ''
   }
 }
 
@@ -407,7 +434,32 @@ watch(dialog, (newValue) => {
 </script>
 
 <style scoped>
+.modal-card {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
 .v-card-text {
-  padding-top: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.v-form {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+:deep(.v-field) {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+:deep(.v-field:not(.v-field--disabled):hover) {
+  border-color: rgba(var(--v-theme-primary), 0.5);
+}
+
+:deep(.v-text-field .v-input__details) {
+  padding-inline-start: 16px;
 }
 </style>
