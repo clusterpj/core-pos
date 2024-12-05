@@ -51,8 +51,8 @@
           </v-row>
 
           <template v-else>
-            <!-- Invoice Summary -->
             <v-row>
+              <!-- Left Column - Invoice Summary & Tip -->
               <v-col cols="12" md="4">
                 <v-card
                   variant="elevated"
@@ -92,12 +92,8 @@
                     </div>
                   </v-card-text>
                 </v-card>
-              </v-col>
-            </v-row>
 
-            <!-- Tip Button -->
-            <v-row>
-              <v-col cols="12">
+                <!-- Tip Button -->
                 <v-btn
                   block
                   color="primary"
@@ -108,11 +104,9 @@
                   {{ tipAmount > 0 ? `Update Tip (${formatCurrency(tipAmount / 100)})` : 'Add Tip' }}
                 </v-btn>
               </v-col>
-            </v-row>
 
-            <!-- Payment Methods Selection -->
-            <v-row>
-              <v-col cols="12">
+              <!-- Right Column - Payment Methods -->
+              <v-col cols="12" md="8">
                 <div class="text-subtitle-1 mb-3 font-weight-medium">Select Payment Method</div>
                 <v-row class="payment-methods-grid">
                   <v-col v-for="method in paymentMethods" 
