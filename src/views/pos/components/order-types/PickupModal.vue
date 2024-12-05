@@ -273,14 +273,51 @@ const onCustomerSelect = async (selection) => {
   try {
     const customer = selection.value
     if (customer) {
-      customerInfo.phone = customer.phone || ''
+      // Set the selected customer ref
+      selectedCustomer.value = customer
+
+      // First, set the basic customer info immediately
       customerInfo.name = customer.name || ''
+      customerInfo.phone = customer.phone || ''
       customerInfo.email = customer.email || ''
-      logger.debug('Customer selected:', customer)
+      
+      // Keep the search value
+      customerSearch.value = customer.name
+
+      // Then fetch full customer details
+      const response = await posApi.get(`/v1/customers/${customer.id}`, {
+        params: {
+          include: 'billing_address'
+        }
+      })
+      
+      const fullCustomer = response.data.customer
+      logger.debug('Full customer data:', fullCustomer)
+
+      // Update with complete customer information
+      customerInfo.name = fullCustomer?.name?.trim() || fullCustomer?.first_name?.trim() || customer.name || ''
+      customerInfo.phone = fullCustomer?.phone?.trim() || customer.phone || ''
+      customerInfo.email = fullCustomer?.email?.trim() || customer.email || ''
+      customerInfo.instructions = fullCustomer?.notes || ''
+
+      // Update selected customer with full data
+      selectedCustomer.value = fullCustomer
+
+      logger.debug('Customer selected:', fullCustomer)
+      logger.info('Customer data populated:', { 
+        customer: customer.id,
+        fields: { ...customerInfo }
+      })
+
+      // Clear any existing validation errors
+      clearAllErrors()
     }
   } catch (err) {
     logger.error('Error selecting customer:', err)
-    clearSelectedCustomer()
+    if (window.toastr) {
+      window.toastr.error('Failed to load customer details')
+    }
+    // Don't clear selection on API error, keep the basic info
   }
 }
 
@@ -351,8 +388,8 @@ const validateForm = () => {
   let isValid = true
   clearAllErrors()
 
-  if (!customerInfo.name.trim()) {
-    validationErrors.name = 'Customer name is required'
+  if (!selectedCustomer.value?.id) {
+    validationErrors.name = 'Please select a customer from the search results'
     isValid = false
   }
 
@@ -454,7 +491,7 @@ const processOrder = async () => {
       invoice_pbx_modify: 0,
       store_id: companyStore.selectedStore?.id,
       cash_register_id: companyStore.selectedCashier?.id,
-      user_id: selectedCustomer.value?.id || 1,
+      user_id: selectedCustomer.value?.id || null,
 
       // Order type and status
       type: ORDER_TYPES.PICKUP,
@@ -463,12 +500,12 @@ const processOrder = async () => {
 
       // Customer contact info
       contact: {
-        name: customerInfo.name.trim().split(' ')[0] || customerInfo.name.trim(),
-        last_name: customerInfo.name.trim().split(' ').slice(1).join(' ') || 'N/A',
-        email: customerInfo.email.trim(),
-        phone: customerInfo.phone.trim(),
-        second_phone: 'N/A',  // Default value for second_phone
-        identification: 'N/A'  // Default value for identification
+        name: selectedCustomer.value?.name || customerInfo.name.trim(),
+        last_name: 'N/A',
+        email: selectedCustomer.value?.email || customerInfo.email.trim(),
+        phone: selectedCustomer.value?.phone || customerInfo.phone.trim(),
+        second_phone: 'N/A',
+        identification: 'N/A'
       },
 
       // Arrays

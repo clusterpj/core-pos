@@ -536,8 +536,8 @@ const validateForm = () => {
   let isValid = true
   clearAllErrors()
 
-  if (!customerInfo.name.trim()) {
-    validationErrors.name = 'Customer name is required'
+  if (!selectedCustomer.value?.id) {
+    validationErrors.name = 'Please select a customer from the search results'
     isValid = false
   }
 
@@ -547,25 +547,7 @@ const validateForm = () => {
   }
 
   if (!customerInfo.address.trim()) {
-    validationErrors.address = 'Delivery address is required for delivery orders'
-    isValid = false
-  }
-
-  if (!customerInfo.zipCode.trim()) {
-    validationErrors.zipCode = 'ZIP code is required'
-    isValid = false
-  } else if (!/^\d{5}(-\d{4})?$/.test(customerInfo.zipCode.trim())) {
-    validationErrors.zipCode = 'Invalid ZIP code format'
-    isValid = false
-  }
-
-  if (!customerInfo.city.trim()) {
-    validationErrors.city = 'City is required'
-    isValid = false
-  }
-
-  if (!customerInfo.state.trim()) {
-    validationErrors.state = 'State is required'
+    validationErrors.address = 'Delivery address is required'
     isValid = false
   }
 
@@ -664,7 +646,7 @@ const processOrder = async () => {
       invoice_pbx_modify: 0,
       store_id: companyStore.selectedStore?.id,
       cash_register_id: companyStore.selectedCashier?.id,
-      user_id: selectedCustomer.value?.id || 1,
+      user_id: selectedCustomer.value?.id || null,
 
       // Order type and status
       type: ORDER_TYPES.DELIVERY,
@@ -673,12 +655,12 @@ const processOrder = async () => {
 
       // Customer contact info
       contact: {
-        name: customerInfo.name.trim().split(' ')[0] || customerInfo.name.trim(),
-        last_name: customerInfo.name.trim().split(' ').slice(1).join(' ') || 'N/A',
-        email: customerInfo.email.trim(),
-        phone: customerInfo.phone.trim(),
-        second_phone: 'N/A',  // Default value for second_phone
-        identification: 'N/A'  // Default value for identification
+        name: selectedCustomer.value?.name || customerInfo.name.trim(),
+        last_name: 'N/A',
+        email: selectedCustomer.value?.email || customerInfo.email.trim(),
+        phone: selectedCustomer.value?.phone || customerInfo.phone.trim(),
+        second_phone: 'N/A',
+        identification: 'N/A'
       },
 
       // Arrays
