@@ -2,18 +2,15 @@
 <template>
   <v-dialog 
     v-model="dialog" 
-    :fullscreen="$vuetify.display.mobile"
-    :max-width="$vuetify.display.mobile ? '100%' : '800px'"
-    persistent
-    scrollable
+    fullscreen
     transition="dialog-bottom-transition"
+    :scrim="false"
     class="payment-dialog"
   >
-    <v-card class="payment-dialog-card">
+    <v-card class="modal-card">
       <v-toolbar 
-        color="primary" 
-        class="payment-dialog-toolbar"
-        :elevation="2"
+        color="primary"
+        :elevation="1"
       >
         <v-toolbar-title class="text-h6 font-weight-medium">
           <v-icon icon="mdi-cash-register" size="large" class="mr-2"></v-icon>
@@ -21,32 +18,29 @@
         </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn
-          icon="mdi-close"
-          variant="text"
+          icon
           @click="closeDialog"
-          class="ml-2"
-          size="large"
-        ></v-btn>
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-toolbar>
 
-      <v-card-text>
-        <v-container>
-          <!-- Loading State -->
-          <v-row v-if="loading">
-            <v-col cols="12">
-              <v-sheet class="pa-3">
-                <v-skeleton-loader
-                  type="article, actions"
-                  class="mx-auto"
-                ></v-skeleton-loader>
-              </v-sheet>
-            </v-col>
-          </v-row>
+      <div class="payment-content">
+        <!-- Loading State -->
+        <div v-if="loading" class="loading-state">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+            size="64"
+          ></v-progress-circular>
+          <div class="text-h6 mt-4">Loading Payment Methods...</div>
+        </div>
 
-          <template v-else>
-            <!-- Invoice Summary -->
+        <template v-else>
+          <v-container class="payment-container">
             <v-row>
-              <v-col cols="12">
+              <v-col cols="12" md="4">
+                <!-- Invoice Summary Card -->
                 <v-card
                   variant="elevated"
                   class="invoice-summary-card mb-4"
@@ -89,34 +83,28 @@
                     </div>
                   </v-card-text>
                 </v-card>
-              </v-col>
-            </v-row>
 
-            <!-- Tip Button -->
-            <v-row>
-              <v-col cols="12">
+                <!-- Tip Button -->
                 <v-btn
                   block
                   color="primary"
                   variant="outlined"
                   @click="showTipDialog = true"
-                  class="mb-4"
+                  class="mb-4 tip-button"
+                  height="48"
                 >
                   {{ tipAmount > 0 ? `Update Tip (${formatCurrency(tipAmount)})` : 'Add Tip' }}
                 </v-btn>
               </v-col>
-            </v-row>
 
-            <!-- Payment Methods Selection -->
-            <v-row>
-              <v-col cols="12">
-                <div class="text-subtitle-1 mb-3">Select Payment Method</div>
-                <v-row>
+              <v-col cols="12" md="8">
+                <!-- Payment Methods Selection -->
+                <div class="text-subtitle-1 mb-3 font-weight-medium">Select Payment Method</div>
+                <v-row class="payment-methods-grid">
                   <v-col v-for="method in paymentMethods" 
                          :key="method.id" 
-                         cols="12" 
-                         sm="6" 
-                         md="4">
+                         cols="6" 
+                         sm="4">
                     <v-btn
                       block
                       :color="isMethodSelected(method.id) ? 'primary' : undefined"
@@ -131,181 +119,171 @@
                     </v-btn>
                   </v-col>
                 </v-row>
-              </v-col>
-            </v-row>
 
-            <!-- Active Payment Methods -->
-            <v-row v-if="payments.length > 0">
-              <v-col cols="12">
-                <div v-for="(payment, index) in payments" :key="index" class="payment-section mb-4">
-                  <v-card variant="outlined" class="pa-4">
-                    <div class="d-flex align-center mb-4">
-                      <v-icon :icon="getPaymentMethodIcon(getPaymentMethod(payment.method_id)?.name)" class="mr-2"></v-icon>
-                      <span class="text-h6">{{ getPaymentMethod(payment.method_id)?.name }}</span>
-                      <v-spacer></v-spacer>
-                      <v-btn
-                        icon="mdi-close"
-                        variant="text"
-                        density="comfortable"
-                        @click="removePayment(index)"
-                      ></v-btn>
-                    </div>
-
-                  <!-- Amount Input -->
-                  <v-text-field
-                    v-model="payment.displayAmount"
-                    label="Amount"
-                    type="number"
-                    :rules="[
-                      v => !!v || 'Amount is required',
-                      v => v > 0 || 'Amount must be greater than 0',
-                      v => Number(v) === (invoiceTotal + tipAmount) || 'Full payment is required'
-                    ]"
-                    :prefix="'$'"
-                    @input="validateAmount(index)"
-                  ></v-text-field>
-
-                  <!-- Cash Payment Fields -->
-                  <template v-if="isCashOnly(payment.method_id)">
-                    <!-- Denominations Grid -->
-                    <div v-if="getDenominations(payment.method_id)?.length" class="mb-4">
-                      <div class="text-subtitle-2 mb-2">Quick Amount Selection</div>
-                      <v-row>
-                        <v-col v-for="money in getDenominations(payment.method_id)" 
-                              :key="money.id" 
-                              cols="4" 
-                              class="pa-1">
-                          <v-btn block
-                                variant="outlined"
-                                size="small"
-                                @click="handleDenominationClick(money, index)">
-                            {{ formatCurrency(Number(money.amount)) }}
-                          </v-btn>
-                        </v-col>
-                      </v-row>
-                    </div>
-
-                    <!-- Received Amount -->
-                    <v-text-field
-                      v-model="payment.displayReceived"
-                      label="Amount Received"
-                      type="number"
-                      :rules="[
-                        v => !!v || 'Received amount is required',
-                        v => Number(v) >= Number(payment.displayAmount) || 'Received amount must be greater than or equal to payment amount'
-                      ]"
-                      :prefix="'$'"
-                      @input="calculateChange(index)"
-                    ></v-text-field>
-
-                    <!-- Change Amount Display -->
-                    <div v-if="payment.returned > 0" class="text-caption mb-2">
-                      <div class="d-flex justify-space-between">
-                        <span>Change:</span>
-                        <strong>{{ formatCurrency(payment.returned) }}</strong>
+                <!-- Active Payment Methods -->
+                <div v-if="payments.length > 0" class="active-payments-section">
+                  <div v-for="(payment, index) in payments" :key="index" class="payment-section">
+                    <v-card variant="outlined" class="pa-4">
+                      <div class="d-flex align-center mb-4">
+                        <v-icon :icon="getPaymentMethodIcon(getPaymentMethod(payment.method_id)?.name)" class="mr-2"></v-icon>
+                        <span class="text-h6">{{ getPaymentMethod(payment.method_id)?.name }}</span>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          icon="mdi-close"
+                          variant="text"
+                          density="comfortable"
+                          @click="removePayment(index)"
+                        ></v-btn>
                       </div>
-                    </div>
-                  </template>
 
-                  <!-- Payment Fees -->
-                  <div v-if="hasPaymentFees(payment.method_id)" class="text-caption mb-2">
-                    <div class="d-flex justify-space-between">
-                      <span>Service Fee:</span>
-                      <strong>{{ formatCurrency(payment.fees) }}</strong>
-                    </div>
-                    <div class="text-grey">
-                      {{ getFeeDescription(payment.method_id, payment.amount) }}
-                    </div>
+                      <!-- Amount Input -->
+                      <v-text-field
+                        v-model="payment.displayAmount"
+                        label="Amount"
+                        type="number"
+                        :rules="[
+                          v => !!v || 'Amount is required',
+                          v => v > 0 || 'Amount must be greater than 0',
+                          v => Number(v) === (invoiceTotal + tipAmount) || 'Full payment is required'
+                        ]"
+                        :prefix="'$'"
+                        @input="validateAmount(index)"
+                      ></v-text-field>
+
+                      <!-- Cash Payment Fields -->
+                      <template v-if="isCashOnly(payment.method_id)">
+                        <!-- Denominations Grid -->
+                        <div v-if="getDenominations(payment.method_id)?.length" class="mb-4">
+                          <div class="text-subtitle-2 mb-2">Quick Amount Selection</div>
+                          <v-row>
+                            <v-col v-for="money in getDenominations(payment.method_id)" 
+                                  :key="money.id" 
+                                  cols="4" 
+                                  class="pa-1">
+                              <v-btn block
+                                    variant="outlined"
+                                    size="small"
+                                    @click="handleDenominationClick(money, index)">
+                                {{ formatCurrency(Number(money.amount)) }}
+                              </v-btn>
+                            </v-col>
+                          </v-row>
+                        </div>
+
+                        <!-- Received Amount -->
+                        <v-text-field
+                          v-model="payment.displayReceived"
+                          label="Amount Received"
+                          type="number"
+                          :rules="[
+                            v => !!v || 'Received amount is required',
+                            v => Number(v) >= Number(payment.displayAmount) || 'Received amount must be greater than or equal to payment amount'
+                          ]"
+                          :prefix="'$'"
+                          @input="calculateChange(index)"
+                        ></v-text-field>
+
+                        <!-- Change Amount Display -->
+                        <div v-if="payment.returned > 0" class="text-caption mb-2">
+                          <div class="d-flex justify-space-between">
+                            <span>Change:</span>
+                            <strong>{{ formatCurrency(payment.returned) }}</strong>
+                          </div>
+                        </div>
+                      </template>
+
+                      <!-- Payment Fees -->
+                      <div v-if="hasPaymentFees(payment.method_id)" class="text-caption mb-2">
+                        <div class="d-flex justify-space-between">
+                          <span>Service Fee:</span>
+                          <strong>{{ formatCurrency(payment.fees) }}</strong>
+                        </div>
+                        <div class="text-grey">
+                          {{ getFeeDescription(payment.method_id, payment.amount) }}
+                        </div>
+                      </div>
+
+                      <!-- Payment Amount Display -->
+                      <div class="d-flex justify-space-between mb-2">
+                        <span>Payment Amount:</span>
+                        <strong>{{ formatCurrency(payment.amount) }}</strong>
+                      </div>
+                      <div v-if="payment.received" class="d-flex justify-space-between mb-2">
+                        <span>Amount Received:</span>
+                        <strong>{{ formatCurrency(payment.received) }}</strong>
+                      </div>
+                      <div v-if="payment.change" class="d-flex justify-space-between mb-2">
+                        <span>Change:</span>
+                        <strong>{{ formatCurrency(payment.change) }}</strong>
+                      </div>
+                      <div v-if="payment.fees" class="d-flex justify-space-between">
+                        <span>Fees:</span>
+                        <strong>{{ formatCurrency(payment.fees) }}</strong>
+                      </div>
+
+                      <!-- Remove Payment Button -->
+                      <v-btn
+                        color="error"
+                        variant="outlined"
+                        size="small"
+                        class="mb-2"
+                        @click="removePayment(index)"
+                      >
+                        Remove Payment Method
+                      </v-btn>
+
+                      <v-divider v-if="index < payments.length - 1" class="my-4"></v-divider>
+                    </v-card>
                   </div>
 
-                  <!-- Payment Amount Display -->
-                  <div class="d-flex justify-space-between mb-2">
-                    <span>Payment Amount:</span>
-                    <strong>{{ formatCurrency(payment.amount) }}</strong>
-                  </div>
-                  <div v-if="payment.received" class="d-flex justify-space-between mb-2">
-                    <span>Amount Received:</span>
-                    <strong>{{ formatCurrency(payment.received) }}</strong>
-                  </div>
-                  <div v-if="payment.change" class="d-flex justify-space-between mb-2">
-                    <span>Change:</span>
-                    <strong>{{ formatCurrency(payment.change) }}</strong>
-                  </div>
-                  <div v-if="payment.fees" class="d-flex justify-space-between">
-                    <span>Fees:</span>
-                    <strong>{{ formatCurrency(payment.fees) }}</strong>
-                  </div>
-
-                  <!-- Remove Payment Button -->
+                  <!-- Add Payment Method Button -->
                   <v-btn
-                    color="error"
+                    v-if="canAddMorePayments"
+                    block
+                    color="primary"
                     variant="outlined"
-                    size="small"
-                    class="mb-2"
-                    @click="removePayment(index)"
+                    @click="addPayment"
+                    class="mt-4"
+                    height="48"
                   >
-                    Remove Payment Method
+                    <v-icon start>mdi-plus</v-icon>
+                    Add Another Payment Method
                   </v-btn>
-
-                  <v-divider v-if="index < payments.length - 1" class="my-4"></v-divider>
-                  </v-card>
                 </div>
-
-                <!-- Add Payment Method Button -->
-                <v-btn
-                  v-if="canAddMorePayments"
-                  color="primary"
-                  variant="outlined"
-                  size="small"
-                  class="mt-2"
-                  @click="addPayment"
-                >
-                  Add Payment Method
-                </v-btn>
-
-                <!-- Total with Fees -->
-                <v-card v-if="totalFees > 0" variant="outlined" class="mt-4">
-                  <v-card-text>
-                    <div class="d-flex justify-space-between mb-2">
-                      <span>Total Payments:</span>
-                      <strong>{{ formatCurrency(totalPayments) }}</strong>
-                    </div>
-                    <div class="d-flex justify-space-between mb-2">
-                      <span>Total Fees:</span>
-                      <strong>{{ formatCurrency(totalFees) }}</strong>
-                    </div>
-                    <div class="d-flex justify-space-between">
-                      <span>Total with Fees:</span>
-                      <strong>{{ formatCurrency(totalPayments + totalFees) }}</strong>
-                    </div>
-                  </v-card-text>
-                </v-card>
               </v-col>
             </v-row>
 
             <!-- Error Message -->
-            <v-row v-if="error">
-              <v-col cols="12">
-                <v-alert type="error" variant="tonal">
-                  {{ error }}
-                </v-alert>
-              </v-col>
-            </v-row>
-          </template>
-        </v-container>
-      </v-card-text>
+            <v-alert
+              v-if="error"
+              type="error"
+              variant="tonal"
+              closable
+              class="error-alert"
+              @click:close="error = null"
+            >
+              {{ error }}
+            </v-alert>
 
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn
-          color="primary"
-          :loading="processing"
-          :disabled="!isValid || processing"
-          @click="processPayment"
-        >
-          Process Payment
-        </v-btn>
-      </v-card-actions>
+            <!-- Process Payment Button -->
+            <div class="process-payment-footer">
+              <v-btn
+                color="primary"
+                size="large"
+                block
+                height="56"
+                @click="processPayment"
+                :loading="processing"
+                :disabled="!isValid || processing"
+                class="process-payment-btn"
+              >
+                <v-icon start>mdi-cash-register</v-icon>
+                Process Payment
+              </v-btn>
+            </div>
+          </v-container>
+        </template>
+      </div>
     </v-card>
   </v-dialog>
 
@@ -864,231 +842,185 @@ watch(() => dialog.value, async (newValue) => {
 </script>
 
 <style scoped>
-.payment-dialog {
-  .v-dialog {
-    border-radius: 16px;
-    overflow: hidden;
-  }
-}
-
-.payment-dialog-card {
+.modal-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  border-radius: 16px;
+  height: 100vh;
   background-color: rgb(var(--v-theme-surface));
 }
 
-.payment-dialog-toolbar {
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
-  backdrop-filter: blur(10px);
-  height: 64px !important;
+.v-toolbar {
+  position: relative;
+  z-index: 1;
 }
 
-.invoice-summary-card {
-  background: linear-gradient(145deg, var(--v-surface-variant) 0%, var(--v-surface-base) 100%);
-  border-radius: 24px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(var(--v-border-color), 0.05);
-  backdrop-filter: blur(10px);
+.payment-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(var(--v-theme-background));
 }
 
-.invoice-summary-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+.loading-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
 }
 
-.payment-method-btn {
-  min-height: 56px;
-  border-radius: 16px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 1.1rem;
-  letter-spacing: 0.5px;
-  border: 1px solid rgba(var(--v-border-color), 0.05);
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-  }
-  
-  &.v-btn--active {
-    background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
-    color: white;
-    border: none;
-  }
-}
-
-.payment-method-btn:hover {
-  transform: translateY(-2px);
-}
-
-.v-card-text {
-  font-size: 1.1rem;
-  line-height: 1.6;
-}
-
-/* Responsive Typography */
-.text-h5 {
-  font-size: 1.1rem !important;
-  font-weight: 500;
-}
-
-.text-h6 {
-  font-size: 1rem !important;
-  font-weight: 500;
-}
-
-.text-subtitle-1 {
-  font-size: 0.9rem !important;
-}
-
-/* Touch Targets */
-@media (max-width: 600px) {
-  .payment-method-btn {
-    min-height: 56px;
-    width: 100%;
-  }
-  
-  .v-btn {
-    min-height: 48px;
-  }
-  
-  .v-text-field :deep(input) {
-    font-size: 16px !important; /* Prevent zoom on iOS */
-  }
-}
-
-/* Transitions */
-.v-enter-active,
-.v-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.v-enter-from,
-.v-leave-to {
-  opacity: 0;
-}
-
-.v-card-title {
-  font-size: 1.2rem !important;
-  padding: 16px 20px !important;
-}
-
-.text-h5 {
-  font-size: 1.2rem !important;
-}
-
-.text-h6 {
-  font-size: 1.1rem !important;
-}
-
-.text-subtitle-1 {
-  font-size: 1rem !important;
-  font-weight: 500;
-}
-
-.text-subtitle-2 {
-  font-size: 0.9rem !important;
-}
-
-.payment-method-btn {
-  text-transform: none;
-  letter-spacing: normal;
-  font-size: 1rem;
-  height: 60px !important;
-}
-
-.payment-method-btn .v-icon {
-  font-size: 1.8rem;
-  margin-right: 12px;
-}
-
-.payment-section {
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  margin-bottom: 24px !important;
-}
-
-.payment-section:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.v-text-field {
-  font-size: 1rem;
-}
-
-.v-text-field :deep(input) {
-  font-size: 1rem !important;
-}
-
-.v-text-field :deep(label) {
-  font-size: 0.9rem !important;
-}
-
-.v-btn {
-  font-size: 0.9rem;
-  padding: 0 16px;
-  height: 36px;
-}
-
-.v-btn--size-small {
-  height: 32px;
-  font-size: 0.85rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 600px) {
-  .v-dialog {
-    margin: 0;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    max-width: 100% !important;
-    border-radius: 0;
-  }
-  
-  .v-card {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .v-card-text {
-    flex: 1;
-    overflow-y: auto;
-  }
-}
-
-/* Additional spacing improvements */
-.v-container {
+.payment-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 16px;
 }
 
-.v-row {
+.invoice-summary-card {
+  position: sticky;
+  top: 16px;
+  z-index: 1;
+}
+
+.payment-methods-grid {
+  margin: -8px;
+}
+
+.payment-method-btn {
+  height: 64px !important;
+  border-radius: 12px;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  font-size: 1rem;
+  font-weight: 500;
+  
+  &:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
+  }
+  
+  &.v-btn--disabled {
+    opacity: 0.7;
+  }
+}
+
+.active-payments-section {
+  margin-top: 24px;
+}
+
+.payment-section {
+  margin-bottom: 16px;
+  
+  .v-card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+  }
+}
+
+.tip-button {
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.process-payment-footer {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: rgb(var(--v-theme-surface));
+  border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+  margin: 0 -16px -16px;
+}
+
+.process-payment-btn {
+  max-width: 600px;
+  margin: 0 auto;
+  border-radius: 12px;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.error-alert {
+  position: fixed;
+  bottom: 88px;
+  left: 16px;
+  right: 16px;
+  z-index: 2;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Touch-friendly form inputs */
+:deep(.v-text-field .v-field__input),
+:deep(.v-select .v-field__input) {
+  min-height: 44px;
+  padding-top: 8px;
+  font-size: 1rem;
+}
+
+:deep(.v-text-field .v-field__input input) {
+  font-size: 1rem;
+}
+
+/* Ensure proper spacing */
+:deep(.v-row) {
   margin-bottom: 16px;
 }
 
-.v-col {
+:deep(.v-col) {
   padding: 8px;
 }
 
-.mb-2 {
-  margin-bottom: 8px !important;
+/* Dialog transition */
+.dialog-bottom-transition-enter-active,
+.dialog-bottom-transition-leave-active {
+  transition: transform 0.3s ease-in-out;
 }
 
-.mb-4 {
-  margin-bottom: 16px !important;
+.dialog-bottom-transition-enter-from,
+.dialog-bottom-transition-leave-to {
+  transform: translateY(100%);
 }
 
-.mr-2 {
-  margin-right: 8px !important;
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .payment-container {
+    padding: 12px;
+  }
+  
+  .process-payment-footer {
+    margin: 0 -12px -12px;
+  }
+  
+  .invoice-summary-card {
+    position: relative;
+    top: 0;
+  }
 }
 
-.pa-4 {
-  padding: 16px !important;
+@media (max-width: 600px) {
+  .payment-method-btn {
+    height: 56px !important;
+  }
+  
+  :deep(.v-card-title) {
+    font-size: 1.1rem;
+  }
+  
+  :deep(.v-card-text) {
+    font-size: 0.95rem;
+  }
 }
 </style>

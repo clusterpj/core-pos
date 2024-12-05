@@ -2,65 +2,65 @@
   <div>
     <v-dialog
       v-model="dialog"
-      :fullscreen="$vuetify.display.mobile"
-      :max-width="$vuetify.display.mobile ? '100%' : '800px'"
-      persistent
-      scrollable
+      fullscreen
       transition="dialog-bottom-transition"
+      :scrim="false"
       class="payment-dialog"
     >
-      <v-card class="payment-dialog-card">
-        <v-toolbar color="primary" class="payment-dialog-toolbar" :elevation="2">
+      <v-card class="modal-card">
+        <v-toolbar
+          color="primary"
+          :elevation="1"
+        >
           <v-toolbar-title class="text-h6 font-weight-medium">
             <v-icon icon="mdi-cash-register" size="large" class="mr-2"></v-icon>
             Process Payment
           </v-toolbar-title>
           <v-spacer></v-spacer>
           <v-btn
-            icon="mdi-close"
-            variant="text"
+            icon
             @click="closeDialog"
-            class="ml-2"
-            size="large"
-          ></v-btn>
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-toolbar>
 
-        <v-card-text>
-          <v-container>
-            <!-- Error Alert -->
-            <v-alert
-              v-if="error"
-              type="error"
-              variant="tonal"
-              closable
-              class="mb-4"
-              @click:close="error = null"
-            >
-              {{ error }}
-            </v-alert>
+        <div class="payment-content">
+          <!-- Error Alert -->
+          <v-alert
+            v-if="error"
+            type="error"
+            variant="tonal"
+            closable
+            class="error-alert"
+            @click:close="error = null"
+          >
+            {{ error }}
+          </v-alert>
 
-            <!-- Loading State -->
-            <div v-if="processing" class="text-center py-8">
-              <v-progress-circular
-                indeterminate
-                color="primary"
-                size="64"
-              ></v-progress-circular>
-              <div class="text-h6 mt-4">Processing Payment...</div>
-            </div>
+          <!-- Loading State -->
+          <div v-if="processing" class="processing-state">
+            <v-progress-circular
+              indeterminate
+              color="primary"
+              size="64"
+            ></v-progress-circular>
+            <div class="text-h6 mt-4">Processing Payment...</div>
+          </div>
 
-            <!-- Cart Empty Warning -->
-            <v-alert
-              v-else-if="!hasItems"
-              type="warning"
-              variant="tonal"
-              class="mb-4"
-            >
-              Please add items to cart before proceeding with payment.
-            </v-alert>
+          <!-- Cart Empty Warning -->
+          <v-alert
+            v-else-if="!hasItems"
+            type="warning"
+            variant="tonal"
+            class="mb-4"
+          >
+            Please add items to cart before proceeding with payment.
+          </v-alert>
 
-            <!-- Payment Summary -->
-            <v-row v-else>
+          <!-- Payment Content -->
+          <v-container v-else class="payment-container pa-4">
+            <v-row>
               <v-col cols="12" class="text-center">
                 <v-card variant="outlined" class="invoice-summary-card mb-4">
                   <v-card-text class="py-4">
@@ -85,27 +85,27 @@
                 </v-card>
               </v-col>
             </v-row>
+            <v-row>
+              <v-col cols="12" class="d-flex justify-center">
+                <v-btn
+                  color="primary"
+                  size="large"
+                  min-width="120"
+                  height="48"
+                  @click="processPayment"
+                  :loading="processing"
+                  :disabled="!canPay"
+                  class="text-none px-6"
+                  rounded="pill"
+                  elevation="2"
+                >
+                  <v-icon start icon="mdi-cash-register" class="mr-1"></v-icon>
+                  Pay Now
+                </v-btn>
+              </v-col>
+            </v-row>
           </v-container>
-        </v-card-text>
-
-        <v-card-actions class="pa-4">
-          <v-spacer></v-spacer>
-          <v-btn
-            color="primary"
-            size="large"
-            min-width="120"
-            height="48"
-            @click="processPayment"
-            :loading="processing"
-            :disabled="!canPay"
-            class="text-none px-6"
-            rounded="pill"
-            elevation="2"
-          >
-            <v-icon start icon="mdi-cash-register" class="mr-1"></v-icon>
-            Pay Now
-          </v-btn>
-        </v-card-actions>
+        </div>
       </v-card>
     </v-dialog>
 
@@ -387,36 +387,94 @@ const closeDialog = () => {
 </script>
 
 <style scoped>
-.payment-dialog {
-  .v-dialog {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    max-height: 100%;
-  }
-}
-
-.payment-dialog-card {
+.modal-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
+  background-color: rgb(var(--v-theme-surface));
 }
 
-.payment-dialog-toolbar {
-  flex: 0 0 auto;
+.v-toolbar {
+  position: relative;
+  z-index: 1;
 }
 
-.v-card-text {
-  flex: 1 1 auto;
+.payment-content {
+  flex: 1;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(var(--v-theme-background));
 }
 
-.v-card-actions {
-  flex: 0 0 auto;
+.error-alert {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 16px;
 }
 
-.invoice-summary-card {
-  max-width: 400px;
+.processing-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.payment-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1200px;
   margin: 0 auto;
+}
+
+/* Ensure buttons and interactive elements are large enough for touch */
+:deep(.v-btn) {
+  min-height: 48px;
+}
+
+:deep(.v-text-field .v-field__input),
+:deep(.v-select .v-field__input) {
+  min-height: 44px;
+  padding-top: 8px;
+}
+
+/* Improve spacing and readability */
+:deep(.v-card-title) {
+  font-size: 1.2rem;
+  padding: 16px 20px;
+}
+
+:deep(.v-card-text) {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Ensure proper spacing in container */
+:deep(.v-container) {
+  padding: 16px;
+}
+
+:deep(.v-row) {
+  margin-bottom: 16px;
+}
+
+:deep(.v-col) {
+  padding: 8px;
+}
+
+/* Dialog transition */
+.dialog-bottom-transition-enter-active,
+.dialog-bottom-transition-leave-active {
+  transition: transform 0.3s ease-in-out;
+}
+
+.dialog-bottom-transition-enter-from,
+.dialog-bottom-transition-leave-to {
+  transform: translateY(100%);
 }
 </style>
