@@ -83,24 +83,6 @@
                     </div>
                   </v-card-text>
                 </v-card>
-
-                <!-- Success State -->
-                <template v-if="currentInvoice">
-                  <v-icon icon="mdi-check-circle" color="success" size="64" class="mb-4"></v-icon>
-                  <h2 class="text-h5 mb-4">Payment Processed Successfully</h2>
-                  <v-card variant="outlined" class="invoice-summary-card mb-4">
-                    <v-card-text class="py-4">
-                      <div class="d-flex justify-space-between mb-2">
-                        <span>Invoice Number:</span>
-                        <strong>{{ invoiceNumber }}</strong>
-                      </div>
-                      <div class="d-flex justify-space-between mb-2">
-                        <span>Total Amount:</span>
-                        <strong>{{ formatCurrency(invoiceTotal) }}</strong>
-                      </div>
-                    </v-card-text>
-                  </v-card>
-                </template>
               </v-col>
             </v-row>
           </v-container>
@@ -109,7 +91,6 @@
         <v-card-actions class="pa-4">
           <v-spacer></v-spacer>
           <v-btn
-            v-if="!currentInvoice"
             color="primary"
             size="large"
             min-width="120"
@@ -123,20 +104,6 @@
           >
             <v-icon start icon="mdi-cash-register" class="mr-1"></v-icon>
             Pay Now
-          </v-btn>
-          <v-btn
-            v-else
-            color="primary"
-            size="large"
-            min-width="120"
-            height="48"
-            @click="closeDialog"
-            class="text-none px-6"
-            rounded="pill"
-            elevation="2"
-          >
-            <v-icon start icon="mdi-check" class="mr-1"></v-icon>
-            Done
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -400,14 +367,12 @@ const processPayment = async () => {
 }
 
 const handlePaymentComplete = async (result) => {
-  if (result?.success) {
-    // Clear the cart and reset state
-    cartStore.clearCart()
-    currentInvoice.value = null
-    showPaymentDialog.value = false
-    window.toastr?.['success']('Retail payment processed successfully')
-  } else {
-    window.toastr?.['error']('Failed to process payment')
+  logger.info('Payment completion handler called with result:', result)
+  
+  if (result) {
+    // Close dialog and emit completion event
+    closeDialog()
+    emit('payment-complete', result)
   }
 }
 
