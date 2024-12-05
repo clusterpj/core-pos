@@ -142,7 +142,6 @@
                   :total-pages="totalDeliveryPages"
                   @update:page="(page) => deliveryPage = page"
                   @refresh="fetchInvoices"
-                  @close-modal="updateModelValue(false)"
                   class="table-component"
                 />
               </v-col>
@@ -202,7 +201,6 @@
                   :total-pages="totalInvoicePages"
                   @update:page="(page) => invoicePage = page"
                   @refresh="fetchInvoices"
-                  @close-modal="updateModelValue(false)"
                   class="table-component"
                 />
               </v-col>
