@@ -267,7 +267,7 @@
             </v-row>
           </template>
         </v-container>
-      </v-card-text>
+      </div>
 
       <v-card-actions class="pa-4">
         <v-btn
