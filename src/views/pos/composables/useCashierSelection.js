@@ -37,8 +37,26 @@ export function useCashierSelection() {
     try {
       await companyStore.initializeStore()
       
-      if (!companyStore.isConfigured) {
+      // Check if we have a stored cashier
+      const storedCashier = localStorage.getItem('selectedCashier')
+      
+      // Only show dialog if no cashier is stored
+      if (!storedCashier) {
         showSelectionDialog.value = true
+        logger.info('Showing cashier selection dialog: No stored cashier')
+        return
+      }
+
+      // Try to restore the stored cashier
+      try {
+        await companyStore.setSelectedCashier(Number(storedCashier))
+        logger.info('Restored stored cashier:', storedCashier)
+        // Don't show dialog if restoration succeeds
+        showSelectionDialog.value = false
+      } catch (err) {
+        // Only show dialog if restoring fails
+        showSelectionDialog.value = true
+        logger.warn('Failed to restore stored cashier, showing dialog:', err)
       }
     } catch (err) {
       logger.error('Failed to initialize cashier selection:', err)

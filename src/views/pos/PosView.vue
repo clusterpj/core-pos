@@ -18,91 +18,138 @@
       persistent
       max-width="500px"
       :eager="true"
+      transition="dialog-bottom-transition"
     >
-      <v-card>
-        <v-card-title>Select Cashier</v-card-title>
-        <v-card-text>
-          <v-select
-            v-model="selectedCashier"
-            :items="companyStore.cashRegistersForDisplay"
-            label="Select Cashier"
-            item-title="title"
-            item-value="value"
-            :error-messages="cashierError"
-            :loading="companyStore.loadingCashRegisters"
-            :disabled="companyStore.loadingCashRegisters"
-            @update:model-value="handleCashierChange"
-          >
-            <template #item="{ props, item }">
-              <v-list-item v-bind="props">
-                <v-list-item-title>{{ item.raw.title }}</v-list-item-title>
-                <v-list-item-subtitle>
-                  Store: {{ item.raw.storeName || 'Not assigned' }}
-                </v-list-item-subtitle>
-              </v-list-item>
-            </template>
-          </v-select>
+      <v-card class="selection-dialog">
+        <v-toolbar
+          color="primary"
+          density="compact"
+        >
+          <v-toolbar-title class="text-white">
+            Select Cashier
+          </v-toolbar-title>
+        </v-toolbar>
 
-          <!-- Display selected info -->
-          <v-list v-if="selectedCashier" density="compact" class="mt-4">
-            <v-list-item>
-              <template #prepend>
-                <v-icon icon="mdi-store" class="mr-2" />
+        <v-card-text class="pt-4">
+          <!-- Loading State -->
+          <div v-if="companyStore.loadingCashRegisters" class="d-flex flex-column align-center py-4">
+            <v-progress-circular
+              indeterminate
+              color="primary"
+              size="32"
+            />
+            <span class="text-medium-emphasis mt-2">Loading cashiers...</span>
+          </div>
+
+          <!-- Selection Form -->
+          <div v-else>
+            <v-select
+              v-model="selectedCashier"
+              :items="companyStore.cashRegistersForDisplay"
+              label="Select your cash register"
+              item-title="title"
+              item-value="value"
+              :error-messages="cashierError"
+              :loading="companyStore.loadingCashRegisters"
+              :disabled="companyStore.loadingCashRegisters"
+              variant="outlined"
+              @update:model-value="handleCashierChange"
+            >
+              <template #item="{ props, item }">
+                <v-list-item v-bind="props">
+                  <template #prepend>
+                    <v-icon icon="mdi-cash-register" class="mr-2" />
+                  </template>
+                  <v-list-item-title>{{ item.raw.title }}</v-list-item-title>
+                  <v-list-item-subtitle>
+                    Store: {{ item.raw.storeName || 'Not assigned' }}
+                  </v-list-item-subtitle>
+                </v-list-item>
               </template>
-              <v-list-item-title>Store</v-list-item-title>
-              <v-list-item-subtitle>
-                <template v-if="companyStore.loadingStores">
-                  <v-progress-linear
-                    indeterminate
-                    color="primary"
-                    class="mt-2"
-                  />
-                </template>
-                <template v-else>
-                  {{ companyStore.selectedStoreDisplay || 'No store selected' }}
-                </template>
-              </v-list-item-subtitle>
-            </v-list-item>
+            </v-select>
 
-            <v-list-item>
-              <template #prepend>
-                <v-icon icon="mdi-account-multiple" class="mr-2" />
-              </template>
-              <v-list-item-title>Customer</v-list-item-title>
-              <v-list-item-subtitle>
-                <template v-if="companyStore.loading">
-                  <v-progress-linear
-                    indeterminate
-                    color="primary"
-                    class="mt-2"
-                  />
-                </template>
-                <template v-else>
-                  {{ companyStore.selectedCustomerDisplay || 'No customer selected' }}
-                </template>
-              </v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
+            <!-- Info Cards -->
+            <v-slide-y-transition group>
+              <v-card
+                v-if="selectedCashier"
+                variant="outlined"
+                class="mt-4"
+              >
+                <v-list>
+                  <!-- Store Info -->
+                  <v-list-item>
+                    <template #prepend>
+                      <v-icon icon="mdi-store" color="primary" class="mr-2" />
+                    </template>
+                    <v-list-item-title class="text-subtitle-2">Store</v-list-item-title>
+                    <v-list-item-subtitle>
+                      <template v-if="companyStore.loadingStores">
+                        <v-progress-linear
+                          indeterminate
+                          color="primary"
+                          height="2"
+                          class="mt-2"
+                        />
+                      </template>
+                      <template v-else>
+                        {{ companyStore.selectedStoreDisplay || 'No store selected' }}
+                      </template>
+                    </v-list-item-subtitle>
+                  </v-list-item>
 
-          <!-- Error Messages -->
-          <v-alert
-            v-if="companyStore.storeError"
-            type="error"
-            density="compact"
-            class="mt-4"
-          >
-            Failed to load store information: {{ companyStore.storeError }}
-          </v-alert>
+                  <!-- Customer Info -->
+                  <v-list-item>
+                    <template #prepend>
+                      <v-icon icon="mdi-account-multiple" color="primary" class="mr-2" />
+                    </template>
+                    <v-list-item-title class="text-subtitle-2">Customer</v-list-item-title>
+                    <v-list-item-subtitle>
+                      <template v-if="companyStore.loading">
+                        <v-progress-linear
+                          indeterminate
+                          color="primary"
+                          height="2"
+                          class="mt-2"
+                        />
+                      </template>
+                      <template v-else>
+                        {{ companyStore.selectedCustomerDisplay || 'No customer selected' }}
+                      </template>
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </v-card>
+            </v-slide-y-transition>
+
+            <!-- Error Messages -->
+            <v-alert
+              v-if="companyStore.storeError"
+              type="error"
+              variant="tonal"
+              density="compact"
+              class="mt-4"
+              icon="mdi-alert-circle"
+            >
+              Failed to load store information: {{ companyStore.storeError }}
+            </v-alert>
+          </div>
         </v-card-text>
-        <v-card-actions>
+
+        <v-divider />
+
+        <v-card-actions class="pa-4">
           <v-spacer />
           <v-btn
             color="primary"
             :disabled="!isReadyToContinue"
             :loading="companyStore.loadingStores || companyStore.loading"
+            min-width="120"
             @click="showSelectionDialog = false"
           >
             Continue
+            <template #append>
+              <v-icon icon="mdi-arrow-right" />
+            </template>
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -215,11 +262,11 @@ const {
 watch(
   () => companyStore.isConfigured,
   (isConfigured) => {
-    if (!isConfigured && !showSelectionDialog.value) {
+    // Only show dialog if store is not configured AND we don't have a stored cashier
+    if (!isConfigured && !localStorage.getItem('selectedCashier') && !showSelectionDialog.value) {
       showSelectionDialog.value = true
     }
-  },
-  { immediate: true }
+  }
 )
 
 // Initialize store data
@@ -344,5 +391,56 @@ onMounted(async () => {
 
 .border-r {
   border-right: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+/* Selection Dialog Styles */
+.selection-dialog {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.selection-dialog :deep(.v-card-text) {
+  padding: 20px;
+}
+
+.selection-dialog :deep(.v-list-item) {
+  min-height: 64px;
+  padding: 12px;
+}
+
+.selection-dialog :deep(.v-list-item__prepend) {
+  margin-right: 12px;
+}
+
+/* Dialog Transition */
+:deep(.dialog-bottom-transition-enter-active),
+:deep(.dialog-bottom-transition-leave-active) {
+  transition: transform 0.3s ease-in-out;
+}
+
+:deep(.dialog-bottom-transition-enter-from),
+:deep(.dialog-bottom-transition-leave-to) {
+  transform: translateY(100%);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 600px) {
+  .selection-dialog {
+    margin: 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .selection-dialog :deep(.v-card-text) {
+    padding: 16px;
+  }
+
+  .selection-dialog :deep(.v-list-item) {
+    min-height: 56px;
+    padding: 8px;
+  }
 }
 </style>
