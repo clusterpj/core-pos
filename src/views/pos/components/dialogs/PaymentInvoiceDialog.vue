@@ -56,18 +56,24 @@
               <v-col cols="12" md="4">
                 <v-card
                   variant="elevated"
-                  class="invoice-summary-card mb-2"
-                  elevation="1"
+                  class="invoice-summary-card mb-4"
+                  elevation="2"
                 >
-                  <v-card-text class="pa-2">
-                    <div class="d-flex align-center mb-2">
+                  <v-card-item>
+                    <template v-slot:prepend>
                       <v-icon
                         icon="mdi-receipt"
+                        size="large"
                         color="primary"
-                        class="mr-2"
+                        class="mr-4"
                       ></v-icon>
-                      <span class="text-subtitle-1 font-weight-medium">Invoice Summary</span>
-                    </div>
+                    </template>
+                    <v-card-title class="text-h6 pb-2">
+                      Invoice Summary
+                    </v-card-title>
+                  </v-card-item>
+                  <v-divider></v-divider>
+                  <v-card-text class="py-4">
                     <div class="d-flex justify-space-between mb-2">
                       <span>Invoice Number:</span>
                       <strong>{{ invoiceNumber }}</strong>
@@ -107,7 +113,7 @@
             <!-- Payment Methods Selection -->
             <v-row>
               <v-col cols="12">
-                <div class="text-subtitle-1 mb-3">Select Payment Method</div>
+                <div class="text-subtitle-1 mb-3 font-weight-medium">Select Payment Method</div>
                 <v-row class="payment-methods-grid">
                   <v-col v-for="method in paymentMethods" 
                          :key="method.id" 
@@ -119,6 +125,7 @@
                       :variant="isMethodSelected(method.id) ? 'flat' : 'outlined'"
                       class="payment-method-btn"
                       height="64"
+                      :disabled="isMethodDisabled(method.id)"
                       @click="selectPaymentMethod(method.id)"
                       :disabled="isMethodDisabled(method.id)"
                     >
@@ -915,11 +922,12 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .invoice-summary-card {
+  position: sticky;
+  top: 16px;
+  z-index: 1;
   background: linear-gradient(145deg, var(--v-surface-variant) 0%, var(--v-surface-base) 100%);
-  border-radius: 24px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(var(--v-border-color), 0.05);
-  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
 .invoice-summary-card:hover {
@@ -928,23 +936,20 @@ watch(() => dialog.value, async (newValue) => {
 }
 
 .payment-method-btn {
-  min-height: 40px;
-  border-radius: 8px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 0.85rem;
-  letter-spacing: 0.25px;
-  border: 1px solid rgba(var(--v-border-color), 0.05);
-  padding: 0 8px !important;
+  height: 64px !important;
+  border-radius: 12px;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  font-size: 1rem;
+  font-weight: 500;
   
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
   }
   
-  &.v-btn--active {
-    background: linear-gradient(135deg, var(--v-primary-base) 0%, var(--v-primary-darken1) 100%);
-    color: white;
-    border: none;
+  &.v-btn--disabled {
+    opacity: 0.7;
   }
 }
 
