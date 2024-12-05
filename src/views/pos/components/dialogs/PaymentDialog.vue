@@ -423,7 +423,7 @@ const invoiceNumber = computed(() => {
 const calculatedTip = computed(() => {
   const percent = selectedTipPercent.value || Number(customTipPercent.value) || 0
   const dollarAmount = PriceUtils.toDollars(invoiceTotal.value)
-  const tipAmount = Math.round((dollarAmount * percent) * 100)
+  const tipAmount = Math.round((dollarAmount * (percent / 100)) * 100)
   console.log('PaymentDialog - Tip calculation:', {
     percent,
     invoiceTotalInCents: invoiceTotal.value,
