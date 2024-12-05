@@ -207,8 +207,8 @@
                   <tr v-for="item in selectedInvoiceDetails.items" :key="item.id">
                     <td>{{ item.name }}</td>
                     <td class="text-right">{{ item.quantity }}</td>
-                    <td class="text-right">{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(item.price)) }}</td>
-                    <td class="text-right">{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(item.total)) }}</td>
+                    <td class="text-right">{{ PriceUtils.format(normalizePriceFromBackend(item.price)) }}</td>
+                    <td class="text-right">{{ PriceUtils.format(normalizePriceFromBackend(item.total)) }}</td>
                   </tr>
                 </tbody>
               </v-table>
@@ -220,16 +220,16 @@
             <v-col cols="12" sm="6" offset-sm="6">
               <div class="d-flex justify-space-between mb-2">
                 <strong>Subtotal:</strong>
-                <span>{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(selectedInvoiceDetails.sub_total)) }}</span>
+                <span>{{ PriceUtils.format(normalizePriceFromBackend(selectedInvoiceDetails.sub_total)) }}</span>
               </div>
               <div class="d-flex justify-space-between mb-2">
                 <strong>Tax:</strong>
-                <span>{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(selectedInvoiceDetails.tax)) }}</span>
+                <span>{{ PriceUtils.format(normalizePriceFromBackend(selectedInvoiceDetails.tax)) }}</span>
               </div>
               <v-divider class="my-2"></v-divider>
               <div class="d-flex justify-space-between">
                 <strong>Total:</strong>
-                <span class="text-h6">{{ PriceUtils.formatInvoiceAmount(normalizePriceFromBackend(selectedInvoiceDetails.total)) }}</span>
+                <span>{{ PriceUtils.format(normalizePriceFromBackend(selectedInvoiceDetails.total)) }}</span>
               </div>
             </v-col>
           </v-row>
@@ -345,7 +345,16 @@ const formatDate = (date) => {
 // Helper function to detect and normalize price
 const normalizePriceFromBackend = (price) => {
   if (!price) return 0;
-  return PriceUtils.normalizePrice(price);
+  // First ensure we have a valid number
+  const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+  
+  // If the price is already in cents (large number), convert to dollars for display
+  if (numericPrice > 1000) { // Threshold to detect if price is in cents
+    return PriceUtils.toDollars(numericPrice);
+  }
+  
+  // Otherwise, assume it's already in dollars
+  return numericPrice;
 }
 
 const loadInvoiceToCart = async (invoice) => {
