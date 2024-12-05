@@ -127,7 +127,6 @@
                       height="64"
                       :disabled="isMethodDisabled(method.id)"
                       @click="selectPaymentMethod(method.id)"
-                      :disabled="isMethodDisabled(method.id)"
                     >
                       <v-icon :icon="getPaymentMethodIcon(method.name)" class="mr-2"></v-icon>
                       {{ method.name }}
