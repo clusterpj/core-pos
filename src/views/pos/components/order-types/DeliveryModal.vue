@@ -1,5 +1,10 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600" :scrim="true" transition="dialog-bottom-transition" class="rounded-lg">
+  <v-dialog 
+    v-model="dialog" 
+    fullscreen
+    transition="dialog-bottom-transition"
+    :scrim="false"
+  >
     <DeliveryPaymentDialog
       v-model="showPaymentDialog"
       :invoice="invoiceData"
@@ -14,28 +19,38 @@
         :disabled="disabled || cartStore.isEmpty"
         class="text-none px-6"
         rounded="pill"
-        elevation="2"
+        :elevation="$vuetify.display.mobile ? 1 : 2"
         size="large"
+        :block="$vuetify.display.mobile"
       >
-        DELIVERY
+        <span class="text-subtitle-1 font-weight-medium">DELIVERY</span>
       </v-btn>
     </template>
 
-    <v-card class="rounded-lg">
-      <v-toolbar color="primary" density="comfortable">
+    <v-card class="modal-card">
+      <v-toolbar 
+        color="primary"
+        density="comfortable"
+      >
         <v-toolbar-title class="text-h6 font-weight-medium">
-          Pick Up Order
+          <v-icon icon="mdi-truck-delivery" size="large" class="mr-2"></v-icon>
+          Delivery Order
         </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn icon="mdi-close" variant="text" @click="closeModal" />
+        <v-btn
+          icon
+          @click="closeModal"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-toolbar>
 
-      <v-card-text>
-        <v-container>
+      <v-card-text class="pa-0 fill-height d-flex flex-column">
+        <v-container fluid class="flex-grow-1 pa-4">
           <!-- Loading State -->
           <v-row v-if="loading">
             <v-col cols="12" class="text-center">
-              <v-progress-circular indeterminate></v-progress-circular>
+              <v-progress-circular indeterminate size="64"></v-progress-circular>
             </v-col>
           </v-row>
 
@@ -781,11 +796,41 @@ const closeModal = () => {
 </script>
 
 <style scoped>
-.v-card-text {
-  padding-top: 20px;
+.modal-card {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: rgb(var(--v-theme-surface));
 }
 
-.text-subtitle-1 {
-  color: rgba(var(--v-theme-on-surface), 0.7);
+.v-toolbar {
+  position: relative;
+  z-index: 1;
+}
+
+.v-card-text {
+  overflow-y: auto;
+}
+
+:deep(.v-text-field .v-field__input),
+:deep(.v-select .v-field__input),
+:deep(.v-textarea .v-field__input) {
+  min-height: 44px;
+  padding-top: 8px;
+}
+
+:deep(.v-card-actions) {
+  background-color: rgb(var(--v-theme-surface));
+  border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+  padding: 12px 24px;
+}
+
+.form-section {
+  margin-bottom: 24px;
+}
+
+.form-section-title {
+  margin-bottom: 16px;
+  font-weight: 500;
 }
 </style>

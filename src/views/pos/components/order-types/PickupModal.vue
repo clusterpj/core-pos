@@ -1,5 +1,10 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600" :scrim="true" transition="dialog-bottom-transition" class="rounded-lg">
+  <v-dialog 
+    v-model="dialog" 
+    fullscreen
+    transition="dialog-bottom-transition"
+    :scrim="false"
+  >
     <DeliveryPaymentDialog
       v-model="showPaymentDialog"
       :invoice="invoiceData"
@@ -14,28 +19,38 @@
         :disabled="disabled || cartStore.isEmpty"
         class="text-none px-6"
         rounded="pill"
-        elevation="2"
+        :elevation="$vuetify.display.mobile ? 1 : 2"
         size="large"
+        :block="$vuetify.display.mobile"
       >
-        PICK UP
+        <span class="text-subtitle-1 font-weight-medium">PICK UP</span>
       </v-btn>
     </template>
 
-    <v-card class="rounded-lg">
-      <v-toolbar color="primary" density="comfortable">
+    <v-card class="modal-card">
+      <v-toolbar 
+        color="primary"
+        density="comfortable"
+      >
         <v-toolbar-title class="text-h6 font-weight-medium">
+          <v-icon icon="mdi-store-clock" size="large" class="mr-2"></v-icon>
           Pick Up Order
         </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn icon="mdi-close" variant="text" @click="closeModal" />
+        <v-btn
+          icon
+          @click="closeModal"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-toolbar>
 
-      <v-card-text>
-        <v-container>
+      <v-card-text class="pa-0 fill-height d-flex flex-column">
+        <v-container fluid class="flex-grow-1 pa-4">
           <!-- Loading State -->
           <v-row v-if="loading">
             <v-col cols="12" class="text-center">
-              <v-progress-circular indeterminate></v-progress-circular>
+              <v-progress-circular indeterminate size="64"></v-progress-circular>
             </v-col>
           </v-row>
 
@@ -62,6 +77,7 @@
                   :error-messages="validationErrors.name"
                   label="Search Customer"
                   item-title="title"
+                  item-subtitle="subtitle"
                   item-value="value"
                   variant="outlined"
                   density="comfortable"
@@ -94,22 +110,6 @@
                           Create New
                         </v-btn>
                       </template>
-                    </v-list-item>
-                  </template>
-                  <template v-slot:item="{ props, item }">
-                    <v-list-item v-bind="props">
-                      <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
-                      <v-list-item-subtitle>
-                        {{ item.raw.phone || 'No phone' }}
-                        {{ item.raw.email ? `• ${item.raw.email}` : '' }}
-                      </v-list-item-subtitle>
-                      <v-list-item-subtitle v-if="item.raw.address_street_1">
-                        {{ item.raw.address_street_1 }}
-                        {{ item.raw.address_street_2 ? `, ${item.raw.address_street_2}` : '' }}
-                        {{ item.raw.city ? `, ${item.raw.city}` : '' }}
-                        {{ item.raw.state ? ` ${item.raw.state}` : '' }}
-                        {{ item.raw.zip_code ? ` ${item.raw.zip_code}` : '' }}
-                      </v-list-item-subtitle>
                     </v-list-item>
                   </template>
                 </v-autocomplete>
@@ -206,40 +206,20 @@
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
-import StateDropdown from '@/components/common/StateDropdown.vue'
 import CreateCustomerDialog from '../customer/CreateCustomerDialog.vue'
 import DeliveryPaymentDialog from '../dialogs/DeliveryPaymentDialog.vue'
-import { useOrderType } from '../../composables/useOrderType'
+import { useOrderType, ORDER_TYPES } from '../../composables/useOrderType'
 import { useCustomerSearch } from '../../composables/useCustomerSearch'
-import { usePosStore } from '@/stores/pos-store'
 import { useCartStore } from '@/stores/cart-store'
 import { useCompanyStore } from '@/stores/company'
 import { logger } from '../../../../utils/logger'
-import { apiClient } from '@/services/api/client'
 import { posApi } from '@/services/api/pos-api'
-import { convertHeldOrderToInvoice } from '../held-orders/utils/invoiceConverter'
+import { PriceUtils } from '@/utils/price'
 
-// Props
-const props = defineProps({
-  disabled: {
-    type: Boolean,
-    default: false
-  }
-})
-
-// Store access
-const posStore = usePosStore()
+// Initialize composables and stores
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
-
-// Composables
-const { 
-  setOrderType, 
-  processOrder: processOrderType, 
-  ORDER_TYPES, 
-  error: orderError,
-  setCustomerInfo
-} = useOrderType()
+const { setOrderType, setCustomerInfo } = useOrderType()
 
 // Customer search integration
 const { 
@@ -250,181 +230,83 @@ const {
   createCustomer
 } = useCustomerSearch()
 
+// Props
+const props = defineProps({
+  disabled: {
+    type: Boolean,
+    default: false
+  }
+})
+
 // Local state
 const dialog = ref(false)
 const loading = ref(false)
 const processing = ref(false)
 const sendSms = ref(false)
 const showPaymentDialog = ref(false)
-const error = computed(() => orderError.value || searchError.value)
-
-const canProcessOrder = computed(() => {
-  return !cartStore.isEmpty && 
-         (customerInfo.name || '').trim() && 
-         (customerInfo.phone || '').trim() && 
-         (customerInfo.pickupTime || '').trim()
-})
+const error = computed(() => searchError.value)
 const customerSearch = ref('')
 const selectedCustomer = ref(null)
 const showCreateCustomer = ref(false)
 
 // Customer search handlers
 const onCustomerSearch = async (search) => {
-  customerSearch.value = search // Maintain search text
-  if (search && search.length >= 3) {
-    try {
-      // Check if search is a phone number (contains only digits, spaces, dashes or parentheses)
-      const isPhoneSearch = /^[\d\s\-()]+$/.test(search)
-      // If it's a phone search, clean up the format before searching
-      const searchTerm = isPhoneSearch ? search.replace(/[\s\-()]/g, '') : search
-      
-      // Get the search results
-      const response = await apiClient.get('/v1/customers', {
-        params: {
-          search: searchTerm,
-          status_customer: 'A',
-          orderByField: 'created_at',
-          orderBy: 'desc',
-          page: 1
-        }
-      })
-      
-      // Extract and format the customers from the paginated response
-      const customers = response.data.customers?.data || []
-      
-      // Update the search results with properly formatted data for v-autocomplete
-      searchResults.value = customers.map(customer => {
-        const displayName = customer.name || customer.customer_username || 'Unknown'
-        const displayPhone = customer.phone ? customer.phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') : 'No phone'
-        const displayEmail = customer.email ? ` • ${customer.email}` : ''
-        
-        return {
-          ...customer,
-          title: isPhoneSearch ? `${displayPhone} - ${displayName}` : displayName,
-          subtitle: isPhoneSearch ? displayEmail : `${displayPhone}${displayEmail}`,
-          value: customer.id
-        }
-      })
-      
-      logger.debug('Customer search results:', {
-        searchTerm,
-        isPhoneSearch,
-        results: searchResults.value
-      })
-    } catch (error) {
-      logger.error('Customer search failed:', error)
-      searchResults.value = []
-    }
-  } else {
+  if (!search || search.length < 3) {
     searchResults.value = []
+    return
+  }
+
+  try {
+    isSearching.value = true
+    await searchCustomers(search)
+  } catch (err) {
+    logger.error('Error searching customers:', err)
   }
 }
 
-const onCustomerSelect = async (customer) => {
-  if (customer) {
-    logger.debug('Customer selected:', customer)
+const onCustomerSelect = async (selection) => {
+  if (!selection) {
+    clearSelectedCustomer()
+    return
+  }
 
-    try {
-      // Fetch full customer details including addresses
-      const response = await apiClient.get(`/v1/customers/${customer.id}`, {
-        params: {
-          include: 'billing_address,addresses'
-        }
-      })
-      
-      const fullCustomer = response.data.customer
-      const billingAddress = fullCustomer.billing_address || {}
-      
-      logger.debug('Full customer data:', fullCustomer)
-      logger.debug('Billing address:', billingAddress)
-
-      // Populate all available customer information with null checks
-      customerInfo.name = fullCustomer?.name?.trim() || fullCustomer?.first_name?.trim() || ''
-      customerInfo.phone = fullCustomer?.phone?.trim() || ''
-      customerInfo.email = fullCustomer?.email?.trim() || ''
-      
-      // Set address information from billing address with null checks
-      customerInfo.address = billingAddress?.address_street_1?.trim() || ''
-      customerInfo.unit = billingAddress?.address_street_2?.trim() || ''
-      customerInfo.city = billingAddress?.city?.trim() || ''
-      customerInfo.zipCode = billingAddress?.zip?.trim() || ''
-      
-      // Handle state information
-      if (billingAddress.state) {
-        customerInfo.state = billingAddress.state.code || ''
-        customerInfo.state_id = billingAddress.state.id || null
-      } else {
-        customerInfo.state = ''
-        customerInfo.state_id = null
-      }
-    
-      customerInfo.instructions = customer.notes || ''
-      
-      // Keep the search value after selection
-      customerSearch.value = customer.name
-      
-      // Log the populated data for debugging
+  try {
+    const customer = selection.value
+    if (customer) {
+      customerInfo.phone = customer.phone || ''
+      customerInfo.name = customer.name || ''
+      customerInfo.email = customer.email || ''
       logger.debug('Customer selected:', customer)
-      logger.debug('Billing address:', billingAddress)
-      logger.info('Customer data populated:', { 
-        customer: customer.id,
-        fields: { ...customerInfo }
-      })
-
-      // Clear any existing validation errors
-      clearAllErrors()
-    } catch (error) {
-      logger.error('Error fetching customer details:', error)
-      if (window.toastr) {
-        window.toastr.error('Failed to load customer details')
-      }
     }
+  } catch (err) {
+    logger.error('Error selecting customer:', err)
+    clearSelectedCustomer()
   }
 }
 
 const clearSelectedCustomer = () => {
   selectedCustomer.value = null
-  customerSearch.value = ''
-  Object.keys(customerInfo).forEach(key => {
-    customerInfo[key] = ''
-  })
+  customerInfo.name = ''
+  customerInfo.phone = ''
+  customerInfo.email = ''
+  customerInfo.pickupTime = ''
+  customerInfo.instructions = ''
 }
 
-const onCustomerCreated = async (customer) => {
-  try {
-    logger.info('New customer created:', customer)
-    
-    // Close the create customer dialog
-    showCreateCustomer.value = false
-    
-    // Set the selected customer and populate the form
-    selectedCustomer.value = customer
-    customerSearch.value = customer.name
-    
-    // Populate delivery form with customer data
-    customerInfo.name = customer.name
-    customerInfo.phone = customer.phone || ''
-    customerInfo.email = customer.email || ''
-    customerInfo.address = customer.address_street_1 || ''
-    customerInfo.unit = customer.address_street_2 || ''
-    customerInfo.city = customer.city || ''
-    customerInfo.state = customer.state || ''
-    customerInfo.zipCode = customer.zip || ''
-    customerInfo.instructions = customer.notes || ''
-    
-    // Clear any existing validation errors
-    clearAllErrors()
-    
-    // Show success message
-    if (window.toastr) {
-      window.toastr.success('Customer created and loaded successfully')
-    }
-  } catch (error) {
-    logger.error('Error handling new customer:', error)
-    if (window.toastr) {
-      window.toastr.error('Error loading customer data')
-    }
+const onCustomerCreated = (customer) => {
+  logger.debug('[PickupModal] New customer created:', customer)
+  selectedCustomer.value = {
+    id: customer.id,
+    title: customer.name,
+    phone: customer.phone,
+    email: customer.email
   }
+  showCreateCustomer.value = false
+  
+  // Update form with new customer info
+  customerInfo.name = customer.name
+  customerInfo.phone = customer.phone
+  customerInfo.email = customer.email
 }
 
 // Form state
@@ -436,11 +318,6 @@ const customerInfo = reactive({
   instructions: ''
 })
 
-const onStateSelect = (state) => {
-  customerInfo.state_id = state.id
-  customerInfo.state = state.code
-}
-
 // Validation
 const validationErrors = reactive({
   name: '',
@@ -448,10 +325,18 @@ const validationErrors = reactive({
   pickupTime: ''
 })
 
+// Computed properties
+const canProcessOrder = computed(() => {
+  return !cartStore.isEmpty && 
+         (customerInfo.name || '').trim() && 
+         (customerInfo.phone || '').trim() && 
+         (customerInfo.pickupTime || '').trim()
+})
+
 // Watch for dialog open to set order type
 watch(dialog, (newValue) => {
   if (newValue) {
-    setOrderType(ORDER_TYPES.DELIVERY)
+    setOrderType(ORDER_TYPES.PICKUP)
   } else {
     // Reset form when dialog closes
     Object.keys(customerInfo).forEach(key => {
@@ -509,24 +394,11 @@ const processOrder = async () => {
   processing.value = true
 
   try {
-    // Format full address
-    const fullAddress = [
-      customerInfo.address.trim(),
-      customerInfo.unit.trim(),
-      customerInfo.zipCode.trim()
-    ].filter(Boolean).join(', ')
-
     // Update customer info in the order type composable
     const customerData = {
       customer_id: selectedCustomer.value?.id || null,
       name: (customerInfo.name || '').trim(),
       phone: (customerInfo.phone || '').trim(),
-      address: (customerInfo.address || '').trim(),
-      unit: (customerInfo.unit || '').trim(),
-      zip: (customerInfo.zipCode || '').trim(),
-      city: (customerInfo.city || '').trim(),
-      state: (customerInfo.state || '').trim(),
-      state_id: customerInfo.state_id,
       email: (customerInfo.email || '').trim(),
       instructions: (customerInfo.instructions || '').trim(),
       send_sms: sendSms.value ? 1 : 0
@@ -538,26 +410,31 @@ const processOrder = async () => {
     const dueDate = new Date(currentDate)
     dueDate.setDate(dueDate.getDate() + 7) // Set due date to 7 days from now
 
+    // Get next invoice number
+    const nextInvoice = await posApi.invoice.getNextNumber()
+    if (!nextInvoice) {
+      throw new Error('Failed to get next invoice number')
+    }
+
     // Create invoice data with required fields
     const orderData = {
       // Required fields first
       invoice_date: currentDate.toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
-      invoice_number: `DEL-${Date.now()}`, // Temporary invoice number
-      sub_total: Math.round(Number(cartStore.subtotal * 100) || 0),
-      total: Math.round(Number(cartStore.total * 100) || 0),
-      tax: Math.round(Number(cartStore.taxAmount * 100) || 0),
-      send_sms: sendSms.value ? 1 : 0,
+      invoice_number: `${nextInvoice.prefix}-${nextInvoice.nextNumber}`,
+      sub_total: cartStore.subtotal, // Already in cents from the cart store
+      total: cartStore.total, // Already in cents from the cart store
+      tax: cartStore.taxAmount, // Already in cents from the cart store
       items: cartStore.items.map(item => ({
         item_id: item.id,
         name: item.name,
         description: item.description || '',
-        price: Math.round(Number(item.price * 100) || 0),
-        quantity: Math.round(Number(item.quantity) || 1),
+        price: PriceUtils.normalizePrice(item.price),
+        quantity: item.quantity,
         unit_name: item.unit_name || 'units',
-        sub_total: Math.round(Number(item.subtotal * 100) || 0),
-        total: Math.round(Number(item.total * 100) || 0),
-        tax: Math.round(Number(item.tax * 100) || 0)
+        total: PriceUtils.normalizePrice(item.total),
+        sub_total: PriceUtils.normalizePrice(item.sub_total),
+        tax: PriceUtils.normalizePrice(item.tax || 0)
       })),
 
       // Boolean flags
@@ -594,29 +471,10 @@ const processOrder = async () => {
         identification: 'N/A'  // Default value for identification
       },
 
-      // Arrays - ensure all required arrays are initialized
+      // Arrays
       tables_selected: [],
       packages: [],
       taxes: [],
-      retentions: [],
-      items: state.items.map(item => ({
-        item_id: Number(item.id),
-        name: item.name,
-        description: item.description || '',
-        price: Math.round(Number(item.price * 100)),
-        quantity: Math.round(Number(item.quantity)),
-        unit_name: item.unit_name || 'units',
-        sub_total: Math.round(Number(item.price * item.quantity * 100)),
-        total: Math.round(Number(item.price * item.quantity * 100)),
-        tax: Math.round(Number(item.tax || 0)),
-        discount: "0",
-        discount_val: 0,
-        discount_type: "fixed",
-        retention_amount: 0,
-        retention_concept: "NO_RETENTION",
-        retention_percentage: 0,
-        retentions_id: null
-      })),
 
       // Amounts and calculations
       discount: "0",
@@ -635,62 +493,38 @@ const processOrder = async () => {
       tip_val: 0
     }
 
-    logger.debug('Creating hold order with data:', orderData)
+    logger.debug('Creating pickup order with data:', orderData)
 
-    // Get next invoice number
-    const nextInvoice = await posApi.invoice.getNextNumber()
-    
-    if (!nextInvoice) {
-      throw new Error('Failed to get next invoice number')
-    }
-
-    // Add invoice number to order data
-    orderData.invoice_number = `${nextInvoice.prefix}-${nextInvoice.nextNumber}`
-    
-    // Create invoice directly
+    // Create invoice
     const invoiceResult = await posApi.invoice.create(orderData)
     
-    // Check if we have an invoice object, regardless of success flag
     if (!invoiceResult?.invoice) {
-      const errorMsg = 'No invoice data received'
-      logger.error('Failed to create invoice:', {
-        result: invoiceResult,
-        orderData: orderData
-      })
-      throw new Error(errorMsg)
+      throw new Error('No invoice data received')
     }
 
-    logger.debug('Invoice created successfully:', invoiceResult.invoice)
+    logger.debug('Invoice created successfully:', invoiceResult)
 
-    const convertedInvoiceData = {
-      success: true,
-      invoice: invoiceResult.invoice
-    }
-    
-    if (!convertedInvoiceData.success) {
-      throw new Error('Failed to prepare invoice data')
-    }
-
-    logger.debug('Converted invoice data:', convertedInvoiceData)
-
-    // Update invoice data ref
+    // Update invoice data for payment dialog
     invoiceData.value = {
-      invoice: convertedInvoiceData.invoice,
+      invoice: {
+        ...invoiceResult.invoice,
+        type: ORDER_TYPES.PICKUP  // Explicitly set the type
+      },
       invoicePrefix: nextInvoice.prefix,
       nextInvoiceNumber: nextInvoice.nextNumber
     }
 
     // Show payment dialog
     showPaymentDialog.value = true
-  } catch (err) {
-    logger.error('Failed to prepare delivery order:', {
-      error: err,
-      message: err.message,
-      data: {
-        customerInfo
-      }
+  } catch (error) {
+    logger.error('Failed to prepare pickup order:', {
+      error,
+      message: error.message,
+      data: { customerInfo }
     })
-    window.toastr?.error(err.message || 'Failed to prepare delivery order')
+    if (window.toastr) {
+      window.toastr.error('Failed to create pickup order. Please try again.')
+    }
   } finally {
     processing.value = false
   }
@@ -712,11 +546,55 @@ const closeModal = () => {
 </script>
 
 <style scoped>
-.v-card-text {
-  padding-top: 20px;
+.modal-card {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: rgb(var(--v-theme-surface));
 }
 
-.text-subtitle-1 {
-  color: rgba(var(--v-theme-on-surface), 0.7);
+.v-toolbar {
+  position: relative;
+  z-index: 1;
+}
+
+.v-card-text {
+  overflow-y: auto;
+}
+
+:deep(.v-text-field .v-field__input),
+:deep(.v-select .v-field__input),
+:deep(.v-textarea .v-field__input) {
+  min-height: 44px;
+  padding-top: 8px;
+}
+
+:deep(.v-card-actions) {
+  background-color: rgb(var(--v-theme-surface));
+  border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+  padding: 12px 24px;
+}
+
+.form-section {
+  margin-bottom: 24px;
+}
+
+.form-section-title {
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+:deep(.v-switch .v-selection-control) {
+  min-height: 44px;
+}
+
+:deep(.v-list-item) {
+  min-height: 64px;
+  padding: 12px 16px;
+}
+
+:deep(.v-list-item-subtitle) {
+  margin-top: 4px;
+  opacity: 0.7;
 }
 </style>

@@ -37,13 +37,16 @@ export function useCustomerSearch() {
       })
 
       if (response.data?.customers?.data) {
-        searchResults.value = response.data.customers.data.map(customer => ({
-          id: customer.id,
-          name: customer.name,
-          phone: customer.phone,
-          email: customer.email,
-          address: customer.address_street_1
-        }))
+        searchResults.value = response.data.customers.data.map(customer => {
+          // Format phone number if present
+          const formattedPhone = customer.phone ? customer.phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1$2$3') : 'No phone'
+          
+          return {
+            title: customer.name,
+            subtitle: `${formattedPhone} • ${customer.email || ''}`,
+            value: customer
+          }
+        })
       }
     } catch (error) {
       logger.error('Customer search failed:', error)
