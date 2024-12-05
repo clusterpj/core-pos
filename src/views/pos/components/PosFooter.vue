@@ -23,7 +23,6 @@
           :disabled="!canPay"
           :loading="isProcessingPayment"
           class="text-none action-btn"
-          rounded="pill"
           elevation="2"
           size="large"
         >
@@ -131,6 +130,7 @@ defineEmits(['print-order', 'submit-order'])
   width: 100% !important;
   height: auto !important;
   min-height: 72px;
+  background-color: #f8f9fa !important;
 }
 
 .footer-content {
@@ -155,7 +155,24 @@ defineEmits(['print-order', 'submit-order'])
   flex: 0 0 auto !important;
   min-width: 100px !important;
   max-width: 130px !important;
-  padding: 0 8px !important;
+  padding: 0 16px !important;
+  height: 48px !important;
+  border-radius: 8px !important;
+  text-transform: none !important;
+  letter-spacing: 0.25px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.order-types :deep(.v-btn:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+.order-types :deep(.v-btn:active) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
 }
 
 .order-actions {
@@ -167,7 +184,25 @@ defineEmits(['print-order', 'submit-order'])
 
 .action-btn {
   white-space: nowrap;
-  min-width: 120px;
+  min-width: 160px !important;
+  height: 48px !important;
+  border-radius: 8px !important;
+  text-transform: none !important;
+  letter-spacing: 0.25px !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+.action-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
 }
 
 /* Large screens */
@@ -187,11 +222,16 @@ defineEmits(['print-order', 'submit-order'])
   .order-types :deep(.v-btn) {
     min-width: 120px !important;
     max-width: 160px !important;
-    padding: 0 16px !important;
+    height: 52px !important;
   }
   
   .order-actions {
     gap: 24px;
+  }
+
+  .action-btn {
+    min-width: 180px !important;
+    height: 52px !important;
   }
 }
 
