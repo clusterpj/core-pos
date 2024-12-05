@@ -37,7 +37,6 @@
       </v-toolbar>
 
       <div class="payment-content">
-        <template>
           <v-container class="payment-container">
           <!-- Loading State -->
           <v-row v-if="loading">
