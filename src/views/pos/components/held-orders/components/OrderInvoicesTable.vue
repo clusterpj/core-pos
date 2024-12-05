@@ -124,13 +124,38 @@
   <!-- Payment Dialog -->
   <PaymentDialog
     v-model="showPaymentDialog"
-    :invoice="{
-      invoice: selectedInvoice,
-      invoicePrefix: selectedInvoice?.invoice_prefix || 'INV',
-      nextInvoiceNumber: selectedInvoice?.id
-    }"
+    :invoice="selectedInvoiceForPayment"
     @payment-complete="handlePaymentComplete"
   />
+
+  <!-- Load Order Confirmation Dialog -->
+  <v-dialog v-model="showLoadConfirmation" max-width="400">
+    <v-card>
+      <v-card-title class="text-h6">
+        Load Order
+      </v-card-title>
+      <v-card-text>
+        Are you sure you want to load this order? Any unsaved changes in the current cart will be lost.
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn
+          color="grey-darken-1"
+          variant="text"
+          @click="showLoadConfirmation = false"
+        >
+          Cancel
+        </v-btn>
+        <v-btn
+          color="primary"
+          variant="text"
+          @click="confirmLoadOrder"
+        >
+          Load Order
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 
   <!-- Invoice Details Dialog -->
   <v-dialog v-model="showDetailsDialog" max-width="700">
@@ -252,8 +277,13 @@
 <script setup>
 import PaymentDialog from '../../../components/dialogs/PaymentInvoiceDialog.vue'
 import { PriceUtils } from '@/utils/price'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, defineProps, defineEmits } from 'vue'
 import { useCartStore } from '@/stores/cart-store'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const cartStore = useCartStore()
+const emit = defineEmits(['update:page', 'invoice-paid', 'refresh', 'close-modal'])
 
 const props = defineProps({
   invoices: {
@@ -295,8 +325,6 @@ const props = defineProps({
   }
 })
 
-const cartStore = useCartStore()
-
 // Log initial props
 console.log('OrderInvoicesTable - Initial props:', {
   invoicesCount: props.invoices.length,
@@ -321,12 +349,13 @@ watch(() => props.invoices, (newInvoices, oldInvoices) => {
   })
 }, { deep: true })
 
-const emit = defineEmits(['update:page', 'invoice-paid', 'refresh'])
-
 // Payment Dialog
 const showPaymentDialog = ref(false)
 const showConfirmDialog = ref(false)
+const showLoadConfirmation = ref(false)
 const selectedInvoice = ref(null)
+const selectedInvoiceForPayment = ref(null)
+const selectedInvoiceForLoading = ref(null)
 const showDetailsDialog = ref(false)
 const selectedInvoiceDetails = ref(null)
 
@@ -357,42 +386,44 @@ const normalizePriceFromBackend = (price) => {
   return numericPrice;
 }
 
+// Load invoice to cart with confirmation
 const loadInvoiceToCart = async (invoice) => {
-  // Normalize prices in the invoice before loading
-  const normalizedInvoice = {
-    ...invoice,
-    total: normalizePriceFromBackend(invoice.total),
-    items: invoice.items?.map(item => ({
-      ...item,
-      price: normalizePriceFromBackend(item.price),
-      total: normalizePriceFromBackend(item.total)
-    }))
-  }
+  selectedInvoiceForLoading.value = invoice
+  showLoadConfirmation.value = true
+}
 
-  console.log('OrderInvoicesTable - Loading invoice to cart:', {
-    id: normalizedInvoice.id,
-    invoice_number: normalizedInvoice.invoice_number,
-    total: normalizedInvoice.total,
-    formatted_total: PriceUtils.format(normalizedInvoice.total),
-    items: normalizedInvoice.items?.map(item => ({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      formatted_price: PriceUtils.format(item.price),
-      quantity: item.quantity
-    }))
-  })
-
+// Confirm and process loading the order
+const confirmLoadOrder = async () => {
   try {
-    await cartStore.loadInvoice(normalizedInvoice)
-    window.toastr?.success('Invoice loaded to cart successfully')
-    console.log('OrderInvoicesTable - Invoice loaded to cart successfully:', {
-      invoice_id: normalizedInvoice.id,
-      invoice_number: normalizedInvoice.invoice_number
+    const invoice = selectedInvoiceForLoading.value
+    if (!invoice) return
+
+    // Clear cart before loading new items
+    cartStore.clearCart()
+    
+    // Load items into cart
+    invoice.items.forEach(item => {
+      cartStore.addItem({
+        id: item.item_id,
+        name: item.name,
+        price: normalizePriceFromBackend(item.price),
+        quantity: item.quantity,
+        description: item.description,
+        unit_name: item.unit_name
+      })
     })
+
+    // Close all modals
+    showLoadConfirmation.value = false
+    emit('close-modal')
+
+    // Navigate to POS view if not already there
+    if (router.currentRoute.value.name !== 'pos') {
+      await router.push({ name: 'pos' })
+    }
   } catch (error) {
-    console.error('OrderInvoicesTable - Failed to load invoice to cart:', error)
-    window.toastr?.error('Failed to load invoice to cart')
+    console.error('Error loading order:', error)
+    // Show error notification
   }
 }
 
@@ -463,6 +494,7 @@ const confirmPayment = () => {
   })
   
   showConfirmDialog.value = false
+  selectedInvoiceForPayment.value = selectedInvoice.value
   showPaymentDialog.value = true
 }
 
