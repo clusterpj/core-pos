@@ -317,7 +317,7 @@ const createInvoice = async () => {
         identification: currentStore.tax_id || "N/A",
         type: "company"
       },
-      type: OrderType.RETAIL,
+      type: OrderType.TO_GO, // Changed from RETAIL to TO_GO since RETAIL is not a valid order type
       status: "SENT",
       paid_status: PaidStatus.UNPAID,
       description: "Retail Point of Sale Transaction",
@@ -357,7 +357,7 @@ const createInvoice = async () => {
       invoice: {
         ...invoiceData,
         id: response?.data?.id || `${nextInvoiceResponse.prefix}-${nextInvoiceResponse.nextNumber}`,
-        type: OrderType.RETAIL,
+        type: OrderType.TO_GO,
         hold_items: formattedItems,
         total: cartStore.total,
         sub_total: cartStore.subtotal,

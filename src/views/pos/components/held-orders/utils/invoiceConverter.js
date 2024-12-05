@@ -186,7 +186,7 @@ export const convertHeldOrderToInvoice = async (invoice) => {
       // Status
       status: "SENT",
       paid_status: invoice.paid_status || PaidStatus.UNPAID,
-      type: invoice.type,
+      type: invoice.type || OrderType.TO_GO,
 
       // Arrays
       items: formattedItems,
