@@ -85,6 +85,7 @@
               @load="handleLoadOrder"
               @convert="handleConvertOrder"
               @delete="handleDeleteOrder"
+              @order-loaded="handleOrderLoaded"
               class="table-component"
             />
           </v-window-item>
@@ -142,6 +143,8 @@
                   :total-pages="totalDeliveryPages"
                   @update:page="(page) => deliveryPage = page"
                   @refresh="fetchInvoices"
+                  @load="handleLoadOrder"
+                  @order-loaded="handleOrderLoaded"
                   class="table-component"
                 />
               </v-col>
@@ -201,6 +204,8 @@
                   :total-pages="totalInvoicePages"
                   @update:page="(page) => invoicePage = page"
                   @refresh="fetchInvoices"
+                  @load="handleLoadOrder"
+                  @order-loaded="handleOrderLoaded"
                   class="table-component"
                 />
               </v-col>
@@ -679,6 +684,14 @@ const confirmDelete = async () => {
     isDeleting.value = false
     selectedInvoice.value = null
   }
+}
+
+const handleOrderLoaded = (invoice) => {
+  logger.info('Order loaded to cart:', {
+    id: invoice.id,
+    invoice_number: invoice.invoice_number
+  })
+  updateModelValue(false) // Close the modal
 }
 
 // Watch for dialog open to refresh the lists

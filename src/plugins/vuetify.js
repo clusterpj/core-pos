@@ -9,6 +9,11 @@ import '@mdi/font/css/materialdesignicons.css'
 export default createVuetify({
   components,
   directives,
+  defaults: {
+    VMain: {
+      class: 'v-main--pos',
+    }
+  },
   icons: {
     defaultSet: 'mdi',
     sets: {

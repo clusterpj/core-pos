@@ -3,17 +3,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import { createVuetify } from 'vuetify'
-import '@mdi/font/css/materialdesignicons.css'
-import 'vuetify/styles'
-
-const vuetify = createVuetify({
-  defaults: {
-    VMain: {
-      class: 'v-main--pos',
-    }
-  }
-})
+import vuetify from './plugins/vuetify'
 
 const app = createApp(App)
 

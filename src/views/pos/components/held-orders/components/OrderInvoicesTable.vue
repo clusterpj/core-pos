@@ -321,7 +321,7 @@ watch(() => props.invoices, (newInvoices, oldInvoices) => {
   })
 }, { deep: true })
 
-const emit = defineEmits(['update:page', 'invoice-paid', 'refresh'])
+const emit = defineEmits(['update:page', 'invoice-paid', 'refresh', 'order-loaded', 'load'])
 
 // Payment Dialog
 const showPaymentDialog = ref(false)
@@ -358,24 +358,29 @@ const normalizePriceFromBackend = (price) => {
 }
 
 const loadInvoiceToCart = async (invoice) => {
-  // Normalize prices in the invoice before loading
-  const normalizedInvoice = {
+  // Transform invoice data to match expected format
+  const transformedInvoice = {
     ...invoice,
     total: normalizePriceFromBackend(invoice.total),
-    items: invoice.items?.map(item => ({
-      ...item,
+    hold_items: invoice.items?.map(item => ({
+      item_id: item.item_id || item.id, // Handle both formats
+      name: item.name,
+      description: item.description,
       price: normalizePriceFromBackend(item.price),
-      total: normalizePriceFromBackend(item.total)
-    }))
+      total: normalizePriceFromBackend(item.total),
+      quantity: item.quantity,
+      unit_name: item.unit_name
+    })),
+    type: invoice.type || 'DINE_IN', // Default to DINE_IN if not specified
   }
 
   console.log('OrderInvoicesTable - Loading invoice to cart:', {
-    id: normalizedInvoice.id,
-    invoice_number: normalizedInvoice.invoice_number,
-    total: normalizedInvoice.total,
-    formatted_total: PriceUtils.format(normalizedInvoice.total),
-    items: normalizedInvoice.items?.map(item => ({
-      id: item.id,
+    id: transformedInvoice.id,
+    invoice_number: transformedInvoice.invoice_number,
+    total: transformedInvoice.total,
+    formatted_total: PriceUtils.format(transformedInvoice.total),
+    items: transformedInvoice.hold_items?.map(item => ({
+      id: item.item_id,
       name: item.name,
       price: item.price,
       formatted_price: PriceUtils.format(item.price),
@@ -384,12 +389,13 @@ const loadInvoiceToCart = async (invoice) => {
   })
 
   try {
-    await cartStore.loadInvoice(normalizedInvoice)
+    await cartStore.loadInvoice(transformedInvoice)
     window.toastr?.success('Invoice loaded to cart successfully')
     console.log('OrderInvoicesTable - Invoice loaded to cart successfully:', {
-      invoice_id: normalizedInvoice.id,
-      invoice_number: normalizedInvoice.invoice_number
+      invoice_id: transformedInvoice.id,
+      invoice_number: transformedInvoice.invoice_number
     })
+    emit('order-loaded', transformedInvoice)
   } catch (error) {
     console.error('OrderInvoicesTable - Failed to load invoice to cart:', error)
     window.toastr?.error('Failed to load invoice to cart')
