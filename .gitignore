@@ -46,3 +46,6 @@ dist-ssr/
 
 # Virtual environment
 venv/
+
+# windsurf rules
+.windsurfrules

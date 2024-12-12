@@ -18,6 +18,7 @@
             <v-col cols="12" sm="7" md="8" lg="9" class="pe-sm-4 mb-3 mb-sm-0">
               <div class="search-field">
                 <product-search 
+                  :loading="posStore.loading.products"
                   @search="handleSearch"
                   @quick-add="handleQuickAdd" 
                 />
@@ -76,9 +77,18 @@
 
       <v-container fluid class="products-content pa-0" style="max-width: none;">
         <div class="products-scroll-container">
+          <!-- Loading State -->
+          <div v-if="posStore.loading.products" class="products-loading-state">
+            <v-progress-circular
+              indeterminate
+              color="primary"
+              size="32"
+            />
+          </div>
+
           <!-- Products Grid -->
           <product-grid
-            v-if="posStore.products.length > 0"
+            v-else-if="posStore.products.length > 0"
             :products="posStore.products"
             :grid-settings="gridSettings"
             @select="quickAdd"
@@ -97,15 +107,6 @@
             </template>
             No items found
           </v-alert>
-
-          <!-- Overlay Loading State -->
-          <div v-if="posStore.loading.products" class="products-loading-state">
-            <v-progress-circular
-              indeterminate
-              color="primary"
-              size="32"
-            />
-          </div>
         </div>
       </v-container>
     </template>

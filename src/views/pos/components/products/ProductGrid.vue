@@ -100,135 +100,61 @@ const props = defineProps({
 
 const emit = defineEmits(['select'])
 
-// Log initial props
-console.log('ProductGrid - Initial props:', {
-  productsCount: props.products.length,
-  gridSettings: props.gridSettings
-})
-
-// Computed values based on grid settings
-const getImageHeight = computed(() => {
-  const height = props.gridSettings.layout === 'comfortable' ? '160' : '120'
-  console.log('ProductGrid - Image height calculated:', { layout: props.gridSettings.layout, height })
-  return height
-})
-
-const getCardHeight = computed(() => {
-  const height = props.gridSettings.layout === 'comfortable' ? '260px' : '200px'
-  console.log('ProductGrid - Card height calculated:', { layout: props.gridSettings.layout, height })
-  return height
-})
-
-// Pagination
-const itemsPerPage = computed(() => {
-  const count = props.gridSettings.rows === -1 ? 
-    props.products.length : 
-    props.gridSettings.columns * props.gridSettings.rows
-  console.log('ProductGrid - Items per page calculated:', {
-    rows: props.gridSettings.rows,
-    columns: props.gridSettings.columns,
-    count
-  })
-  return count
-})
-
+// Pagination state
 const currentPage = ref(1)
-
-const totalPages = computed(() => {
-  const pages = Math.ceil(props.products.length / itemsPerPage.value)
-  console.log('ProductGrid - Total pages calculated:', {
-    totalProducts: props.products.length,
-    itemsPerPage: itemsPerPage.value,
-    pages
-  })
-  return pages
+const itemsPerPage = computed(() => {
+  if (props.gridSettings.rows === -1) return props.products.length
+  return props.gridSettings.rows * props.gridSettings.columns
 })
 
+// Computed properties for grid display
 const displayedProducts = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
-  const products = props.products.slice(start, end)
-  console.log('ProductGrid - Displayed products calculated:', {
-    currentPage: currentPage.value,
-    start,
-    end,
-    count: products.length
-  })
-  return products
+  return props.products.slice(start, end)
 })
 
-// Reset pagination when products or grid settings change
-watch([() => props.products, () => props.gridSettings], () => {
-  console.log('ProductGrid - Products or grid settings changed:', {
-    newProductsCount: props.products.length,
-    newGridSettings: props.gridSettings
-  })
+const totalPages = computed(() => {
+  if (props.gridSettings.rows === -1) return 1
+  return Math.ceil(props.products.length / itemsPerPage.value)
+})
+
+// Reset pagination when products change
+watch(() => props.products, () => {
   currentPage.value = 1
-})
+}, { immediate: true })
 
+// Event handlers
 const handlePageChange = (page) => {
-  console.log('ProductGrid - Page changed:', { from: currentPage.value, to: page })
   currentPage.value = page
+  logger.debug('ProductGrid - Page changed:', { page, totalItems: props.products.length })
 }
 
-// Format price for display, converting from cents to dollars if needed
-const formatPrice = (price) => {
-  logger.info('ProductGrid - Formatting price:', { 
-    input: price,
-    type: typeof price
+const handleProductSelect = (item) => {
+  logger.debug('ProductGrid - Product selected:', { 
+    id: item.id, 
+    name: item.name,
+    price: item.price 
   })
-  
-  // Always normalize price to cents first
-  const priceInCents = PriceUtils.ensureCents(price)
-  
-  // Format with currency symbol
-  const formatted = PriceUtils.format(priceInCents)
-  
-  logger.info('ProductGrid - Price formatted:', { 
-    input: price,
-    priceInCents,
-    formatted
-  })
-  
-  return formatted
+  emit('select', item)
 }
+
+const formatPrice = (price) => PriceUtils.format(price)
 
 const getImageUrl = (item) => {
-  let url = '/api/placeholder/400/320'
-  if (item.media && item.media.length > 0 && item.media[0].original_url) {
-    url = item.media[0].original_url
-  } else if (item.picture) {
-    url = item.picture
-  }
-  console.log('ProductGrid - Image URL resolved:', { 
-    itemId: item.id,
-    hasMedia: item.media?.length > 0,
-    hasPicture: !!item.picture,
-    resolvedUrl: url 
-  })
-  return url
+  return item.image_url || '/placeholder-product.png'
 }
 
-// Add click handler wrapper to log selection
-const handleProductSelect = (item) => {
-  // Ensure price is in cents before emitting
-  const price = PriceUtils.ensureCents(item.sale_price || item.price)
-  
-  console.log('ProductGrid - Product selected:', {
-    id: item.id,
-    name: item.name,
-    rawPrice: item.sale_price || item.price,
-    normalizedPrice: price
-  })
-  
-  // Create a new item object with the normalized price
-  const normalizedItem = {
-    ...item,
-    price: price
+const getImageHeight = computed(() => {
+  switch (props.gridSettings.layout) {
+    case 'compact':
+      return 120
+    case 'comfortable':
+      return 160
+    default:
+      return 140
   }
-  
-  emit('select', normalizedItem)
-}
+})
 </script>
 
 <style scoped>

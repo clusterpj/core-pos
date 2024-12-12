@@ -44,22 +44,56 @@ const isMobile = computed(() => mobile.value)
 
 const emit = defineEmits(['search', 'quickAdd'])
 
+// Regular expressions for SKU patterns
+const SKU_PATTERNS = {
+  // Common SKU patterns - adjust these based on your actual SKU format
+  NUMERIC: /^\d{4,}$/, // 4 or more digits
+  ALPHANUMERIC: /^[A-Z]\d{3,}$/, // Letter followed by 3+ numbers
+  DASHED: /^[A-Z0-9]+-[A-Z0-9]+$/, // Two alphanumeric parts with dash
+}
+
 // Debounced search with loading state
 let searchTimeout
+let skuBuffer = ''
+let skuBufferTimeout
+
+const isValidSKU = (value) => {
+  // Early exit for short inputs
+  if (!value || value.length < 4) return false
+  
+  // Convert to uppercase for consistent matching
+  const upperValue = value.toUpperCase()
+  
+  // Check against each SKU pattern
+  return Object.values(SKU_PATTERNS).some(pattern => pattern.test(upperValue))
+}
+
 const handleSearch = (value) => {
+  if (!value) {
+    clearSearch()
+    return
+  }
+
   isLoading.value = true
   clearTimeout(searchTimeout)
+  clearTimeout(skuBufferTimeout)
   
-  // Check if the value looks like a SKU (you might want to adjust this logic)
-  const isSKU = /^[A-Za-z0-9-]+$/.test(value) && value.length >= 4
+  // Update SKU buffer
+  skuBuffer = value
   
-  if (isSKU) {
-    // If it looks like a SKU, emit quickAdd immediately
-    emit('quickAdd', value)
-    clearSearch()
+  // Check if input matches SKU pattern
+  if (isValidSKU(value)) {
+    logger.debug('Potential SKU detected:', { value })
+    // For SKU-like input, give more time to complete typing
+    skuBufferTimeout = setTimeout(() => {
+      logger.info('Processing SKU:', { sku: skuBuffer })
+      emit('quickAdd', skuBuffer)
+      clearSearch()
+    }, 1000) // Wait 1 second after last keystroke
   } else {
-    // Otherwise, use debounced search
+    // For regular search, use shorter debounce
     searchTimeout = setTimeout(() => {
+      logger.debug('Processing search:', { query: value })
       emit('search', value)
       isLoading.value = false
     }, 300)
@@ -68,15 +102,27 @@ const handleSearch = (value) => {
 
 const clearSearch = () => {
   searchQuery.value = ''
+  skuBuffer = ''
+  clearTimeout(searchTimeout)
+  clearTimeout(skuBufferTimeout)
   emit('search', '')
   isLoading.value = false
 }
 
 const handleEnter = () => {
-  if (searchQuery.value.trim()) {
-    emit('quickAdd', searchQuery.value.trim())
-    clearSearch() // Clear the search after adding
+  const value = searchQuery.value.trim()
+  if (!value) return
+  
+  clearTimeout(skuBufferTimeout) // Clear any pending SKU timeout
+  
+  if (isValidSKU(value)) {
+    logger.info('Manual SKU entry:', { sku: value })
+    emit('quickAdd', value)
+  } else {
+    logger.info('Manual search entry:', { query: value })
+    emit('search', value)
   }
+  clearSearch()
 }
 </script>
 
