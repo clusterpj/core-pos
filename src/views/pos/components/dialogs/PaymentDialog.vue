@@ -138,15 +138,11 @@
 
                       <!-- Amount Display -->
                       <div class="amount-display">
-                        <div class="amount-display__header">
-                          <div class="amount-display__label">Amount</div>
-                          <div class="amount-display__badge">Required</div>
-                        </div>
+                        <div class="amount-display__label">Amount</div>
                         <div class="amount-display__value-container"
                              :class="{ 'is-error': !isValidAmount(payment) }">
-                          <div class="amount-display__currency">$</div>
-                          <div class="amount-display__value">
-                            {{ PriceUtils.toDollars(payment.amount).toFixed(2) }}
+                          <div class="amount-display__amount">
+                            <span class="amount-display__currency">$</span>{{ PriceUtils.toDollars(payment.amount).toFixed(2) }}
                           </div>
                         </div>
                         <transition name="fade">
@@ -180,15 +176,11 @@
 
                         <!-- Received Amount -->
                         <div class="amount-display">
-                          <div class="amount-display__header">
-                            <div class="amount-display__label">Amount Received</div>
-                            <div class="amount-display__badge">Required</div>
-                          </div>
+                          <div class="amount-display__label">Amount Received</div>
                           <div class="amount-display__value-container"
                                :class="{ 'is-error': !isValidReceivedAmount(payment) }">
-                            <div class="amount-display__currency">$</div>
-                            <div class="amount-display__value">
-                              {{ PriceUtils.toDollars(payment.received).toFixed(2) }}
+                            <div class="amount-display__amount">
+                              <span class="amount-display__currency">$</span>{{ PriceUtils.toDollars(payment.received).toFixed(2) }}
                             </div>
                           </div>
                           <transition name="fade">
@@ -1024,58 +1016,49 @@ watch(() => dialog.value, async (newValue) => {
 .amount-display {
   margin-bottom: 24px;
   
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  &__label {
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgba(var(--v-theme-on-surface), 0.87);
     margin-bottom: 8px;
   }
   
-  &__label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: rgba(var(--v-theme-on-surface), 0.87);
-  }
-  
-  &__badge {
-    font-size: 0.75rem;
-    color: rgb(var(--v-theme-primary));
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    background: rgba(var(--v-theme-primary), 0.1);
-    padding: 4px 8px;
-    border-radius: 4px;
-  }
-  
   &__value-container {
-    display: flex;
-    align-items: center;
     background: rgb(var(--v-theme-surface));
-    border: 2px solid rgba(var(--v-theme-primary), 0.1);
-    border-radius: 12px;
-    padding: 16px;
-    transition: all 0.2s ease;
-    min-height: 72px;
+    border: 2px solid rgba(var(--v-theme-primary), 0.15);
+    border-radius: 16px;
+    padding: 16px 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    
+    &:hover {
+      border-color: rgba(var(--v-theme-primary), 0.3);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transform: translateY(-1px);
+    }
     
     &.is-error {
       border-color: rgb(var(--v-theme-error));
-      background: rgba(var(--v-theme-error), 0.05);
+      background: linear-gradient(rgba(var(--v-theme-error), 0.02), rgba(var(--v-theme-error), 0.04));
     }
   }
   
-  &__currency {
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: rgba(var(--v-theme-on-surface), 0.87);
-    margin-right: 8px;
-  }
-  
-  &__value {
-    font-size: 1.5rem;
-    font-weight: 500;
+  &__amount {
+    font-size: 2rem;
+    font-weight: 600;
     color: rgb(var(--v-theme-on-surface));
     font-feature-settings: "tnum";
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+  }
+  
+  &__currency {
+    font-size: 2rem;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+    margin-right: 2px;
   }
   
   &__error {
