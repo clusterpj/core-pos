@@ -139,6 +139,7 @@
                       <!-- Amount Input -->
                       <v-text-field
                         v-model="payment.displayAmount"
+                        label="Amount"
                         type="number"
                         class="payment-input"
                         :rules="[
@@ -148,9 +149,6 @@
                         ]"
                         @input="validateAmount(index)"
                       >
-                        <template #label>
-                          <span class="field-label">Amount</span>
-                        </template>
                         <template #prepend-inner>
                           <span class="currency-symbol">$</span>
                         </template>
@@ -180,6 +178,7 @@
                         <!-- Received Amount -->
                         <v-text-field
                           v-model="payment.displayReceived"
+                          label="Amount Received"
                           type="number"
                           class="payment-input"
                           :rules="[
@@ -188,9 +187,6 @@
                           ]"
                           @input="calculateChange(index)"
                         >
-                          <template #label>
-                            <span class="field-label">Amount Received</span>
-                          </template>
                           <template #prepend-inner>
                             <span class="currency-symbol">$</span>
                           </template>
@@ -1020,7 +1016,7 @@ watch(() => dialog.value, async (newValue) => {
     --v-field-border-width: 2px;
   }
   
-  .field-label {
+  :deep(.v-label) {
     position: absolute;
     top: -24px;
     left: 0;
@@ -1031,6 +1027,8 @@ watch(() => dialog.value, async (newValue) => {
     margin: 0;
     line-height: 1;
     pointer-events: none;
+    transform: none !important;
+    opacity: 1;
   }
 
   :deep(.v-field--focused .v-label),
