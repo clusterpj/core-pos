@@ -147,19 +147,22 @@
                       ></v-btn>
                     </div>
 
-                  <!-- Amount Input -->
-                  <v-text-field
-                    v-model="payment.displayAmount"
-                    label="Amount"
-                    type="number"
-                    :rules="[
-                      v => !!v || 'Amount is required',
-                      v => v > 0 || 'Amount must be greater than 0',
-                      v => Number(v) === (invoiceTotal + tipAmount) / 100 || 'Full payment is required'
-                    ]"
-                    :prefix="'$'"
-                    @input="validateAmount(index)"
-                  ></v-text-field>
+                  <!-- Amount Display -->
+                  <div class="amount-display">
+                    <div class="amount-display__label">Amount</div>
+                    <div class="amount-display__value-container"
+                         :class="{ 'is-error': !isValidAmount(payment) }">
+                      <div class="amount-display__amount">
+                        <span class="amount-display__currency">$</span>{{ PriceUtils.toDollars(payment.amount).toFixed(2) }}
+                      </div>
+                    </div>
+                    <transition name="fade">
+                      <div v-if="!isValidAmount(payment)" class="amount-display__error">
+                        <v-icon icon="mdi-alert-circle" size="small" color="error" class="mr-1" />
+                        Full payment amount is required
+                      </div>
+                    </transition>
+                  </div>
 
                   <!-- Cash Payment Fields -->
                   <template v-if="isCashOnly(payment.method_id)">
@@ -182,17 +185,29 @@
                     </div>
 
                     <!-- Received Amount -->
-                    <v-text-field
-                      v-model="payment.displayReceived"
-                      label="Amount Received"
-                      type="number"
-                      :rules="[
-                        v => !!v || 'Received amount is required',
-                        v => Number(v) >= Number(payment.displayAmount) || 'Received amount must be greater than or equal to payment amount'
-                      ]"
-                      :prefix="'$'"
-                      @input="calculateChange(index)"
-                    ></v-text-field>
+                    <div class="amount-display">
+                      <div class="amount-display__label">Amount Received</div>
+                      <div class="amount-display__value-container"
+                           :class="{ 'is-error': !isValidReceivedAmount(payment) }">
+                        <div class="amount-display__amount">
+                          <span class="amount-display__currency">$</span>
+                          <input
+                            v-model="payment.displayReceived"
+                            type="number"
+                            class="amount-display__input"
+                            step="0.01"
+                            min="0"
+                            @input="calculateChange(index)"
+                          />
+                        </div>
+                      </div>
+                      <transition name="fade">
+                        <div v-if="!isValidReceivedAmount(payment)" class="amount-display__error">
+                          <v-icon icon="mdi-alert-circle" size="small" color="error" class="mr-1" />
+                          Received amount must be greater than or equal to payment amount
+                        </div>
+                      </transition>
+                    </div>
 
                     <!-- Change Amount Display -->
                     <v-card
@@ -885,6 +900,106 @@ watch(() => dialog.value, async (newValue) => {
 </script>
 
 <style scoped>
+/* Modern amount display styling */
+.amount-display {
+  margin-bottom: 24px;
+  
+  &__label {
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+    margin-bottom: 8px;
+  }
+  
+  &__value-container {
+    background: rgb(var(--v-theme-surface));
+    border: 2px solid rgba(var(--v-theme-primary), 0.15);
+    border-radius: 16px;
+    padding: 16px 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    
+    &:hover {
+      border-color: rgba(var(--v-theme-primary), 0.3);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transform: translateY(-1px);
+    }
+    
+    &.is-error {
+      border-color: rgb(var(--v-theme-error));
+      background: linear-gradient(rgba(var(--v-theme-error), 0.02), rgba(var(--v-theme-error), 0.04));
+    }
+  }
+  
+  &__amount {
+    font-size: 2rem;
+    font-weight: 600;
+    color: rgb(var(--v-theme-on-surface));
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+  }
+  
+  &__currency {
+    font-size: 2rem;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+    margin-right: 2px;
+  }
+
+  &__input {
+    font-size: 2rem;
+    font-weight: 600;
+    color: rgb(var(--v-theme-on-surface));
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    border: none;
+    background: transparent;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    
+    &:focus {
+      outline: none;
+    }
+    
+    /* Hide spinner buttons */
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    &[type=number] {
+      -moz-appearance: textfield;
+    }
+  }
+
+  &__error {
+    margin-top: 8px;
+    font-size: 0.875rem;
+    color: rgb(var(--v-theme-error));
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(var(--v-theme-error), 0.05);
+    border-radius: 8px;
+  }
+}
+
+/* Fade transition for error messages */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 .modal-card {
   display: flex;
   flex-direction: column;
