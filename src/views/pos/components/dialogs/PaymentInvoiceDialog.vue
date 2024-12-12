@@ -178,7 +178,7 @@
                                 variant="outlined"
                                 size="small"
                                 @click="handleDenominationClick(money, index)">
-                            {{ formatCurrency(Number(money.amount)) }}
+                            {{ formatCurrency(PriceUtils.toCents(money.amount)) }}
                           </v-btn>
                         </v-col>
                       </v-row>
