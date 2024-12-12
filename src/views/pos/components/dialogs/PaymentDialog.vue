@@ -575,12 +575,15 @@ const selectPaymentMethod = (methodId) => {
 
 const handleDenominationClick = (money, index) => {
   const payment = payments.value[index]
-  const currentReceived = Number(payment.displayReceived || 0)
+  const currentReceived = payment.displayReceived ? Number(payment.displayReceived) : 0
   const amountToAdd = Number(money.amount)
   const newTotal = currentReceived + amountToAdd
   
+  // Update display amount (in dollars)
   payment.displayReceived = newTotal.toFixed(2)
-  payment.received = PriceUtils.toCents(newTotal)
+  // Update internal amount (in cents)
+  payment.received = PriceUtils.toCents(payment.displayReceived)
+  
   calculateChange(index)
   
   // Provide haptic feedback if available
@@ -593,13 +596,16 @@ const calculateChange = (index) => {
   const payment = payments.value[index]
   if (!payment.displayReceived || !payment.displayAmount) return
 
-  const received = Math.round(Number(payment.displayReceived))
-  const amount = payment.amount
+  // Convert display amounts to cents for calculations
+  const receivedInCents = PriceUtils.toCents(payment.displayReceived)
+  const amountInCents = payment.amount // Already in cents
   
-  payment.received = received
+  // Update internal values
+  payment.received = receivedInCents
   
-  if (received >= amount) {
-    payment.returned = received - amount
+  // Calculate change in cents
+  if (receivedInCents >= amountInCents) {
+    payment.returned = receivedInCents - amountInCents
   } else {
     payment.returned = 0
   }
