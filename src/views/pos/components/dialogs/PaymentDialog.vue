@@ -141,14 +141,18 @@
                         v-model="payment.displayAmount"
                         label="Amount"
                         type="number"
+                        class="payment-input"
                         :rules="[
                           v => !!v || 'Amount is required',
                           v => v > 0 || 'Amount must be greater than 0',
                           v => Number(v) === (invoiceTotal + tipAmount) || 'Full payment is required'
                         ]"
-                        :prefix="'$'"
                         @input="validateAmount(index)"
-                      ></v-text-field>
+                      >
+                        <template v-slot:prepend-inner>
+                          <span class="currency-symbol">$</span>
+                        </template>
+                      </v-text-field>
 
                       <!-- Cash Payment Fields -->
                       <template v-if="isCashOnly(payment.method_id)">
@@ -162,9 +166,10 @@
                                   class="pa-1">
                               <v-btn block
                                     variant="outlined"
+                                    class="denomination-btn"
                                     size="small"
                                     @click="handleDenominationClick(money, index)">
-                                {{ formatCurrency(Number(money.amount)) }}
+                                {{ formatCurrency(PriceUtils.toCents(money.amount)) }}
                               </v-btn>
                             </v-col>
                           </v-row>
@@ -175,13 +180,17 @@
                           v-model="payment.displayReceived"
                           label="Amount Received"
                           type="number"
+                          class="payment-input"
                           :rules="[
                             v => !!v || 'Received amount is required',
                             v => Number(v) >= Number(payment.displayAmount) || 'Received amount must be greater than or equal to payment amount'
                           ]"
-                          :prefix="'$'"
                           @input="calculateChange(index)"
-                        ></v-text-field>
+                        >
+                          <template v-slot:prepend-inner>
+                            <span class="currency-symbol">$</span>
+                          </template>
+                        </v-text-field>
 
                         <!-- Change Amount Display -->
                         <div v-if="payment.returned > 0" class="text-caption mb-2">
@@ -553,10 +562,18 @@ const selectPaymentMethod = (methodId) => {
 
 const handleDenominationClick = (money, index) => {
   const payment = payments.value[index]
-  const currentReceived = Number(payment.displayReceived || 0)
-  payment.displayReceived = (currentReceived + Number(money.amount)).toString()
-  payment.received = Math.round(Number(payment.displayReceived))
+  const currentReceived = PriceUtils.toCents(payment.displayReceived || 0)
+  const amountToAdd = PriceUtils.toCents(money.amount)
+  const newTotal = currentReceived + amountToAdd
+  
+  payment.displayReceived = PriceUtils.toDollars(newTotal).toString()
+  payment.received = newTotal
   calculateChange(index)
+  
+  // Provide haptic feedback if available
+  if (window.navigator?.vibrate) {
+    window.navigator.vibrate(50)
+  }
 }
 
 const calculateChange = (index) => {
@@ -974,13 +991,95 @@ watch(() => dialog.value, async (newValue) => {
   font-size: 1rem;
 }
 
-/* Ensure proper spacing */
+/* Enhanced spacing and layout */
 :deep(.v-row) {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 :deep(.v-col) {
-  padding: 8px;
+  padding: 12px;
+}
+
+/* Payment input styling */
+.payment-input {
+  :deep(.v-field__input) {
+    padding-left: 28px !important;
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+  
+  :deep(.currency-symbol) {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(var(--v-theme-on-surface), 0.7);
+    font-size: 1.1rem;
+    font-weight: 500;
+    z-index: 1;
+  }
+
+  :deep(.v-field) {
+    border-radius: 8px;
+    background-color: rgb(var(--v-theme-surface));
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    &.v-field--focused {
+      box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.15);
+    }
+  }
+}
+
+/* Quick amount selection buttons */
+.denomination-btn {
+  min-height: 44px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* Payment section cards */
+.payment-section {
+  .v-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .payment-input {
+    :deep(.v-field__input) {
+      font-size: 1rem;
+    }
+  }
+  
+  .denomination-btn {
+    min-height: 40px;
+    font-size: 0.95rem;
+  }
 }
 
 /* Dialog transition */
