@@ -199,13 +199,6 @@
                           </transition>
                         </div>
 
-                        <!-- Change Amount Display -->
-                        <div v-if="payment.returned > 0" class="text-caption mb-2">
-                          <div class="d-flex justify-space-between">
-                            <span>Change:</span>
-                            <strong>{{ formatCurrency(payment.returned) }}</strong>
-                          </div>
-                        </div>
                       </template>
 
                       <!-- Payment Fees -->
