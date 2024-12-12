@@ -232,10 +232,6 @@
                         <span>Change:</span>
                         <strong>${{ PriceUtils.toDollars(payment.returned).toFixed(2) }}</strong>
                       </div>
-                      <div v-if="payment.change" class="d-flex justify-space-between mb-2">
-                        <span>Change:</span>
-                        <strong>{{ formatCurrency(payment.change) }}</strong>
-                      </div>
                       <div v-if="payment.fees" class="d-flex justify-space-between">
                         <span>Fees:</span>
                         <strong>{{ formatCurrency(payment.fees) }}</strong>
