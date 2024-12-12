@@ -1185,7 +1185,6 @@ watch(() => dialog.value, async (newValue) => {
     font-feature-settings: "tnum";
     font-variant-numeric: tabular-nums;
   }
-}
 
 /* Quick amount selection buttons */
 .denomination-btn {
