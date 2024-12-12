@@ -1004,6 +1004,8 @@ watch(() => dialog.value, async (newValue) => {
 .payment-input {
   :deep(.v-field__input) {
     padding-left: 28px !important;
+    padding-top: 12px !important;
+    min-height: 56px !important;
     font-size: 1.1rem;
     font-weight: 500;
   }
@@ -1011,7 +1013,7 @@ watch(() => dialog.value, async (newValue) => {
   :deep(.currency-symbol) {
     position: absolute;
     left: 12px;
-    top: 50%;
+    top: 55%;
     transform: translateY(-50%);
     color: rgba(var(--v-theme-on-surface), 0.7);
     font-size: 1.1rem;
