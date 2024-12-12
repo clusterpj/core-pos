@@ -137,25 +137,24 @@
                       </div>
 
                       <!-- Amount Display -->
-                      <div class="payment-field-container">
-                        <div class="payment-field-header">
-                          <span class="payment-field-label">Amount</span>
-                          <span class="payment-field-required">Required</span>
+                      <div class="amount-display">
+                        <div class="amount-display__header">
+                          <div class="amount-display__label">Amount</div>
+                          <div class="amount-display__badge">Required</div>
                         </div>
-                        <div class="payment-field-input"
-                             :class="{ 'has-error': !isValidAmount(payment) }">
-                          <span class="payment-field-currency">$</span>
-                          <input
-                            v-model="payment.displayAmount"
-                            type="number"
-                            class="payment-field-value"
-                            @input="validateAmount(index)"
-                            :class="{ 'is-invalid': !isValidAmount(payment) }"
-                          />
+                        <div class="amount-display__value-container"
+                             :class="{ 'is-error': !isValidAmount(payment) }">
+                          <div class="amount-display__currency">$</div>
+                          <div class="amount-display__value">
+                            {{ PriceUtils.toDollars(payment.amount).toFixed(2) }}
+                          </div>
                         </div>
-                        <div v-if="!isValidAmount(payment)" class="payment-field-error">
-                          Full payment amount is required
-                        </div>
+                        <transition name="fade">
+                          <div v-if="!isValidAmount(payment)" class="amount-display__error">
+                            <v-icon icon="mdi-alert-circle" size="small" color="error" class="mr-1" />
+                            Full payment amount is required
+                          </div>
+                        </transition>
                       </div>
 
                       <!-- Cash Payment Fields -->
@@ -180,25 +179,24 @@
                         </div>
 
                         <!-- Received Amount -->
-                        <div class="payment-field-container">
-                          <div class="payment-field-header">
-                            <span class="payment-field-label">Amount Received</span>
-                            <span class="payment-field-required">Required</span>
+                        <div class="amount-display">
+                          <div class="amount-display__header">
+                            <div class="amount-display__label">Amount Received</div>
+                            <div class="amount-display__badge">Required</div>
                           </div>
-                          <div class="payment-field-input"
-                               :class="{ 'has-error': !isValidReceivedAmount(payment) }">
-                            <span class="payment-field-currency">$</span>
-                            <input
-                              v-model="payment.displayReceived"
-                              type="number"
-                              class="payment-field-value"
-                              @input="calculateChange(index)"
-                              :class="{ 'is-invalid': !isValidReceivedAmount(payment) }"
-                            />
+                          <div class="amount-display__value-container"
+                               :class="{ 'is-error': !isValidReceivedAmount(payment) }">
+                            <div class="amount-display__currency">$</div>
+                            <div class="amount-display__value">
+                              {{ PriceUtils.toDollars(payment.received).toFixed(2) }}
+                            </div>
                           </div>
-                          <div v-if="!isValidReceivedAmount(payment)" class="payment-field-error">
-                            Received amount must be greater than or equal to payment amount
-                          </div>
+                          <transition name="fade">
+                            <div v-if="!isValidReceivedAmount(payment)" class="amount-display__error">
+                              <v-icon icon="mdi-alert-circle" size="small" color="error" class="mr-1" />
+                              Received amount must be greater than or equal to payment amount
+                            </div>
+                          </transition>
                         </div>
 
                         <!-- Change Amount Display -->
@@ -1022,105 +1020,85 @@ watch(() => dialog.value, async (newValue) => {
   padding: 12px;
 }
 
-/* Modern payment field styling */
-.payment-field-container {
+/* Modern amount display styling */
+.amount-display {
   margin-bottom: 24px;
-}
-
-.payment-field-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.payment-field-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgba(var(--v-theme-on-surface), 0.87);
-}
-
-.payment-field-required {
-  font-size: 0.75rem;
-  color: rgb(var(--v-theme-error));
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.payment-field-input {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: rgb(var(--v-theme-surface));
-  border: 2px solid rgba(var(--v-theme-on-surface), 0.12);
-  border-radius: 12px;
-  padding: 12px 16px;
-  transition: all 0.2s ease;
-  min-height: 64px;
-
-  &:focus-within {
-    border-color: rgb(var(--v-theme-primary));
-    box-shadow: 0 0 0 4px rgba(var(--v-theme-primary), 0.1);
+  
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
   }
-
-  &.has-error {
-    border-color: rgb(var(--v-theme-error));
+  
+  &__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+  }
+  
+  &__badge {
+    font-size: 0.75rem;
+    color: rgb(var(--v-theme-primary));
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    background: rgba(var(--v-theme-primary), 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  
+  &__value-container {
+    display: flex;
+    align-items: center;
+    background: rgb(var(--v-theme-surface));
+    border: 2px solid rgba(var(--v-theme-primary), 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s ease;
+    min-height: 72px;
     
-    &:focus-within {
-      box-shadow: 0 0 0 4px rgba(var(--v-theme-error), 0.1);
+    &.is-error {
+      border-color: rgb(var(--v-theme-error));
+      background: rgba(var(--v-theme-error), 0.05);
     }
   }
-}
-
-.payment-field-currency {
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: rgba(var(--v-theme-on-surface), 0.87);
-  margin-right: 8px;
-}
-
-.payment-field-value {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: rgb(var(--v-theme-on-surface));
-  width: 100%;
-  padding: 0;
-  margin: 0;
-  font-feature-settings: "tnum";
-  font-variant-numeric: tabular-nums;
-
-  &:focus {
-    outline: none;
+  
+  &__currency {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+    margin-right: 8px;
   }
-
-  &.is-invalid {
+  
+  &__value {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: rgb(var(--v-theme-on-surface));
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+  
+  &__error {
+    margin-top: 8px;
+    font-size: 0.875rem;
     color: rgb(var(--v-theme-error));
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(var(--v-theme-error), 0.05);
+    border-radius: 8px;
   }
 }
 
-.payment-field-error {
-  margin-top: 8px;
-  font-size: 0.875rem;
-  color: rgb(var(--v-theme-error));
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* Fade transition for error messages */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
 
-  &::before {
-    content: "!";
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    background: rgb(var(--v-theme-error));
-    color: white;
-    border-radius: 50%;
-    font-size: 0.75rem;
-  }
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
   
   :deep(.v-field__outline) {
