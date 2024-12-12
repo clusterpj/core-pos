@@ -1002,38 +1002,63 @@ watch(() => dialog.value, async (newValue) => {
 
 /* Payment input styling */
 .payment-input {
+  margin-bottom: 16px;
+
   :deep(.v-field__input) {
-    padding-left: 28px !important;
-    padding-top: 12px !important;
-    min-height: 56px !important;
-    font-size: 1.1rem;
+    padding-left: 36px !important;
+    padding-top: 16px !important;
+    min-height: 64px !important;
+    font-size: 1.25rem !important;
     font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  
+  :deep(.v-field__outline) {
+    --v-field-border-width: 2px;
+  }
+  
+  :deep(.v-label) {
+    font-size: 0.95rem;
+    margin-top: -4px;
   }
   
   :deep(.currency-symbol) {
     position: absolute;
-    left: 12px;
-    top: 55%;
+    left: 16px;
+    top: 58%;
     transform: translateY(-50%);
-    color: rgba(var(--v-theme-on-surface), 0.7);
-    font-size: 1.1rem;
+    color: rgba(var(--v-theme-on-surface), 0.85);
+    font-size: 1.25rem;
     font-weight: 500;
     z-index: 1;
   }
 
   :deep(.v-field) {
-    border-radius: 8px;
+    border-radius: 12px;
     background-color: rgb(var(--v-theme-surface));
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     transition: all 0.2s ease;
 
     &:hover {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      transform: translateY(-1px);
     }
 
     &.v-field--focused {
-      box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.15);
+      box-shadow: 0 6px 16px rgba(var(--v-theme-primary), 0.2);
+      transform: translateY(-2px);
+      
+      .v-field__outline {
+        border-color: rgb(var(--v-theme-primary));
+        opacity: 1;
+      }
     }
+  }
+
+  /* Improve number input appearance */
+  :deep(input[type="number"]) {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
   }
 }
 
