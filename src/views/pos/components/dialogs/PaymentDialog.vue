@@ -1006,8 +1006,7 @@ watch(() => dialog.value, async (newValue) => {
 
   :deep(.v-field__input) {
     padding-left: 36px !important;
-    padding-top: 24px !important;
-    min-height: 72px !important;
+    min-height: 56px !important;
     font-size: 1.25rem !important;
     font-weight: 500;
     letter-spacing: 0.5px;
@@ -1018,14 +1017,18 @@ watch(() => dialog.value, async (newValue) => {
   }
   
   :deep(.v-label) {
-    font-size: 0.95rem;
-    margin-top: 4px;
-    transform: translateY(-16px) scale(0.75);
+    font-size: 1rem;
+    margin-bottom: 8px;
+    position: relative;
+    top: 0;
+    transform: none !important;
+    opacity: 1;
+    color: rgba(var(--v-theme-on-surface), 0.7);
   }
 
   :deep(.v-field--focused .v-label),
   :deep(.v-field--active .v-label) {
-    transform: translateY(-16px) scale(0.75);
+    color: rgb(var(--v-theme-primary));
   }
   
   :deep(.currency-symbol) {
