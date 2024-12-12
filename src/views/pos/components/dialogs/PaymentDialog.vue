@@ -180,7 +180,15 @@
                           <div class="amount-display__value-container"
                                :class="{ 'is-error': !isValidReceivedAmount(payment) }">
                             <div class="amount-display__amount">
-                              <span class="amount-display__currency">$</span>{{ PriceUtils.toDollars(payment.received).toFixed(2) }}
+                              <span class="amount-display__currency">$</span>
+                              <input
+                                v-model="payment.displayReceived"
+                                type="number"
+                                class="amount-display__input"
+                                step="0.01"
+                                min="0"
+                                @input="calculateChange(index)"
+                              />
                             </div>
                           </div>
                           <transition name="fade">
@@ -574,12 +582,12 @@ const selectPaymentMethod = (methodId) => {
 
 const handleDenominationClick = (money, index) => {
   const payment = payments.value[index]
-  const currentReceived = PriceUtils.toCents(payment.displayReceived || 0)
-  const amountToAdd = PriceUtils.toCents(money.amount)
+  const currentReceived = Number(payment.displayReceived || 0)
+  const amountToAdd = Number(money.amount)
   const newTotal = currentReceived + amountToAdd
   
-  payment.displayReceived = PriceUtils.toDollars(newTotal).toString()
-  payment.received = newTotal
+  payment.displayReceived = newTotal.toFixed(2)
+  payment.received = PriceUtils.toCents(newTotal)
   calculateChange(index)
   
   // Provide haptic feedback if available
@@ -1052,6 +1060,34 @@ watch(() => dialog.value, async (newValue) => {
     letter-spacing: -0.02em;
     display: flex;
     align-items: center;
+  }
+
+  &__input {
+    font-size: 2rem;
+    font-weight: 600;
+    color: rgb(var(--v-theme-on-surface));
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    border: none;
+    background: transparent;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    
+    &:focus {
+      outline: none;
+    }
+    
+    /* Hide spinner buttons */
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    &[type=number] {
+      -moz-appearance: textfield;
+    }
   }
   
   &__currency {
