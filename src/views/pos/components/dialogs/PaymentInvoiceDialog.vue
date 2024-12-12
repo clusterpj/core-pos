@@ -488,10 +488,23 @@ const canAddMorePayments = computed(() => {
   return remainingAmount.value > 0 && payments.value.length < paymentMethods.value.length
 })
 
+const isValidAmount = (payment) => {
+  if (!payment.displayAmount) return false
+  if (Number(payment.displayAmount) <= 0) return false
+  return Number(payment.displayAmount) === PriceUtils.toDollars(invoiceTotal.value + tipAmount.value)
+}
+
+const isValidReceivedAmount = (payment) => {
+  if (!payment.displayReceived) return false
+  return Number(payment.displayReceived) >= Number(payment.displayAmount)
+}
+
 const isValid = computed(() => {
   return payments.value.every(payment => {
     if (!payment.method_id || !payment.amount) return false
     if (isCashOnly(payment.method_id) && !payment.received) return false
+    if (!isValidAmount(payment)) return false
+    if (isCashOnly(payment.method_id) && !isValidReceivedAmount(payment)) return false
     return true
   }) && remainingAmount.value === 0
 })
