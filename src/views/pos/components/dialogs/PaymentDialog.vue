@@ -224,9 +224,9 @@
                         <span>Payment Amount:</span>
                         <strong>${{ PriceUtils.toDollars(payment.amount).toFixed(2) }}</strong>
                       </div>
-                      <div v-if="payment.received" class="d-flex justify-space-between mb-2">
+                      <div v-if="payment.displayReceived" class="d-flex justify-space-between mb-2">
                         <span>Amount Received:</span>
-                        <strong>${{ PriceUtils.toDollars(payment.received).toFixed(2) }}</strong>
+                        <strong>${{ Number(payment.displayReceived).toFixed(2) }}</strong>
                       </div>
                       <div v-if="payment.change" class="d-flex justify-space-between mb-2">
                         <span>Change:</span>
