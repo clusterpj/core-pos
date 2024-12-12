@@ -1006,7 +1006,8 @@ watch(() => dialog.value, async (newValue) => {
 
   :deep(.v-field__input) {
     padding-left: 36px !important;
-    min-height: 56px !important;
+    padding-top: 28px !important;
+    min-height: 76px !important;
     font-size: 1.25rem !important;
     font-weight: 500;
     letter-spacing: 0.5px;
@@ -1018,8 +1019,8 @@ watch(() => dialog.value, async (newValue) => {
   
   :deep(.v-label) {
     position: absolute;
-    top: -24px;
-    left: 0;
+    top: 8px;
+    left: 36px;
     font-size: 0.875rem;
     color: rgba(var(--v-theme-on-surface), 0.7);
     background: transparent;
