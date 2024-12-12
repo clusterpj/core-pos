@@ -139,7 +139,6 @@
                       <!-- Amount Input -->
                       <v-text-field
                         v-model="payment.displayAmount"
-                        label="Amount"
                         type="number"
                         class="payment-input"
                         :rules="[
@@ -149,7 +148,10 @@
                         ]"
                         @input="validateAmount(index)"
                       >
-                        <template v-slot:prepend-inner>
+                        <template #label>
+                          <span class="field-label">Amount</span>
+                        </template>
+                        <template #prepend-inner>
                           <span class="currency-symbol">$</span>
                         </template>
                       </v-text-field>
@@ -178,7 +180,6 @@
                         <!-- Received Amount -->
                         <v-text-field
                           v-model="payment.displayReceived"
-                          label="Amount Received"
                           type="number"
                           class="payment-input"
                           :rules="[
@@ -187,7 +188,10 @@
                           ]"
                           @input="calculateChange(index)"
                         >
-                          <template v-slot:prepend-inner>
+                          <template #label>
+                            <span class="field-label">Amount Received</span>
+                          </template>
+                          <template #prepend-inner>
                             <span class="currency-symbol">$</span>
                           </template>
                         </v-text-field>
@@ -1016,14 +1020,17 @@ watch(() => dialog.value, async (newValue) => {
     --v-field-border-width: 2px;
   }
   
-  :deep(.v-label) {
-    font-size: 1rem;
-    margin-bottom: 8px;
-    position: relative;
-    top: 0;
-    transform: none !important;
-    opacity: 1;
+  .field-label {
+    position: absolute;
+    top: -24px;
+    left: 0;
+    font-size: 0.875rem;
     color: rgba(var(--v-theme-on-surface), 0.7);
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+    pointer-events: none;
   }
 
   :deep(.v-field--focused .v-label),
