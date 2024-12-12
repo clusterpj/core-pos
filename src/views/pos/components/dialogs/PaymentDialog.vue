@@ -237,17 +237,6 @@
                         <strong>{{ formatCurrency(payment.fees) }}</strong>
                       </div>
 
-                      <!-- Remove Payment Button -->
-                      <v-btn
-                        color="error"
-                        variant="outlined"
-                        size="small"
-                        class="mb-2"
-                        @click="removePayment(index)"
-                      >
-                        Remove Payment Method
-                      </v-btn>
-
                       <v-divider v-if="index < payments.length - 1" class="my-4"></v-divider>
                     </v-card>
                   </div>
