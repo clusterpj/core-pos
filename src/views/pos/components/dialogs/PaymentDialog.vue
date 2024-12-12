@@ -222,11 +222,11 @@
                       <!-- Payment Amount Display -->
                       <div class="d-flex justify-space-between mb-2">
                         <span>Payment Amount:</span>
-                        <strong>{{ formatCurrency(payment.amount) }}</strong>
+                        <strong>${{ PriceUtils.toDollars(payment.amount).toFixed(2) }}</strong>
                       </div>
                       <div v-if="payment.received" class="d-flex justify-space-between mb-2">
                         <span>Amount Received:</span>
-                        <strong>{{ formatCurrency(payment.received) }}</strong>
+                        <strong>${{ PriceUtils.toDollars(payment.received).toFixed(2) }}</strong>
                       </div>
                       <div v-if="payment.change" class="d-flex justify-space-between mb-2">
                         <span>Change:</span>
