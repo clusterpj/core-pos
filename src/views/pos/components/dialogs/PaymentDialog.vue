@@ -136,23 +136,27 @@
                         ></v-btn>
                       </div>
 
-                      <!-- Amount Input -->
-                      <v-text-field
-                        v-model="payment.displayAmount"
-                        label="Amount"
-                        type="number"
-                        class="payment-input"
-                        :rules="[
-                          v => !!v || 'Amount is required',
-                          v => v > 0 || 'Amount must be greater than 0',
-                          v => Number(v) === (invoiceTotal + tipAmount) || 'Full payment is required'
-                        ]"
-                        @input="validateAmount(index)"
-                      >
-                        <template #prepend-inner>
-                          <span class="currency-symbol">$</span>
-                        </template>
-                      </v-text-field>
+                      <!-- Amount Display -->
+                      <div class="payment-field-container">
+                        <div class="payment-field-header">
+                          <span class="payment-field-label">Amount</span>
+                          <span class="payment-field-required">Required</span>
+                        </div>
+                        <div class="payment-field-input"
+                             :class="{ 'has-error': !isValidAmount(payment) }">
+                          <span class="payment-field-currency">$</span>
+                          <input
+                            v-model="payment.displayAmount"
+                            type="number"
+                            class="payment-field-value"
+                            @input="validateAmount(index)"
+                            :class="{ 'is-invalid': !isValidAmount(payment) }"
+                          />
+                        </div>
+                        <div v-if="!isValidAmount(payment)" class="payment-field-error">
+                          Full payment amount is required
+                        </div>
+                      </div>
 
                       <!-- Cash Payment Fields -->
                       <template v-if="isCashOnly(payment.method_id)">
@@ -176,21 +180,26 @@
                         </div>
 
                         <!-- Received Amount -->
-                        <v-text-field
-                          v-model="payment.displayReceived"
-                          label="Amount Received"
-                          type="number"
-                          class="payment-input"
-                          :rules="[
-                            v => !!v || 'Received amount is required',
-                            v => Number(v) >= Number(payment.displayAmount) || 'Received amount must be greater than or equal to payment amount'
-                          ]"
-                          @input="calculateChange(index)"
-                        >
-                          <template #prepend-inner>
-                            <span class="currency-symbol">$</span>
-                          </template>
-                        </v-text-field>
+                        <div class="payment-field-container">
+                          <div class="payment-field-header">
+                            <span class="payment-field-label">Amount Received</span>
+                            <span class="payment-field-required">Required</span>
+                          </div>
+                          <div class="payment-field-input"
+                               :class="{ 'has-error': !isValidReceivedAmount(payment) }">
+                            <span class="payment-field-currency">$</span>
+                            <input
+                              v-model="payment.displayReceived"
+                              type="number"
+                              class="payment-field-value"
+                              @input="calculateChange(index)"
+                              :class="{ 'is-invalid': !isValidReceivedAmount(payment) }"
+                            />
+                          </div>
+                          <div v-if="!isValidReceivedAmount(payment)" class="payment-field-error">
+                            Received amount must be greater than or equal to payment amount
+                          </div>
+                        </div>
 
                         <!-- Change Amount Display -->
                         <div v-if="payment.returned > 0" class="text-caption mb-2">
@@ -478,10 +487,23 @@ const canAddMorePayments = computed(() => {
   return remainingAmount.value > 0 && payments.value.length < paymentMethods.value.length
 })
 
+const isValidAmount = (payment) => {
+  if (!payment.displayAmount) return false
+  if (Number(payment.displayAmount) <= 0) return false
+  return Number(payment.displayAmount) === PriceUtils.toDollars(invoiceTotal.value + tipAmount.value)
+}
+
+const isValidReceivedAmount = (payment) => {
+  if (!payment.displayReceived) return false
+  return Number(payment.displayReceived) >= Number(payment.displayAmount)
+}
+
 const isValid = computed(() => {
   return payments.value.every(payment => {
     if (!payment.method_id || !payment.amount) return false
     if (isCashOnly(payment.method_id) && !payment.received) return false
+    if (!isValidAmount(payment)) return false
+    if (isCashOnly(payment.method_id) && !isValidReceivedAmount(payment)) return false
     return true
   }) && remainingAmount.value === 0
 })
@@ -1000,18 +1022,106 @@ watch(() => dialog.value, async (newValue) => {
   padding: 12px;
 }
 
-/* Payment input styling */
-.payment-input {
-  margin-bottom: 16px;
+/* Modern payment field styling */
+.payment-field-container {
+  margin-bottom: 24px;
+}
 
-  :deep(.v-field__input) {
-    padding-left: 36px !important;
-    padding-top: 28px !important;
-    min-height: 76px !important;
-    font-size: 1.25rem !important;
-    font-weight: 500;
-    letter-spacing: 0.5px;
+.payment-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.payment-field-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.87);
+}
+
+.payment-field-required {
+  font-size: 0.75rem;
+  color: rgb(var(--v-theme-error));
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.payment-field-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgb(var(--v-theme-surface));
+  border: 2px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  min-height: 64px;
+
+  &:focus-within {
+    border-color: rgb(var(--v-theme-primary));
+    box-shadow: 0 0 0 4px rgba(var(--v-theme-primary), 0.1);
   }
+
+  &.has-error {
+    border-color: rgb(var(--v-theme-error));
+    
+    &:focus-within {
+      box-shadow: 0 0 0 4px rgba(var(--v-theme-error), 0.1);
+    }
+  }
+}
+
+.payment-field-currency {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.87);
+  margin-right: 8px;
+}
+
+.payment-field-value {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface));
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+
+  &:focus {
+    outline: none;
+  }
+
+  &.is-invalid {
+    color: rgb(var(--v-theme-error));
+  }
+}
+
+.payment-field-error {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  color: rgb(var(--v-theme-error));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &::before {
+    content: "!";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: rgb(var(--v-theme-error));
+    color: white;
+    border-radius: 50%;
+    font-size: 0.75rem;
+  }
+}
   
   :deep(.v-field__outline) {
     --v-field-border-width: 2px;
