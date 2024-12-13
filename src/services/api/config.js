@@ -26,7 +26,8 @@ export const apiConfig = {
     auth: {
       login: 'auth/login',
       logout: 'auth/logout',
-      me: 'me'
+      me: 'me',
+      cashiers: '/auth/available-cashiers' // New endpoint
     },
     dashboard: {
       todaySales: 'dashboard/today-sales',

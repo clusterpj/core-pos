@@ -8,94 +8,94 @@ export const useCompanyStore = defineStore('company', {
   state: () => ({
     ...customerModule.state(),
     ...storeModule.state(),
-    ...cashRegisterModule.state()
+    ...cashRegisterModule.state(),
+    initializationComplete: false
   }),
 
   getters: {
-    // Combine all getters from modules
     ...customerModule.getters,
     ...storeModule.getters,
     ...cashRegisterModule.getters,
 
-    // Additional composed getters
     isConfigured: (state) => {
       return state.selectedCustomer && state.selectedStore && state.selectedCashier
     }
   },
 
   actions: {
-    // Initialize the entire store
-    async initializeStore() {
-      logger.startGroup('Company Store: Initialize')
+    ...customerModule.actions,
+    ...storeModule.actions,
+    ...cashRegisterModule.actions,
+
+    async initializeFromCashier(cashierData) {
+      logger.startGroup('Company Store: Initialize from Cashier')
       try {
-        await this.fetchCustomers()
-        await this.fetchCashRegisters()
+        this.clearSelections()
         
-        // If we have a selected customer, fetch stores
-        if (this.selectedCustomer) {
-          const customer = this.customers.find(c => c.id === this.selectedCustomer)
-          if (customer) {
-            await this.fetchStores(customer.company_id)
-          }
-        }
+        await this.setSelectedCustomer(cashierData.customer_id)
+        logger.debug('Customer set:', cashierData.customer_id)
         
-        logger.info('Company store initialized successfully')
+        await this.setSelectedStore(cashierData.store_id)
+        logger.debug('Store set:', cashierData.store_id)
+        
+        await this.setSelectedCashier(cashierData.id)
+        logger.debug('Cashier set:', cashierData.id)
+        
+        this.initializationComplete = true
+        logger.info('Company store initialized successfully from cashier')
+        
+        return true
       } catch (error) {
-        logger.error('Failed to initialize company store', error)
+        logger.error('Failed to initialize from cashier:', error)
+        this.clearSelections()
         throw error
       } finally {
         logger.endGroup()
       }
     },
 
-    // Combine all actions from modules
-    ...customerModule.actions,
-    ...storeModule.actions,
-    ...cashRegisterModule.actions,
+    async initializeStore() {
+      logger.startGroup('Company Store: Initialize')
+      try {
+        await this.fetchCustomers()
+        
+        const storedCustomer = localStorage.getItem('selectedCustomer')
+        const storedStore = localStorage.getItem('selectedStore')
+        const storedCashier = localStorage.getItem('selectedCashier')
 
-    // Override setSelectedCashier to handle the complex interaction between modules
-    async setSelectedCashier(registerId) {
-      const result = await cashRegisterModule.actions.setSelectedCashier.call(this, registerId)
-      
-      if (!result.success) {
-        return
-      }
+        if (storedCustomer) {
+          await this.setSelectedCustomer(Number(storedCustomer))
+          await this.fetchStores()
 
-      // Auto-select customer and fetch stores
-      if (result.customerId) {
-        await this.setSelectedCustomer(result.customerId)
-        const customer = this.customers.find(c => c.id === result.customerId)
-        if (customer) {
-          // Fetch stores for the customer's company
-          await this.fetchStores(customer.company_id)
+          if (storedStore) {
+            await this.setSelectedStore(Number(storedStore))
+            await this.fetchCashRegisters()
+
+            if (storedCashier) {
+              await this.setSelectedCashier(Number(storedCashier))
+            }
+          }
         }
-      }
 
-      // Auto-select store
-      if (result.storeId) {
-        // Verify store exists in fetched stores
-        const storeExists = this.stores.some(s => s.id === result.storeId)
-        if (storeExists) {
-          await this.setSelectedStore(result.storeId)
-        } else {
-          logger.warn('Store not found in available stores:', result.storeId)
-          throw new Error('Associated store not available')
-        }
+        this.initializationComplete = true
+        return true
+      } catch (error) {
+        logger.error('Store initialization failed:', error)
+        this.clearSelections()
+        throw error
+      } finally {
+        logger.endGroup()
       }
-
-      logger.info('Auto-selected customer and store:', {
-        cashier: registerId,
-        customer: result.customerId,
-        store: result.storeId
-      })
     },
 
-    // Clear all selections
     clearSelections() {
-      logger.info('Clearing all selections')
-      this.clearCustomerSelection()
-      this.clearStoreSelection()
-      this.clearCashierSelection()
+      this.selectedCustomer = null
+      this.selectedStore = null
+      this.selectedCashier = null
+      localStorage.removeItem('selectedCustomer')
+      localStorage.removeItem('selectedStore')
+      localStorage.removeItem('selectedCashier')
+      this.initializationComplete = false
     }
   }
 })

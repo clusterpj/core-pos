@@ -43,5 +43,14 @@ export const authApi = {
    */
   async getProfile() {
     return apiClient.get(apiConfig.endpoints.auth.me)
+  },
+
+  /**
+   * Get available cashiers
+   * @returns {Promise<Object>}
+   */
+  async getAvailableCashiers() {
+    const response = await apiClient.get('/v1/core-pos/cash-register/getCashRegistersUser')
+    return response.data
   }
 }
