@@ -263,11 +263,6 @@ const navItems = computed(() => [
     title: 'Point of Sale',
     icon: 'mdi-cash-register',
     to: '/pos'
-  },
-  {
-    title: 'Items',
-    icon: 'mdi-package-variant-closed',
-    to: '/items'
   }
 ])
 
