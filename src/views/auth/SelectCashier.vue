@@ -1,36 +1,41 @@
 <!-- src/views/auth/SelectCashier.vue -->
 <template>
   <div class="select-cashier-page">
-    <v-container fluid class="fill-height">
-      <v-row align="center" justify="center" no-gutters>
-        <v-col cols="12" sm="8" md="6" lg="4" xl="3">
-          <v-card class="select-cashier-card elevation-3">
+    <v-container fluid class="fill-height pa-0">
+      <v-row align="center" justify="center" no-gutters class="fill-height">
+        <v-col cols="12" sm="8" md="6" lg="4" xl="3" class="pa-4">
+          <v-card class="select-cashier-card" elevation="2" rounded="lg">
             <!-- Header -->
-            <v-card-item class="select-cashier-header">
-              <div class="d-flex flex-column align-center py-8">
-                <v-icon
-                  icon="mdi-cash-register"
+            <div class="select-cashier-header">
+              <div class="d-flex flex-column align-center pt-8 pb-6">
+                <v-avatar
                   color="primary"
                   size="64"
-                  class="mb-4"
-                />
-                <h1 class="text-h4 font-weight-bold text-primary mb-2">
-                  Select Location
+                  class="mb-6"
+                >
+                  <v-icon
+                    icon="mdi-cash-register"
+                    size="32"
+                    color="white"
+                  />
+                </v-avatar>
+                <h1 class="text-h4 font-weight-bold mb-1 text-primary">
+                  Welcome Back
                 </h1>
-                <p class="text-body-1 text-medium-emphasis">
-                  Choose your store and cash register to continue
+                <p class="text-subtitle-1 text-primary">
+                  Select your workspace to continue
                 </p>
               </div>
-            </v-card-item>
+            </div>
 
-            <v-card-text class="px-6 pt-2 pb-4">
+            <v-card-text class="px-6 pt-8 pb-4">
               <!-- Store Selection -->
               <v-select
                 v-model="selectedStore"
                 :items="stores"
                 item-title="name"
                 item-value="id"
-                label="Select your store"
+                label="Select Store"
                 :loading="loading"
                 required
                 variant="outlined"
@@ -39,13 +44,24 @@
                 :disabled="loading"
                 :error-messages="storeError"
                 @update:model-value="handleStoreChange"
+                prepend-inner-icon="mdi-store"
+                :menu-props="{ maxHeight: '300' }"
               >
                 <template v-slot:item="{ props, item }">
-                  <v-list-item v-bind="props" :title="item.raw.name">
-                    <template v-slot:subtitle>
-                      {{ item.raw.description }}
+                  <v-list-item v-bind="props">
+                    <template v-slot:prepend>
+                      <v-icon icon="mdi-store" color="primary" class="mr-2" />
                     </template>
+                    <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                    <v-list-item-subtitle v-if="item.raw.description">
+                      {{ item.raw.description }}
+                    </v-list-item-subtitle>
                   </v-list-item>
+                </template>
+                <template v-slot:append>
+                  <v-fade-transition leave-absolute>
+                    <v-icon v-if="selectedStore" icon="mdi-check-circle" color="success" />
+                  </v-fade-transition>
                 </template>
               </v-select>
 
@@ -55,62 +71,75 @@
                 :items="filteredCashiers"
                 item-title="name"
                 item-value="id"
-                label="Select your cash register"
+                label="Select Register"
                 :loading="loading"
                 required
                 variant="outlined"
                 bg-color="surface"
                 :disabled="loading || !selectedStore"
                 :error-messages="cashierError"
+                prepend-inner-icon="mdi-register"
+                :menu-props="{ maxHeight: '300' }"
               >
                 <template v-slot:item="{ props, item }">
-                  <v-list-item v-bind="props" :title="item.raw.name">
-                    <template v-slot:subtitle>
-                      Store: {{ item.raw.store_name }}
+                  <v-list-item v-bind="props">
+                    <template v-slot:prepend>
+                      <v-icon icon="mdi-register" color="primary" class="mr-2" />
                     </template>
+                    <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                    <v-list-item-subtitle>
+                      {{ item.raw.store_name }}
+                    </v-list-item-subtitle>
                   </v-list-item>
+                </template>
+                <template v-slot:append>
+                  <v-fade-transition leave-absolute>
+                    <v-icon v-if="selectedCashier" icon="mdi-check-circle" color="success" />
+                  </v-fade-transition>
                 </template>
               </v-select>
 
-              <v-alert
-                v-if="error"
-                type="error"
-                variant="tonal"
-                class="mt-4"
-                closable
-                @click:close="error = null"
-              >
-                {{ error }}
-              </v-alert>
+              <v-expand-transition>
+                <v-alert
+                  v-if="error"
+                  type="error"
+                  variant="tonal"
+                  class="mt-4"
+                  closable
+                  density="compact"
+                  @click:close="error = null"
+                >
+                  <template v-slot:prepend>
+                    <v-icon icon="mdi-alert-circle" />
+                  </template>
+                  {{ error }}
+                </v-alert>
+              </v-expand-transition>
             </v-card-text>
 
-            <v-card-actions class="pa-6 pt-0">
+            <v-divider />
+
+            <v-card-actions class="pa-4">
+              <v-btn
+                color="error"
+                variant="text"
+                :disabled="loading"
+                @click="handleLogout"
+                density="comfortable"
+              >
+                Sign Out
+              </v-btn>
               <v-spacer />
               <v-btn
                 color="primary"
                 :loading="loading"
                 :disabled="!isValid"
                 @click="handleSelection"
-                size="large"
-                block
-                height="48"
+                min-width="120"
               >
-                <v-icon start icon="mdi-login" class="mr-2" />
                 Continue
               </v-btn>
             </v-card-actions>
-
-            <v-card-text class="text-center pt-0">
-              <v-btn
-                color="error"
-                variant="text"
-                size="small"
-                @click="handleLogout"
-                :disabled="loading"
-              >
-                Sign Out
-              </v-btn>
-            </v-card-text>
           </v-card>
         </v-col>
       </v-row>
@@ -224,17 +253,39 @@ onMounted(async () => {
 })
 </script>
 
-<style>
+<style scoped>
 .select-cashier-page {
   min-height: 100vh;
-  background-color: rgb(var(--v-theme-background));
+  background: rgb(var(--v-theme-surface));
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .select-cashier-card {
-  border-radius: 12px;
+  width: 100%;
+  max-width: 100%;
+  background: white;
 }
 
 .select-cashier-header {
-  background: linear-gradient(to right, rgba(var(--v-theme-primary), 0.1), rgba(var(--v-theme-primary), 0.05));
+  background: rgb(var(--v-theme-primary-lighten-5, 237, 245, 255));
+}
+
+:deep(.v-field) {
+  border-radius: 4px;
+}
+
+:deep(.v-list-item) {
+  min-height: 48px;
+}
+
+:deep(.v-list-item:not(:last-child)) {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.08);
+}
+
+:deep(.v-btn) {
+  text-transform: none;
+  font-weight: 500;
 }
 </style>

@@ -1,29 +1,34 @@
 <!-- src/views/auth/Login.vue -->
 <template>
   <div class="login-page">
-    <v-container fluid class="fill-height">
-      <v-row align="center" justify="center" no-gutters>
-        <v-col cols="12" sm="8" md="6" lg="4" xl="3">
-          <v-card class="login-card">
+    <v-container fluid class="fill-height pa-0">
+      <v-row align="center" justify="center" no-gutters class="fill-height">
+        <v-col cols="12" sm="8" md="6" lg="4" xl="3" class="pa-4">
+          <v-card class="login-card" elevation="2" rounded="lg">
             <!-- Header -->
-            <v-card-item class="login-header">
-              <div class="d-flex flex-column align-center py-8">
-                <v-icon
-                  icon="mdi-store"
+            <div class="login-header">
+              <div class="d-flex flex-column align-center pt-8 pb-6">
+                <v-avatar
                   color="primary"
                   size="64"
-                  class="mb-4"
-                />
-                <h1 class="text-h4 font-weight-bold text-primary mb-2">
+                  class="mb-6"
+                >
+                  <v-icon
+                    icon="mdi-store"
+                    size="32"
+                    color="white"
+                  />
+                </v-avatar>
+                <h1 class="text-h4 font-weight-bold mb-1 text-primary">
                   {{ appTitle }}
                 </h1>
-                <p class="text-body-1 text-medium-emphasis">
+                <p class="text-subtitle-1 text-primary">
                   Sign in to your account
                 </p>
               </div>
-            </v-card-item>
+            </div>
 
-            <v-card-text class="px-6 pt-2 pb-4">
+            <v-card-text class="px-6 pt-8 pb-4">
               <v-form @submit.prevent="handleLogin" ref="form">
                 <!-- Email Field -->
                 <v-text-field
@@ -55,7 +60,7 @@
                   @update:model-value="clearError('password')"
                   required
                   autocomplete="current-password"
-                  class="mb-2 login-field"
+                  class="mb-4 login-field"
                   placeholder="Enter your password"
                   bg-color="surface"
                 />
@@ -66,11 +71,14 @@
                     v-if="error"
                     type="error"
                     variant="tonal"
+                    class="mb-4"
                     closable
-                    class="mb-4 login-alert"
+                    density="compact"
                     @click:close="error = null"
-                    density="comfortable"
                   >
+                    <template v-slot:prepend>
+                      <v-icon icon="mdi-alert-circle" />
+                    </template>
                     {{ error }}
                   </v-alert>
                 </v-expand-transition>
@@ -78,16 +86,15 @@
                 <!-- Login Button -->
                 <v-btn
                   color="primary"
-                  size="large"
                   :loading="loading"
                   :disabled="!formIsValid"
                   @click="handleLogin"
+                  size="large"
                   block
-                  class="mt-2 login-button"
-                  height="48"
+                  min-height="48"
+                  class="mt-2"
                 >
-                  <v-icon start icon="mdi-login" class="mr-2" />
-                  Sign In
+                  Continue
                 </v-btn>
               </v-form>
             </v-card-text>
@@ -186,61 +193,37 @@ async function handleLogin() {
 
 <style scoped>
 .login-page {
-  background: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, rgba(var(--v-theme-primary), 0.8) 100%);
   min-height: 100vh;
-  width: 100vw;
+  background: rgb(var(--v-theme-surface));
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .login-card {
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1) !important;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
   max-width: 100%;
+  background: white;
 }
 
 .login-header {
-  background-color: rgb(var(--v-theme-background));
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.12);
+  background: rgb(var(--v-theme-primary-lighten-5, 237, 245, 255));
 }
 
-.login-field {
-  transition: all 0.2s ease;
+:deep(.v-field) {
+  border-radius: 4px;
 }
 
-.login-field:hover :deep(.v-field) {
-  border-color: rgba(var(--v-theme-primary), 0.5);
+:deep(.v-list-item) {
+  min-height: 48px;
 }
 
-.login-field :deep(.v-field) {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.login-button {
-  transition: all 0.2s ease;
+:deep(.v-btn) {
   text-transform: none;
-  letter-spacing: 0.5px;
   font-weight: 500;
 }
 
-.login-button:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.2);
-}
-
-.login-alert {
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-@media (max-width: 600px) {
-  .login-card {
-    margin: 16px;
-    border-radius: 12px;
-  }
+:deep(.v-alert) {
+  border-left: 4px solid currentColor;
 }
 </style>
