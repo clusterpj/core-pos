@@ -14,13 +14,19 @@
 <script setup>
 import { onBeforeMount, ref } from 'vue'
 import { useAuthStore } from './stores/auth'
+import { useCartStore } from './stores/cart-store'
 
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 const isReady = ref(false)
 
 onBeforeMount(async () => {
   // Attempt to restore session before app mount
   await authStore.restoreSession()
+  
+  // Initialize cart from localStorage
+  cartStore.initializeCart()
+  
   isReady.value = true
 })
 </script>

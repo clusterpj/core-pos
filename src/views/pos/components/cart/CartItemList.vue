@@ -1,4 +1,3 @@
-<!-- src/views/pos/components/cart/CartItemList.vue -->
 <template>
   <div class="cart-items" :class="$attrs.class">
     <v-list class="cart-list pa-0" density="compact">
@@ -18,6 +17,14 @@
           <div class="item-info flex-grow-1 min-width-0">
             <div class="item-name text-body-2 font-weight-medium text-truncate">
               {{ item.name }}
+            </div>
+            <div v-if="item.notes || item.modifications?.length" class="item-modifications text-caption text-grey-darken-1">
+              <div v-if="item.notes" class="item-notes">
+                {{ item.notes }}
+              </div>
+              <div v-if="item.modifications?.length" class="item-mods">
+                {{ item.modifications.join(', ') }}
+              </div>
             </div>
             <div class="item-price text-caption text-grey-darken-1">
               {{ formatPrice(item.price) }} each
@@ -48,6 +55,15 @@
                 density="comfortable"
                 color="primary"
                 @click="handleQuantityUpdate(item.id, item.quantity + 1, index)"
+                class="touch-btn"
+              />
+              <v-btn
+                icon="mdi-pencil"
+                size="small"
+                variant="tonal"
+                density="comfortable"
+                color="primary"
+                @click="$emit('edit', item, index)"
                 class="touch-btn"
               />
               <v-btn
@@ -89,7 +105,9 @@ console.log('CartItemList - Initial cart state:', {
     name: item.name,
     price: item.price,
     quantity: item.quantity,
-    total: item.price * item.quantity
+    total: item.price * item.quantity,
+    notes: item.notes,
+    modifications: item.modifications
   }))
 })
 
@@ -105,10 +123,35 @@ watch(() => props.items, (newItems, oldItems) => {
       formatted_price: PriceUtils.format(item.price),
       quantity: item.quantity,
       total: item.price * item.quantity,
-      formatted_total: PriceUtils.format(item.price * item.quantity)
+      formatted_total: PriceUtils.format(item.price * item.quantity),
+      notes: item.notes,
+      modifications: item.modifications
     }))
   })
 }, { deep: true })
+
+// Handlers with logging
+const handleQuantityUpdate = (itemId, newQuantity, index) => {
+  console.log('CartItemList - Updating quantity:', {
+    itemId,
+    index,
+    oldQuantity: props.items[index].quantity,
+    newQuantity,
+    price: props.items[index].price,
+    oldTotal: props.items[index].price * props.items[index].quantity,
+    newTotal: props.items[index].price * newQuantity
+  })
+  emit('updateQuantity', itemId, newQuantity, index)
+}
+
+const handleRemoveItem = (itemId, index) => {
+  console.log('CartItemList - Removing item:', {
+    itemId,
+    index,
+    item: props.items[index]
+  })
+  emit('remove', itemId, index)
+}
 
 // Format price for display
 const formatPrice = (cents) => {
@@ -140,38 +183,6 @@ const cartTotal = computed(() => {
   })
   return total
 })
-
-// Handlers with logging
-const handleQuantityUpdate = (itemId, newQuantity, index) => {
-  console.log('CartItemList - Updating quantity:', {
-    itemId,
-    index,
-    oldQuantity: props.items[index].quantity,
-    newQuantity,
-    price: props.items[index].price,
-    oldTotal: props.items[index].price * props.items[index].quantity,
-    newTotal: props.items[index].price * newQuantity
-  })
-  emit('updateQuantity', itemId, newQuantity, index)
-}
-
-const handleRemoveItem = (itemId, index) => {
-  console.log('CartItemList - Removing item:', {
-    itemId,
-    index,
-    item: props.items[index]
-  })
-  emit('remove', itemId, index)
-}
-
-const handleEditItem = (itemId, index) => {
-  console.log('CartItemList - Editing item:', {
-    itemId,
-    index,
-    item: props.items[index]
-  })
-  emit('edit', itemId, index)
-}
 </script>
 
 <style scoped>
@@ -219,6 +230,11 @@ const handleEditItem = (itemId, index) => {
 
 .item-name {
   margin-bottom: 2px;
+}
+
+.item-modifications {
+  margin-bottom: 2px;
+  font-style: italic;
 }
 
 .gap-1 {
