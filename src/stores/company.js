@@ -32,17 +32,35 @@ export const useCompanyStore = defineStore('company', {
       try {
         this.clearSelections()
         
+        // First fetch all required data
+        await this.fetchCustomers()
+        logger.debug('Customers fetched')
+        
+        // Set and persist customer
         await this.setSelectedCustomer(cashierData.customer_id)
         logger.debug('Customer set:', cashierData.customer_id)
+        localStorage.setItem('selectedCustomer', cashierData.customer_id)
         
+        // Fetch stores for the selected customer
+        await this.fetchStores()
+        logger.debug('Stores fetched')
+        
+        // Set and persist store
         await this.setSelectedStore(cashierData.store_id)
         logger.debug('Store set:', cashierData.store_id)
+        localStorage.setItem('selectedStore', cashierData.store_id)
         
+        // Fetch cash registers for the selected store
+        await this.fetchCashRegisters()
+        logger.debug('Cash registers fetched')
+        
+        // Set and persist cashier
         await this.setSelectedCashier(cashierData.id)
         logger.debug('Cashier set:', cashierData.id)
+        localStorage.setItem('selectedCashier', cashierData.id)
         
         this.initializationComplete = true
-        logger.info('Company store initialized successfully from cashier')
+        logger.info('Company store initialized and persisted successfully from cashier')
         
         return true
       } catch (error) {
@@ -57,6 +75,7 @@ export const useCompanyStore = defineStore('company', {
     async initializeStore() {
       logger.startGroup('Company Store: Initialize')
       try {
+        // First fetch customers
         await this.fetchCustomers()
         
         const storedCustomer = localStorage.getItem('selectedCustomer')
@@ -65,10 +84,14 @@ export const useCompanyStore = defineStore('company', {
 
         if (storedCustomer) {
           await this.setSelectedCustomer(Number(storedCustomer))
+          
+          // After customer is set, fetch stores
           await this.fetchStores()
 
           if (storedStore) {
             await this.setSelectedStore(Number(storedStore))
+            
+            // After store is set, fetch cash registers
             await this.fetchCashRegisters()
 
             if (storedCashier) {
