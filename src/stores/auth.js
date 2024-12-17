@@ -10,7 +10,6 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref(null)
   const isAuthenticated = ref(false)
   const loading = ref(false)
-  const availableCashiers = ref([])
 
   // Router instance
   const router = useRouter()
@@ -18,7 +17,6 @@ export const useAuthStore = defineStore('auth', () => {
   // Getters
   const userPermissions = computed(() => user.value?.permissions || [])
   const isAdmin = computed(() => user.value?.role === 'admin')
-  const hasCashiers = computed(() => availableCashiers.value.length > 0)
 
   // Actions
   async function login(credentials) {
@@ -41,13 +39,11 @@ export const useAuthStore = defineStore('auth', () => {
       // Store token in localStorage
       localStorage.setItem('token', authToken)
 
-      // Load full user profile first
+      // Load full user profile
       await loadUserProfile()
 
-      // Navigate to select-cashier page which will handle loading cashiers
-      router.push('/select-cashier')
-
       logger.info('User logged in successfully', { email: credentials.email })
+
       return response
     } catch (error) {
       logger.error('Login failed', error)
@@ -60,9 +56,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout() {
     try {
-      await authApi.logout()
+      if (isAuthenticated.value) {
+        await authApi.logout()
+      }
     } catch (error) {
-      logger.error('Logout failed', error)
+      logger.warn('Logout API call failed', error)
     } finally {
       clearAuthState()
       router.push('/login')
@@ -70,19 +68,18 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function clearAuthState() {
-    user.value = null
     token.value = null
+    user.value = null
     isAuthenticated.value = false
-    availableCashiers.value = []
     localStorage.removeItem('token')
   }
 
   async function loadUserProfile() {
     try {
-      const profile = await authApi.getProfile()
+      const response = await authApi.getProfile()
       user.value = {
         ...user.value,
-        ...profile
+        ...response.data
       }
     } catch (error) {
       logger.error('Failed to load user profile', error)
@@ -90,39 +87,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function loadAvailableCashiers() {
-    try {
-      const response = await authApi.getAvailableCashiers()
-      if (response.success && Array.isArray(response.data)) {
-        availableCashiers.value = response.data
-      } else {
-        availableCashiers.value = []
-        throw new Error('Invalid response format from server')
-      }
-      return response.data
-    } catch (error) {
-      logger.error('Failed to load available cashiers:', error)
-      availableCashiers.value = []
-      throw error
-    }
-  }
-
   async function restoreSession() {
     const storedToken = localStorage.getItem('token')
-    if (!storedToken) {
-      return false
-    }
+    if (!storedToken) return false
 
     try {
       token.value = storedToken
+      await loadUserProfile()
       isAuthenticated.value = true
-      await Promise.all([
-        loadUserProfile(),
-        loadAvailableCashiers()
-      ])
       return true
     } catch (error) {
-      logger.error('Failed to restore session', error)
+      logger.error('Session restoration failed', error)
       clearAuthState()
       return false
     }
@@ -130,7 +105,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Add hasPermission method
   function hasPermission(permission) {
-    if (!user.value) return false
+    if (isAdmin.value) return true
     return userPermissions.value.includes(permission)
   }
 
@@ -140,19 +115,16 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     isAuthenticated,
     loading,
-    availableCashiers,
 
     // Getters
     userPermissions,
     isAdmin,
-    hasCashiers,
 
     // Actions
     login,
     logout,
-    loadUserProfile,
-    loadAvailableCashiers,
     restoreSession,
-    hasPermission
+    hasPermission,
+    loadUserProfile
   }
 })
