@@ -1,13 +1,13 @@
 import { OrderType } from '../../types/order'
 
 export const state = () => ({
-  items: [], // Each item will now have a modifications array and notes field
+  items: [],
   discountType: 'fixed',
   discountValue: 0,
   taxRate: 0.08, // 8% tax rate
   loading: false,
   error: null,
-  notes: '', // This will be kept for order-level notes
+  notes: '',
   selectedTables: [],
   holdInvoiceId: null,
   holdOrderDescription: null,
